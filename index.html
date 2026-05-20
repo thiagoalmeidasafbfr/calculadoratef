@@ -612,11 +612,95 @@
             .page-hero, .page-body { margin-left: 12px; margin-right: 12px; }
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <div id="app"></div>
 
-<script>
+
+<parameter name="new_string"><script>
+// ================================================================
+// SUPABASE
+// Preencha com os dados do seu projeto em supabase.com > Project Settings > API
+// ================================================================
+const SUPABASE_URL = 'https://SEU-PROJETO.supabase.co';
+const SUPABASE_KEY = 'SUA-ANON-KEY';
+const DB_TABLE     = 'tef_state';
+const DB_ROW_ID    = 'default';
+
+let _db = null;
+let _saveTimer = null;
+
+function initDB() {
+    if (typeof supabase === 'undefined' || SUPABASE_URL.includes('SEU-PROJETO')) return;
+    _db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}
+
+async function loadState() {
+    if (!_db) return;
+    setStatus('loading');
+    const { data, error } = await _db
+        .from(DB_TABLE).select('state').eq('id', DB_ROW_ID).maybeSingle();
+    if (error) { console.error('Supabase load error:', error); setStatus('error'); return; }
+    if (data?.state) {
+        const d = data.state;
+        if (d.aliq != null) S.aliq = d.aliq;
+        (d.players || []).forEach((src, i) => {
+            if (!S.players[i]) return;
+            const p = S.players[i];
+            if (src.name  != null) p.name  = src.name;
+            if (src.gross != null) p.gross = src.gross;
+            Object.keys(p.deds).forEach(k => {
+                if (!src.deds?.[k]) return;
+                p.deds[k].on    = src.deds[k].on    ?? false;
+                p.deds[k].value = src.deds[k].value ?? null;
+            });
+        });
+    }
+    setStatus('saved');
+}
+
+function saveState() {
+    if (!_db) return;
+    setStatus('saving');
+    clearTimeout(_saveTimer);
+    _saveTimer = setTimeout(async () => {
+        const payload = {
+            id:    DB_ROW_ID,
+            state: {
+                aliq:    S.aliq,
+                players: S.players.map(p => ({
+                    name:  p.name,
+                    gross: p.gross,
+                    deds:  Object.fromEntries(
+                        Object.entries(p.deds).map(([k, d]) => [k, { on: d.on, value: d.value }])
+                    ),
+                })),
+            },
+            updated_at: new Date().toISOString(),
+        };
+        const { error } = await _db
+            .from(DB_TABLE).upsert(payload, { onConflict: 'id' });
+        if (error) { console.error('Supabase save error:', error); setStatus('error'); }
+        else setStatus('saved');
+    }, 700);
+}
+
+function setStatus(s) {
+    const el = document.getElementById('save-status');
+    if (!el) return;
+    const cfg = {
+        loading: ['Carregando…',     'rgba(243,238,226,0.38)'],
+        saving:  ['Salvando…',       'rgba(243,238,226,0.38)'],
+        saved:   ['● Salvo',         '#86efac'],
+        error:   ['● Erro ao salvar','#f87171'],
+        offline: ['● Offline',       'rgba(243,238,226,0.25)'],
+    };
+    const [text, color] = cfg[s] ?? cfg.offline;
+    el.textContent = text;
+    el.style.color = color;
+}
+
 // ================================================================
 // STATE
 // ================================================================
@@ -730,6 +814,7 @@ function hHero() {
                 <div class="hero-sub">Tributação Específica em Transferências de Atletas de Futebol</div>
             </div>
             <div class="hero-right">
+                <span id="save-status" style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:rgba(243,238,226,0.25);"></span>
                 <button class="hero-btn" onclick="window.print()">Imprimir</button>
             </div>
         </div>
@@ -1012,31 +1097,31 @@ function bindEvents() {
         S.aliq = parseFloat(e.target.value) || 0;
         if (inp) inp.value = S.aliq;
         updateSlider(slider);
-        render();
+        render(); saveState();
     });
     if (inp) inp.addEventListener('input', e => {
         S.aliq = parseFloat(e.target.value) || 0;
         if (slider) { slider.value = S.aliq; updateSlider(slider); }
-        render();
+        render(); saveState();
     });
 
     document.querySelectorAll('[data-field="name"]').forEach(el => {
         el.addEventListener('input', e => { S.players[+e.target.dataset.pi].name = e.target.value; });
-        el.addEventListener('blur', () => render());
+        el.addEventListener('blur', () => { render(); saveState(); });
     });
 
     document.querySelectorAll('[data-field="gross"]').forEach(el => {
         el.addEventListener('input', e => {
             const raw = e.target.value;
             S.players[+e.target.dataset.pi].gross = raw === '' ? null : parseFloat(raw);
-            renderResults();
+            renderResults(); saveState();
         });
     });
 
     document.querySelectorAll('[data-field="dedOn"]').forEach(el => {
         el.addEventListener('change', e => {
             S.players[+e.target.dataset.pi].deds[e.target.dataset.dk].on = e.target.checked;
-            render();
+            render(); saveState();
         });
     });
 
@@ -1044,7 +1129,7 @@ function bindEvents() {
         el.addEventListener('input', e => {
             const raw = e.target.value;
             S.players[+e.target.dataset.pi].deds[e.target.dataset.dk].value = raw === '' ? null : parseFloat(raw);
-            renderResults();
+            renderResults(); saveState();
         });
     });
 }
@@ -1057,7 +1142,18 @@ function updateSlider(slider) {
 // ================================================================
 // INIT
 // ================================================================
-render();
+async function init() {
+    initDB();
+    if (_db) {
+        setStatus('loading');
+        await loadState();
+    } else {
+        setStatus('offline');
+    }
+    render();
+}
+
+init();
 </script>
 </body>
 </html>

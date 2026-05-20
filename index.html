@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora TEF — Tributação em Transferências de Atletas</title>
+    <style>
+        :root {
+            --green-dark: #0b3d2e;
+            --green: #155c42;
+            --green-mid: #1e7a57;
+            --accent: #4ade80;
+            --accent-dim: #22c55e;
+            --bg: #090e18;
+            --surface: #101826;
+            --surface2: #192233;
+            --surface3: #243040;
+            --surface4: #2e3c50;
+            --text: #f1f5f9;
+            --text2: #cbd5e1;
+            --text3: #94a3b8;
+            --text4: #64748b;
+            --border: #1e3048;
+            --border2: #2a3f56;
+            --red: #f87171;
+            --red-dim: #ef4444;
+            --orange: #fb923c;
+            --yellow: #fbbf24;
+            --blue: #60a5fa;
+            --blue-dim: #3b82f6;
+            --purple: #a78bfa;
+            --radius: 10px;
+            --radius-sm: 7px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            background: linear-gradient(135deg, var(--green-dark) 0%, var(--green-mid) 100%);
+            padding: 18px 28px;
+            border-bottom: 2px solid var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+        .header-left { display: flex; align-items: center; gap: 14px; }
+        .header-icon { font-size: 36px; line-height: 1; }
+        .header h1 { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+        .header-sub { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+        .header-right { display: flex; gap: 10px; align-items: center; }
+
+        .chip {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        .chip-green { background: rgba(74,222,128,0.15); color: var(--accent); border: 1px solid rgba(74,222,128,0.25); }
+        .chip-blue  { background: rgba(96,165,250,0.12); color: var(--blue); border: 1px solid rgba(96,165,250,0.2); }
+
+        /* ===== LAYOUT ===== */
+        .container { max-width: 1700px; margin: 0 auto; padding: 20px 24px; }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text2);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .section-title::before {
+            content: '';
+            display: block;
+            width: 3px;
+            height: 14px;
+            background: var(--accent);
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        /* ===== CONFIG PANEL ===== */
+        .config-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 20px;
+        }
+        .config-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        /* Regime Tabs */
+        .regime-tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--surface3);
+            padding: 4px;
+            border-radius: var(--radius-sm);
+        }
+        .rtab {
+            padding: 7px 18px;
+            border: none;
+            background: transparent;
+            color: var(--text3);
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .rtab.active { background: var(--accent); color: #0a1a10; }
+        .rtab:hover:not(.active) { background: var(--surface4); color: var(--text); }
+
+        /* Rate grid */
+        .rates-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .rate-card {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+            min-width: 155px;
+            flex: 1;
+        }
+        .rate-card-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text3);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 8px;
+        }
+        .rate-row { display: flex; align-items: center; gap: 6px; }
+        .rate-inp {
+            background: var(--surface3);
+            border: 1px solid var(--border2);
+            border-radius: 6px;
+            padding: 7px 10px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            width: 90px;
+            text-align: right;
+            transition: border-color 0.15s;
+        }
+        .rate-inp:focus { outline: none; border-color: var(--accent); }
+        .rate-unit { font-size: 13px; color: var(--text3); }
+        .rate-hint { font-size: 11px; color: var(--text4); margin-top: 5px; }
+
+        .note-bar {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 10px 14px;
+            background: rgba(96,165,250,0.06);
+            border-left: 3px solid var(--blue-dim);
+            border-radius: 0 6px 6px 0;
+            font-size: 11px;
+            color: var(--text3);
+            margin-top: 16px;
+            line-height: 1.6;
+        }
+
+        /* ===== EXCHANGE RATE BAR ===== */
+        .fx-bar {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .fx-label { font-size: 12px; font-weight: 600; color: var(--text3); white-space: nowrap; }
+        .fx-inp {
+            background: var(--surface3);
+            border: 1px solid var(--border2);
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            width: 110px;
+            text-align: right;
+        }
+        .fx-inp:focus { outline: none; border-color: var(--accent); }
+        .fx-note { font-size: 11px; color: var(--text4); }
+
+        /* ===== PLAYER GRID ===== */
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .player-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .player-head {
+            background: linear-gradient(135deg, var(--green-dark), var(--green));
+            padding: 14px 14px 12px;
+            border-bottom: 2px solid var(--accent);
+        }
+        .player-num { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.45); letter-spacing: 0.8px; margin-bottom: 6px; text-transform: uppercase; }
+        .player-name-inp {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 6px;
+            padding: 7px 10px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #fff;
+            width: 100%;
+        }
+        .player-name-inp:focus { outline: none; border-color: var(--accent); background: rgba(255,255,255,0.16); }
+        .player-name-inp::placeholder { color: rgba(255,255,255,0.3); }
+
+        .player-body { padding: 14px; flex: 1; display: flex; flex-direction: column; gap: 0; }
+
+        /* Value input */
+        .field-label { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+        .money-inp-wrap {
+            display: flex;
+            align-items: center;
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            margin-bottom: 14px;
+        }
+        .money-prefix {
+            padding: 9px 11px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--accent);
+            background: var(--surface3);
+            border-right: 1px solid var(--border2);
+            white-space: nowrap;
+        }
+        .money-inp {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 9px 10px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            min-width: 0;
+        }
+        .money-inp:focus { outline: none; }
+        .money-inp-wrap:focus-within { border-color: var(--accent); }
+
+        /* Deductions */
+        .ded-section { border-top: 1px solid var(--border); padding-top: 13px; margin-bottom: 14px; }
+        .ded-title { font-size: 10px; font-weight: 700; color: var(--text4); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; }
+
+        .ded-row {
+            display: grid;
+            grid-template-columns: 16px 1fr 64px 14px;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .ded-check { width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer; margin: 0; }
+        .ded-name { font-size: 11px; color: var(--text2); cursor: help; }
+        .ded-row.off .ded-name { color: var(--text4); }
+        .ded-inp {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 4px 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text);
+            text-align: right;
+            width: 100%;
+        }
+        .ded-inp:focus { outline: none; border-color: var(--accent); }
+        .ded-row.off .ded-inp { opacity: 0.35; pointer-events: none; }
+        .ded-unit { font-size: 11px; color: var(--text4); }
+
+        /* Deduction value display */
+        .ded-value-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-bottom: 4px;
+        }
+        .ded-value-row .lbl { color: var(--text3); }
+        .ded-value-row .val { font-weight: 600; }
+
+        /* Results */
+        .results-section { border-top: 1px solid var(--border); padding-top: 14px; }
+
+        .gross-net-summary { margin-bottom: 12px; }
+
+        .line-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11.5px;
+            margin-bottom: 5px;
+        }
+        .line-row .ll { color: var(--text3); }
+        .line-row .lv { font-weight: 700; }
+        .lv-orange { color: var(--orange); }
+        .lv-red { color: var(--red); }
+        .lv-green { color: var(--accent); }
+        .lv-white { color: var(--text); }
+
+        .sep { border: none; border-top: 1px dashed var(--border2); margin: 8px 0; }
+
+        .scenario-box {
+            border-radius: var(--radius-sm);
+            padding: 11px 12px;
+            margin-bottom: 8px;
+        }
+        .scenario-box-c1 { background: rgba(251,146,60,0.07); border: 1px solid rgba(251,146,60,0.2); }
+        .scenario-box-c2 { background: rgba(74,222,128,0.06); border: 1px solid rgba(74,222,128,0.2); }
+        .scenario-box-diff { background: rgba(167,139,250,0.06); border: 1px solid rgba(167,139,250,0.2); }
+
+        .sc-label {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            margin-bottom: 8px;
+        }
+        .sc-label-c1 { color: var(--orange); }
+        .sc-label-c2 { color: var(--accent); }
+        .sc-label-diff { color: var(--purple); }
+
+        .sc-line {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-bottom: 4px;
+        }
+        .sc-line .sl { color: var(--text3); }
+        .sc-line .sv { font-weight: 600; color: var(--text2); }
+        .sc-line.total .sl { font-weight: 700; color: var(--text); font-size: 12px; }
+        .sc-line.total .sv { font-size: 13px; }
+        .sc-line.total-c1 .sv { color: var(--orange); }
+        .sc-line.total-c2 .sv { color: var(--accent); }
+        .sc-line.total-diff .sv { color: var(--purple); font-size: 14px; }
+
+        .sc-sep { border: none; border-top: 1px solid rgba(255,255,255,0.07); margin: 7px 0; }
+
+        /* Empty state */
+        .player-empty {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            font-size: 12px;
+            color: var(--text4);
+            text-align: center;
+        }
+
+        /* ===== TOTALS BAR ===== */
+        .totals-bar {
+            background: linear-gradient(135deg, var(--green-dark) 0%, var(--green) 100%);
+            border: 1px solid rgba(74,222,128,0.3);
+            border-radius: var(--radius);
+            padding: 18px 24px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 16px;
+        }
+        .tb-item { text-align: center; }
+        .tb-lbl { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 5px; }
+        .tb-val { font-size: 18px; font-weight: 800; color: #fff; line-height: 1.1; }
+        .tb-sub { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 3px; }
+        .tb-val-orange { color: var(--orange); }
+        .tb-val-green { color: var(--accent); }
+        .tb-val-purple { color: #c4b5fd; }
+        .tb-sep { border-left: 1px solid rgba(255,255,255,0.1); }
+
+        /* ===== SUMMARY TABLE ===== */
+        .summary-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12.5px;
+            margin-top: 16px;
+        }
+        .summary-table th {
+            padding: 9px 14px;
+            text-align: right;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text3);
+            background: var(--surface2);
+            border-bottom: 2px solid var(--border2);
+            white-space: nowrap;
+        }
+        .summary-table th:first-child { text-align: left; border-radius: 6px 0 0 0; }
+        .summary-table th:last-child { border-radius: 0 6px 0 0; }
+        .summary-table td {
+            padding: 11px 14px;
+            border-bottom: 1px solid var(--border);
+            text-align: right;
+            color: var(--text2);
+            white-space: nowrap;
+        }
+        .summary-table td:first-child { text-align: left; font-weight: 600; color: var(--text); }
+        .summary-table tr:last-child td { border-bottom: none; }
+        .summary-table tbody tr:hover td { background: var(--surface2); }
+        .summary-table .total-row td {
+            font-weight: 700;
+            color: var(--text);
+            background: var(--surface2);
+            border-top: 2px solid rgba(74,222,128,0.4);
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 11px;
+            color: var(--text4);
+            border-top: 1px solid var(--border);
+        }
+
+        /* ===== UTILITIES ===== */
+        .bold { font-weight: 700; }
+        .text-right { text-align: right; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--surface); }
+        ::-webkit-scrollbar-thumb { background: var(--surface4); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text4); }
+        input[type="number"] { -moz-appearance: textfield; }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+        @media (max-width: 1400px) { .players-grid { grid-template-columns: repeat(3, 1fr); } .totals-bar { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 900px)  { .players-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 600px)  { .players-grid { grid-template-columns: 1fr; } .totals-bar { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+// ================================================================
+// STATE
+// ================================================================
+const S = {
+    regime: 'presumido',
+    fxRate: 5.80,
+    rates: {
+        presumidaIRPJ: 32,
+        presumidaCSLL: 32,
+        irpj: 15,
+        irpjAdd: 10,
+        irpjThreshold: 240000,
+        csll: 9,
+        pis: 0.65,
+        cofins: 3,
+    },
+    players: Array.from({ length: 5 }, (_, i) => ({
+        name: `Jogador ${i + 1}`,
+        gross: 0,
+        deds: {
+            intermediacao: { on: false, rate: 5,    label: 'Intermediação',      tip: 'Comissão do agente/intermediário do atleta' },
+            sellon:        { on: false, rate: 0,    label: 'Sell-on Fee',        tip: 'Cláusula de revenda: % para o clube anterior' },
+            solidarity:    { on: false, rate: 5,    label: 'Solidariedade FIFA', tip: 'Art. 21 RSTP – 5% distribuído aos clubes formadores' },
+            agenteBuyer:   { on: false, rate: 0,    label: 'Agente Comprador',   tip: 'Comissão do agente do clube comprador (quando paga pelo vendedor)' },
+            outros1:       { on: false, rate: 0,    label: 'Outras taxas 1',     tip: 'Deduções adicionais personalizadas' },
+            outros2:       { on: false, rate: 0,    label: 'Outras taxas 2',     tip: 'Deduções adicionais personalizadas' },
+        }
+    }))
+};
+
+// ================================================================
+// CALCULATIONS
+// ================================================================
+function calcTax(base) {
+    const r = S.rates;
+    if (S.regime === 'presumido') {
+        const irpjBase = base * (r.presumidaIRPJ / 100);
+        const csllBase = base * (r.presumidaCSLL / 100);
+        const irpjBasico = irpjBase * (r.irpj / 100);
+        const irpjAdd = Math.max(0, irpjBase - r.irpjThreshold) * (r.irpjAdd / 100);
+        const irpj = irpjBasico + irpjAdd;
+        const csll = csllBase * (r.csll / 100);
+        const pis = base * (r.pis / 100);
+        const cofins = base * (r.cofins / 100);
+        return { irpj, irpjBasico, irpjAdd, csll, pis, cofins, irpjBase, csllBase };
+    } else {
+        // Real/Custom: rates applied directly to base
+        const irpj = base * (r.irpj / 100);
+        const irpjAdd = Math.max(0, base - r.irpjThreshold) * (r.irpjAdd / 100);
+        const csll = base * (r.csll / 100);
+        const pis = base * (r.pis / 100);
+        const cofins = base * (r.cofins / 100);
+        return { irpj: irpj + irpjAdd, irpjBasico: irpj, irpjAdd, csll, pis, cofins, irpjBase: base, csllBase: base };
+    }
+}
+
+function totalTax(t) { return t.irpj + t.csll + t.pis + t.cofins; }
+
+function calcPlayer(p) {
+    const gross = p.gross || 0;
+    let totalDed = 0;
+    const dedBreak = {};
+    for (const [k, d] of Object.entries(p.deds)) {
+        const v = d.on ? gross * d.rate / 100 : 0;
+        dedBreak[k] = v;
+        totalDed += v;
+    }
+    const net = gross - totalDed;
+    const tax1 = calcTax(gross);
+    const tax2 = calcTax(net);
+    const tt1 = totalTax(tax1);
+    const tt2 = totalTax(tax2);
+    return { gross, net, totalDed, dedBreak, tax1, tax2, tt1, tt2, savings: tt1 - tt2 };
+}
+
+// ================================================================
+// FORMATTERS
+// ================================================================
+const EUR = v => {
+    if (!v && v !== 0) return '—';
+    return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
+};
+const BRL = v => {
+    if (!v && v !== 0) return '—';
+    return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
+};
+const PCT = v => (v || 0).toFixed(2).replace('.', ',') + '%';
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+// ================================================================
+// FOCUS MANAGEMENT
+// ================================================================
+let _focusKey = null, _focusSel = [0, 0];
+
+function saveFocus() {
+    const el = document.activeElement;
+    if (!el || el === document.body) { _focusKey = null; return; }
+    const d = el.dataset;
+    _focusKey = [d.r, d.pi, d.dk, d.field].join('|');
+    try { _focusSel = [el.selectionStart, el.selectionEnd]; } catch(e) { _focusSel = [0,0]; }
+}
+
+function restoreFocus() {
+    if (!_focusKey) return;
+    const [r, pi, dk, field] = _focusKey.split('|');
+    let sel = `[data-r="${r}"][data-pi="${pi}"][data-dk="${dk}"][data-field="${field}"]`;
+    // simplify: try each populated attr
+    const parts = [];
+    if (r !== 'undefined') parts.push(`[data-r="${r}"]`);
+    if (pi !== 'undefined') parts.push(`[data-pi="${pi}"]`);
+    if (dk !== 'undefined') parts.push(`[data-dk="${dk}"]`);
+    if (field !== 'undefined') parts.push(`[data-field="${field}"]`);
+    const el = document.querySelector(parts.join(''));
+    if (el) {
+        el.focus();
+        try { el.setSelectionRange(_focusSel[0], _focusSel[1]); } catch(e) {}
+    }
+}
+
+// ================================================================
+// RENDER
+// ================================================================
+function render() {
+    saveFocus();
+    document.getElementById('app').innerHTML = html();
+    bindEvents();
+    restoreFocus();
+}
+
+function html() {
+    return `
+        ${hHeader()}
+        <div class="container">
+            ${hConfig()}
+            ${hFxBar()}
+            <div class="section-title">Simulação por Atleta</div>
+            <div class="players-grid">${S.players.map((p,i) => hPlayerCard(p,i)).join('')}</div>
+            ${hTotalsBar()}
+            ${hSummary()}
+        </div>
+        <div class="footer">Calculadora TEF · Para fins de planejamento tributário · Consulte um especialista fiscal antes de decisões</div>
+    `;
+}
+
+function hHeader() {
+    const regimeLabels = { presumido: 'Lucro Presumido', real: 'Lucro Real', custom: 'Personalizado' };
+    return `
+        <header class="header">
+            <div class="header-left">
+                <div class="header-icon">⚽</div>
+                <div>
+                    <h1>Calculadora TEF</h1>
+                    <div class="header-sub">Tributação Específica em Transferências de Atletas de Futebol</div>
+                </div>
+            </div>
+            <div class="header-right">
+                <span class="chip chip-blue">${esc(regimeLabels[S.regime])}</span>
+                <span class="chip chip-green">v1.0</span>
+            </div>
+        </header>
+    `;
+}
+
+function hConfig() {
+    const r = S.rates;
+    const isP = S.regime === 'presumido';
+    return `
+        <div class="config-panel">
+            <div class="config-top">
+                <div class="section-title" style="margin-bottom:0">Configuração Tributária</div>
+                <div class="regime-tabs">
+                    <button class="rtab ${S.regime==='presumido'?'active':''}" data-action="regime" data-v="presumido">Lucro Presumido</button>
+                    <button class="rtab ${S.regime==='real'?'active':''}" data-action="regime" data-v="real">Lucro Real</button>
+                    <button class="rtab ${S.regime==='custom'?'active':''}" data-action="regime" data-v="custom">Personalizado</button>
+                </div>
+            </div>
+            <div class="rates-grid">
+                ${isP ? `
+                <div class="rate-card">
+                    <div class="rate-card-label">Presunção IRPJ/CSLL</div>
+                    <div class="rate-row">
+                        <input class="rate-inp" type="number" data-r="presumidaIRPJ" data-field="rate" value="${r.presumidaIRPJ}" min="0" max="100" step="0.01">
+                        <span class="rate-unit">%</span>
+                    </div>
+                    <div class="rate-hint">Base de cálculo presumida</div>
+                </div>` : ''}
+                <div class="rate-card">
+                    <div class="rate-card-label">IRPJ</div>
+                    <div class="rate-row">
+                        <input class="rate-inp" type="number" data-r="irpj" data-field="rate" value="${r.irpj}" min="0" max="100" step="0.01">
+                        <span class="rate-unit">%</span>
+                    </div>
+                    <div class="rate-hint">${isP ? `Sobre ${r.presumidaIRPJ}% da receita` : 'Sobre o lucro/base'}</div>
+                </div>
+                <div class="rate-card">
+                    <div class="rate-card-label">IRPJ Adicional</div>
+                    <div class="rate-row">
+                        <input class="rate-inp" type="number" data-r="irpjAdd" data-field="rate" value="${r.irpjAdd}" min="0" max="100" step="0.01">
+                        <span class="rate-unit">%</span>
+                    </div>
+                    <div class="rate-hint">Base > R$ ${new Intl.NumberFormat('pt-BR').format(r.irpjThreshold)}/ano</div>
+                </div>
+                <div class="rate-card">
+                    <div class="rate-card-label">Limite Adicional (R$/ano)</div>
+                    <div class="rate-row">
+                        <input class="rate-inp" type="number" data-r="irpjThreshold" data-field="rate" value="${r.irpjThreshold}" min="0" step="10000" style="width:120px">
+                        <span class="rate-unit">R$</span>
+                    </div>
+                    <div class="rate-hint">Limiar para incidência do adicional</div>
+                </div>
+                <div class="rate-card">
+                    <div class="rate-card-label">CSLL</div>
+                    <div class="rate-row">
+                        <input class="rate-inp" type="number" data-r="csll" data-field="rate" value="${r.csll}" min="0" max="100" step="0.01">
+                        <span class="rate-unit">%</span>
+                    </div>
+                    <div class="rate-hint">${isP ? `Sobre ${r.presumidaCSLL}% da receita` : 'Sobre o lucro/base'}</div>
+                </div>
+                <div class="rate-card">
+                    <div class="rate-card-label">PIS</div>
+                    <div class="rate-row">
+                        <input class="rate-inp" type="number" data-r="pis" data-field="rate" value="${r.pis}" min="0" max="100" step="0.01">
+                        <span class="rate-unit">%</span>
+                    </div>
+                    <div class="rate-hint">${isP ? 'Cumulativo (0,65%)' : 'Não-cumulativo (1,65%)'}</div>
+                </div>
+                <div class="rate-card">
+                    <div class="rate-card-label">COFINS</div>
+                    <div class="rate-row">
+                        <input class="rate-inp" type="number" data-r="cofins" data-field="rate" value="${r.cofins}" min="0" max="100" step="0.01">
+                        <span class="rate-unit">%</span>
+                    </div>
+                    <div class="rate-hint">${isP ? 'Cumulativo (3,00%)' : 'Não-cumulativo (7,60%)'}</div>
+                </div>
+            </div>
+            <div class="note-bar">ℹ️ ${regimeNote()}</div>
+        </div>
+    `;
+}
+
+function regimeNote() {
+    return {
+        presumido: 'Lucro Presumido: IRPJ e CSLL são calculados sobre a base presumida (padrão 32% para prestação de serviços). PIS (0,65%) e COFINS (3%) são cumulativos e incidem sobre a receita bruta.',
+        real: 'Lucro Real: As alíquotas incidem diretamente sobre o valor informado (simplificado para planejamento). Na prática, requer apuração do lucro real com dedução do custo de formação/aquisição do atleta. PIS (1,65%) e COFINS (7,6%) são não-cumulativos.',
+        custom: 'Personalizado: Configure todas as alíquotas livremente. Os percentuais são aplicados diretamente sobre o valor bruto ou líquido, sem presunção. Use para cenários específicos ou estimativas customizadas.',
+    }[S.regime];
+}
+
+function hFxBar() {
+    return `
+        <div class="fx-bar">
+            <span class="fx-label">💱 Taxa de Câmbio EUR → BRL</span>
+            <input class="fx-inp" type="number" data-r="fxRate" data-field="fx" value="${S.fxRate}" min="0" step="0.01">
+            <span class="rate-unit" style="font-size:12px">R$/€</span>
+            <span class="fx-note">Utilizado para calcular a equivalência em reais nas obrigações fiscais brasileiras</span>
+        </div>
+    `;
+}
+
+function hPlayerCard(p, pi) {
+    const c = calcPlayer(p);
+    return `
+        <div class="player-card">
+            <div class="player-head">
+                <div class="player-num">Atleta ${pi + 1}</div>
+                <input class="player-name-inp" type="text" data-pi="${pi}" data-field="name" value="${esc(p.name)}" placeholder="Nome do atleta">
+            </div>
+            <div class="player-body">
+                <div class="field-label">Valor de Transferência (Bruto)</div>
+                <div class="money-inp-wrap">
+                    <span class="money-prefix">€</span>
+                    <input class="money-inp" type="number" data-pi="${pi}" data-field="gross" value="${p.gross || ''}" placeholder="0,00" min="0" step="500000">
+                </div>
+
+                <div class="ded-section">
+                    <div class="ded-title">Deduções sobre o valor bruto</div>
+                    ${Object.entries(p.deds).map(([dk, d]) => `
+                        <div class="ded-row${d.on ? '' : ' off'}">
+                            <input class="ded-check" type="checkbox" data-pi="${pi}" data-dk="${dk}" data-field="dedOn" ${d.on?'checked':''}>
+                            <span class="ded-name" title="${esc(d.tip)}">${esc(d.label)}</span>
+                            <input class="ded-inp" type="number" data-pi="${pi}" data-dk="${dk}" data-field="dedRate" value="${d.rate}" min="0" max="100" step="0.1" ${d.on?'':'tabindex="-1"'}>
+                            <span class="ded-unit">%</span>
+                        </div>
+                    `).join('')}
+                </div>
+
+                ${p.gross > 0 ? hPlayerResults(c, p) : `<div class="player-empty">Insira o valor de transferência para calcular</div>`}
+            </div>
+        </div>
+    `;
+}
+
+function hPlayerResults(c, p) {
+    const fx = S.fxRate;
+    const { gross, net, totalDed, dedBreak, tax1, tax2, tt1, tt2, savings } = c;
+
+    const activeDeds = Object.entries(p.deds).filter(([k,d]) => d.on && dedBreak[k] > 0);
+
+    return `
+        <div class="results-section">
+            <div class="gross-net-summary">
+                <div class="line-row"><span class="ll">Valor Bruto</span><span class="lv lv-orange">€ ${EUR(gross)}</span></div>
+                ${activeDeds.map(([k,d]) => `
+                    <div class="line-row" style="font-size:10.5px;padding-left:8px;">
+                        <span class="ll">(−) ${esc(d.label)}</span>
+                        <span class="lv" style="color:var(--red-dim);font-size:11px;">€ ${EUR(dedBreak[k])}</span>
+                    </div>
+                `).join('')}
+                ${activeDeds.length > 0 ? `<div class="line-row"><span class="ll" style="font-weight:600">Total Deduções</span><span class="lv lv-red">€ ${EUR(totalDed)}</span></div>` : ''}
+                <hr class="sep">
+                <div class="line-row"><span class="ll" style="font-weight:600">Valor Líquido</span><span class="lv lv-green" style="font-size:13px;">€ ${EUR(net)}</span></div>
+                <div class="line-row" style="font-size:10px;"><span class="ll">≈ BRL</span><span class="lv" style="color:var(--text4)">R$ ${BRL(net * fx)}</span></div>
+            </div>
+
+            <!-- Scenario 1 -->
+            <div class="scenario-box scenario-box-c1">
+                <div class="sc-label sc-label-c1">🔴 Cenário 1 — Tributação sobre Valor Bruto</div>
+                ${hTaxLines(tax1)}
+                <div class="sc-sep"></div>
+                <div class="sc-line total total-c1">
+                    <span class="sl">Total Tributos</span>
+                    <span class="sv">€ ${EUR(tt1)}</span>
+                </div>
+                <div class="sc-line">
+                    <span class="sl">Alíquota Efetiva s/ Bruto</span>
+                    <span class="sv">${gross > 0 ? PCT(tt1/gross*100) : '—'}</span>
+                </div>
+                <div class="sc-line">
+                    <span class="sl">Líquido Final (bruto − tributos)</span>
+                    <span class="sv" style="color:var(--text2)">€ ${EUR(gross - tt1)}</span>
+                </div>
+            </div>
+
+            <!-- Scenario 2 -->
+            <div class="scenario-box scenario-box-c2">
+                <div class="sc-label sc-label-c2">🟢 Cenário 2 — Tributação sobre Valor Líquido</div>
+                ${hTaxLines(tax2)}
+                <div class="sc-sep"></div>
+                <div class="sc-line total total-c2">
+                    <span class="sl">Total Tributos</span>
+                    <span class="sv">€ ${EUR(tt2)}</span>
+                </div>
+                <div class="sc-line">
+                    <span class="sl">Alíquota Efetiva s/ Líquido</span>
+                    <span class="sv">${net > 0 ? PCT(tt2/net*100) : '—'}</span>
+                </div>
+                <div class="sc-line">
+                    <span class="sl">Líquido Final (líquido − tributos)</span>
+                    <span class="sv" style="color:var(--text2)">€ ${EUR(net - tt2)}</span>
+                </div>
+            </div>
+
+            <!-- Difference -->
+            <div class="scenario-box scenario-box-diff">
+                <div class="sc-label sc-label-diff">💡 Diferença — Economia Tributária</div>
+                <div class="sc-line">
+                    <span class="sl">Tributos Cenário 1</span>
+                    <span class="sv" style="color:var(--orange)">€ ${EUR(tt1)}</span>
+                </div>
+                <div class="sc-line">
+                    <span class="sl">Tributos Cenário 2</span>
+                    <span class="sv" style="color:var(--accent)">€ ${EUR(tt2)}</span>
+                </div>
+                <div class="sc-sep"></div>
+                <div class="sc-line total total-diff">
+                    <span class="sl">Economia Potencial</span>
+                    <span class="sv">${savings >= 0 ? '+' : ''}€ ${EUR(savings)}</span>
+                </div>
+                <div class="sc-line">
+                    <span class="sl">Redução nos tributos</span>
+                    <span class="sv" style="color:var(--purple)">${tt1 > 0 ? PCT(savings/tt1*100) : '—'}</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function hTaxLines(tax) {
+    const lines = [
+        ['IRPJ (básico)', tax.irpjBasico],
+        ['IRPJ (adicional)', tax.irpjAdd],
+        ['CSLL', tax.csll],
+        ['PIS', tax.pis],
+        ['COFINS', tax.cofins],
+    ].filter(([,v]) => v > 0);
+    return lines.map(([l,v]) => `
+        <div class="sc-line">
+            <span class="sl">${l}</span>
+            <span class="sv">€ ${EUR(v)}</span>
+        </div>
+    `).join('');
+}
+
+function hTotalsBar() {
+    const active = S.players.filter(p => p.gross > 0);
+    if (!active.length) return '';
+    const calcs = active.map(p => calcPlayer(p));
+    const sumGross = calcs.reduce((s,c) => s + c.gross, 0);
+    const sumDed   = calcs.reduce((s,c) => s + c.totalDed, 0);
+    const sumNet   = calcs.reduce((s,c) => s + c.net, 0);
+    const sumTT1   = calcs.reduce((s,c) => s + c.tt1, 0);
+    const sumTT2   = calcs.reduce((s,c) => s + c.tt2, 0);
+    const sumSav   = calcs.reduce((s,c) => s + c.savings, 0);
+    return `
+        <div class="totals-bar">
+            <div class="tb-item">
+                <div class="tb-lbl">Total Bruto</div>
+                <div class="tb-val">€ ${EUR(sumGross)}</div>
+                <div class="tb-sub">${active.length} atleta${active.length>1?'s':''}</div>
+            </div>
+            <div class="tb-item tb-sep">
+                <div class="tb-lbl">Total Deduções</div>
+                <div class="tb-val" style="font-size:16px;color:#fca5a5">€ ${EUR(sumDed)}</div>
+                <div class="tb-sub">${sumGross>0?PCT(sumDed/sumGross*100):'—'} do bruto</div>
+            </div>
+            <div class="tb-item tb-sep">
+                <div class="tb-lbl">Total Líquido</div>
+                <div class="tb-val">€ ${EUR(sumNet)}</div>
+                <div class="tb-sub">${sumGross>0?PCT(sumNet/sumGross*100):'—'} do bruto</div>
+            </div>
+            <div class="tb-item tb-sep">
+                <div class="tb-lbl">Tributos — Cenário 1</div>
+                <div class="tb-val tb-val-orange" style="font-size:16px">€ ${EUR(sumTT1)}</div>
+                <div class="tb-sub">Alíq. ef. ${sumGross>0?PCT(sumTT1/sumGross*100):'—'}</div>
+            </div>
+            <div class="tb-item tb-sep">
+                <div class="tb-lbl">Tributos — Cenário 2</div>
+                <div class="tb-val tb-val-green" style="font-size:16px">€ ${EUR(sumTT2)}</div>
+                <div class="tb-sub">Alíq. ef. ${sumNet>0?PCT(sumTT2/sumNet*100):'—'}</div>
+            </div>
+            <div class="tb-item tb-sep">
+                <div class="tb-lbl">Economia Total</div>
+                <div class="tb-val tb-val-purple">€ ${EUR(sumSav)}</div>
+                <div class="tb-sub">${sumTT1>0?PCT(sumSav/sumTT1*100):'—'} de redução</div>
+            </div>
+        </div>
+    `;
+}
+
+function hSummary() {
+    const active = S.players.filter(p => p.gross > 0);
+    if (!active.length) return '';
+    const calcs = active.map((p,_) => ({ p, c: calcPlayer(p) }));
+    const rows = calcs.map(({ p, c }) => `
+        <tr>
+            <td>${esc(p.name)}</td>
+            <td>€ ${EUR(c.gross)}</td>
+            <td style="color:var(--red)">−€ ${EUR(c.totalDed)}</td>
+            <td>€ ${EUR(c.net)}</td>
+            <td style="color:var(--orange)">€ ${EUR(c.tt1)}</td>
+            <td>${c.gross>0?PCT(c.tt1/c.gross*100):'—'}</td>
+            <td style="color:var(--accent)">€ ${EUR(c.tt2)}</td>
+            <td>${c.net>0?PCT(c.tt2/c.net*100):'—'}</td>
+            <td style="color:#c4b5fd;font-weight:700">+€ ${EUR(c.savings)}</td>
+            <td style="color:var(--text3)">R$ ${BRL(c.gross * S.fxRate)}</td>
+        </tr>
+    `).join('');
+    const sumGross = calcs.reduce((s,{c}) => s+c.gross, 0);
+    const sumDed   = calcs.reduce((s,{c}) => s+c.totalDed, 0);
+    const sumNet   = calcs.reduce((s,{c}) => s+c.net, 0);
+    const sumTT1   = calcs.reduce((s,{c}) => s+c.tt1, 0);
+    const sumTT2   = calcs.reduce((s,{c}) => s+c.tt2, 0);
+    const sumSav   = calcs.reduce((s,{c}) => s+c.savings, 0);
+    return `
+        <div class="summary-section">
+            <div class="section-title">Resumo Comparativo — Todos os Atletas</div>
+            <table class="summary-table">
+                <thead>
+                    <tr>
+                        <th style="text-align:left">Atleta</th>
+                        <th>Valor Bruto (€)</th>
+                        <th>Deduções (€)</th>
+                        <th>Valor Líquido (€)</th>
+                        <th>Tributos C1 — Bruto</th>
+                        <th>Alíq. Ef. C1</th>
+                        <th>Tributos C2 — Líquido</th>
+                        <th>Alíq. Ef. C2</th>
+                        <th>Economia (€)</th>
+                        <th>Bruto (R$)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows}
+                    <tr class="total-row">
+                        <td>TOTAL (${calcs.length} atleta${calcs.length>1?'s':''})</td>
+                        <td>€ ${EUR(sumGross)}</td>
+                        <td style="color:var(--red)">−€ ${EUR(sumDed)}</td>
+                        <td>€ ${EUR(sumNet)}</td>
+                        <td style="color:var(--orange)">€ ${EUR(sumTT1)}</td>
+                        <td>${sumGross>0?PCT(sumTT1/sumGross*100):'—'}</td>
+                        <td style="color:var(--accent)">€ ${EUR(sumTT2)}</td>
+                        <td>${sumNet>0?PCT(sumTT2/sumNet*100):'—'}</td>
+                        <td style="color:#c4b5fd;font-weight:800">+€ ${EUR(sumSav)}</td>
+                        <td style="color:var(--text3)">R$ ${BRL(sumGross * S.fxRate)}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+// ================================================================
+// EVENTS
+// ================================================================
+function bindEvents() {
+    // Regime tabs
+    document.querySelectorAll('[data-action="regime"]').forEach(btn => {
+        btn.addEventListener('click', e => {
+            S.regime = e.currentTarget.dataset.v;
+            if (S.regime === 'presumido') { S.rates.pis = 0.65; S.rates.cofins = 3; }
+            else if (S.regime === 'real') { S.rates.pis = 1.65; S.rates.cofins = 7.6; }
+            render();
+        });
+    });
+
+    // Rate inputs (config panel)
+    document.querySelectorAll('[data-r][data-field="rate"]').forEach(inp => {
+        inp.addEventListener('input', e => {
+            S.rates[e.target.dataset.r] = parseFloat(e.target.value) || 0;
+            render();
+        });
+    });
+
+    // FX rate
+    document.querySelectorAll('[data-r][data-field="fx"]').forEach(inp => {
+        inp.addEventListener('input', e => {
+            S.fxRate = parseFloat(e.target.value) || 1;
+            render();
+        });
+    });
+
+    // Player name
+    document.querySelectorAll('[data-field="name"]').forEach(inp => {
+        inp.addEventListener('input', e => {
+            S.players[+e.target.dataset.pi].name = e.target.value;
+            // no re-render to keep focus
+        });
+        inp.addEventListener('blur', () => render());
+    });
+
+    // Player gross value
+    document.querySelectorAll('[data-field="gross"]').forEach(inp => {
+        inp.addEventListener('input', e => {
+            S.players[+e.target.dataset.pi].gross = parseFloat(e.target.value) || 0;
+            render();
+        });
+    });
+
+    // Deduction toggle
+    document.querySelectorAll('[data-field="dedOn"]').forEach(cb => {
+        cb.addEventListener('change', e => {
+            const pi = +e.target.dataset.pi, dk = e.target.dataset.dk;
+            S.players[pi].deds[dk].on = e.target.checked;
+            render();
+        });
+    });
+
+    // Deduction rate
+    document.querySelectorAll('[data-field="dedRate"]').forEach(inp => {
+        inp.addEventListener('input', e => {
+            const pi = +e.target.dataset.pi, dk = e.target.dataset.dk;
+            S.players[pi].deds[dk].rate = parseFloat(e.target.value) || 0;
+            render();
+        });
+    });
+}
+
+// ================================================================
+// INIT
+// ================================================================
+render();
+</script>
+</body>
+</html>

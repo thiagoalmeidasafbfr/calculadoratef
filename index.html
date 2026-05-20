@@ -647,19 +647,22 @@
         }
 
         /* ── NOTE / COMMENT ── */
-        .ded-note-btn {
-            width: 18px; height: 18px;
-            border: none; background: transparent;
-            cursor: pointer; padding: 0;
-            color: var(--ink-4);
-            font-size: 11px;
-            border-radius: 3px;
+        .ded-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1px solid rgba(243,238,226,0.18);
+            cursor: pointer;
             flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center;
-            transition: color 0.15s;
+            transition: all 0.15s;
+            padding: 0;
+            margin: 0;
+            outline: none;
+            display: inline-block;
         }
-        .ded-note-btn:hover { color: var(--gold); }
-        .ded-note-btn.has-note { color: var(--gold-deep); }
+        .ded-dot:hover { border-color: var(--gold); background: rgba(212,175,55,0.18); }
+        .ded-dot.has-note { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 0 2px rgba(212,175,55,0.22); }
+        .ded-row.off .ded-dot { opacity: 0.35; }
         .ded-comment-area {
             display: none;
             padding: 5px 0 2px 21px;
@@ -770,7 +773,7 @@ async function loadState() {
             const p = S.players[i];
             if (src.name     != null) p.name     = src.name;
             if (src.gross    != null) p.gross    = src.gross;
-            if (src.currency)         p.currency = src.currency;
+            if (src.currency && ['BRL','EUR','USD'].includes(src.currency)) p.currency = src.currency;
             Object.keys(p.deds).forEach(k => {
                 if (!src.deds?.[k]) return;
                 p.deds[k].on      = src.deds[k].on      ?? false;
@@ -829,20 +832,20 @@ function setStatus(s) {
 }
 
 // ================================================================
-// PTAX (EUR/BRL — Banco Central do Brasil)
+// PTAX (BCB — EUR e USD vs BRL)
 // ================================================================
-async function fetchPTAX() {
+const _ptaxFmt = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+
+async function _fetchRateForCurrency(moeda) {
     const tryDate = async (d) => {
         const mm   = String(d.getMonth() + 1).padStart(2, '0');
         const dd   = String(d.getDate()).padStart(2, '0');
         const yyyy = d.getFullYear();
-        const dateStr = `${mm}-${dd}-${yyyy}`;
-        const url = `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaDia(moeda=@moeda,dataCotacao=@dataCotacao)?@moeda='EUR'&@dataCotacao='${dateStr}'&$top=1&$format=json&$select=cotacaoVenda`;
+        const url  = `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaDia(moeda=@moeda,dataCotacao=@dataCotacao)?@moeda='${moeda}'&@dataCotacao='${mm}-${dd}-${yyyy}'&$top=1&$format=json&$select=cotacaoVenda`;
         const res  = await fetch(url);
         const json = await res.json();
-        if (json.value && json.value.length > 0) {
+        if (json.value && json.value.length > 0)
             return { rate: json.value[0].cotacaoVenda, dateStr: `${dd}/${mm}/${yyyy}` };
-        }
         return null;
     };
     const today = new Date();
@@ -850,30 +853,36 @@ async function fetchPTAX() {
         const d = new Date(today);
         d.setDate(today.getDate() - i);
         try {
-            const result = await tryDate(d);
-            if (result) {
-                S.ptax     = result.rate;
-                S.ptaxDate = result.dateStr;
-                updatePTAXChip();
-                return;
-            }
+            const r = await tryDate(d);
+            if (r) return r;
         } catch(e) { /* try previous day */ }
     }
+    return null;
+}
+
+async function fetchPTAX() {
+    const [resEUR, resUSD] = await Promise.all([
+        _fetchRateForCurrency('EUR'),
+        _fetchRateForCurrency('USD'),
+    ]);
+    if (resEUR) { S.ptax.EUR = resEUR.rate; S.ptaxDate = resEUR.dateStr; }
+    if (resUSD)   S.ptax.USD = resUSD.rate;
+    updatePTAXChip();
 }
 
 function updatePTAXChip() {
     const chip = document.getElementById('ptax-chip');
     if (!chip) return;
-    if (S.ptax) {
-        chip.innerHTML = `
-            <span>PTAX EUR/BRL</span>
-            <strong>${S.ptax.toLocaleString('pt-BR', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</strong>
-            <span style="color:var(--ink-4);font-size:9px">${S.ptaxDate}</span>
-            <button class="ptax-refresh" title="Atualizar PTAX" onclick="fetchPTAX()">↻</button>
-        `;
-    } else {
-        chip.innerHTML = `<span>PTAX EUR/BRL</span><span style="color:var(--ink-4)">—</span><button class="ptax-refresh" title="Atualizar PTAX" onclick="fetchPTAX()">↻</button>`;
-    }
+    const fEUR = S.ptax.EUR ? _ptaxFmt(S.ptax.EUR) : '—';
+    const fUSD = S.ptax.USD ? _ptaxFmt(S.ptax.USD) : '—';
+    chip.innerHTML = `
+        <span style="color:var(--ink-4)">PTAX</span>
+        <span>EUR</span><strong>${fEUR}</strong>
+        <span style="color:var(--divider)">|</span>
+        <span>USD</span><strong>${fUSD}</strong>
+        ${S.ptaxDate ? `<span style="color:var(--ink-4);font-size:9px">${S.ptaxDate}</span>` : ''}
+        <button class="ptax-refresh" title="Atualizar PTAX" onclick="fetchPTAX()">↻</button>
+    `;
 }
 
 // ================================================================
@@ -881,7 +890,7 @@ function updatePTAXChip() {
 // ================================================================
 const S = {
     aliq:     5.00,
-    ptax:     null,
+    ptax:     { BRL: 1, EUR: null, USD: null },
     ptaxDate: '',
     players:  Array.from({ length: 5 }, (_, i) => ({
         name:     `Jogador ${i + 1}`,
@@ -901,10 +910,14 @@ const S = {
 // ================================================================
 // CALC
 // ================================================================
+function ptaxRate(currency) {
+    return (currency === 'BRL') ? 1 : (S.ptax[currency] || 1);
+}
+
 function calcPlayer(p) {
     const grossLocal = p.gross ?? 0;
-    const ptax       = S.ptax || 1;
-    const grossBRL   = p.currency === 'EUR' ? grossLocal * ptax : grossLocal;
+    const rate       = ptaxRate(p.currency);
+    const grossBRL   = p.currency === 'BRL' ? grossLocal : grossLocal * rate;
 
     let totalDedLocal = 0;
     const dedBreak = {};
@@ -920,7 +933,7 @@ function calcPlayer(p) {
     }
 
     const netLocal    = grossLocal - totalDedLocal;
-    const totalDedBRL = p.currency === 'EUR' ? totalDedLocal * ptax : totalDedLocal;
+    const totalDedBRL = p.currency === 'BRL' ? totalDedLocal : totalDedLocal * rate;
     const netBRL      = grossBRL - totalDedBRL;
     const taxC1       = grossBRL * S.aliq / 100;
     const taxC2       = netBRL   * S.aliq / 100;
@@ -1024,9 +1037,8 @@ function hHero() {
 function hConfig() {
     const min = 0, max = 20;
     const pct = ((S.aliq - min) / (max - min) * 100).toFixed(1);
-    const ptaxLabel = S.ptax
-        ? S.ptax.toLocaleString('pt-BR', { minimumFractionDigits: 4, maximumFractionDigits: 4 })
-        : '—';
+    const fEUR = S.ptax.EUR ? _ptaxFmt(S.ptax.EUR) : '—';
+    const fUSD = S.ptax.USD ? _ptaxFmt(S.ptax.USD) : '—';
     return `
         <div class="config-strip">
             <div class="config-label">Alíquota</div>
@@ -1041,8 +1053,10 @@ function hConfig() {
                 </div>
             </div>
             <div id="ptax-chip" class="ptax-chip" style="margin-left:auto">
-                <span>PTAX EUR/BRL</span>
-                <strong>${ptaxLabel}</strong>
+                <span style="color:var(--ink-4)">PTAX</span>
+                <span>EUR</span><strong>${fEUR}</strong>
+                <span style="color:var(--divider)">|</span>
+                <span>USD</span><strong>${fUSD}</strong>
                 ${S.ptaxDate ? `<span style="color:var(--ink-4);font-size:9px">${S.ptaxDate}</span>` : ''}
                 <button class="ptax-refresh" title="Atualizar PTAX" onclick="fetchPTAX()">↻</button>
             </div>
@@ -1053,7 +1067,7 @@ function hConfig() {
 // ── Player card ──
 function hCard(p, pi) {
     const c   = calcPlayer(p);
-    const pfx = p.currency === 'EUR' ? '€' : 'R$';
+    const pfx = p.currency === 'EUR' ? '€' : p.currency === 'USD' ? 'US$' : 'R$';
     return `
         <div class="player-card">
             <div class="player-head">
@@ -1061,11 +1075,13 @@ function hCard(p, pi) {
                 <input class="player-name-inp" type="text"
                     data-pi="${pi}" data-field="name"
                     value="${esc(p.name)}" placeholder="Nome do atleta">
-                <div class="cur-toggle" style="margin-left:auto;width:76px;flex-shrink:0">
+                <div class="cur-toggle" style="margin-left:auto;width:104px;flex-shrink:0">
                     <button class="cur-btn${p.currency === 'BRL' ? ' active' : ''}"
                         data-pi="${pi}" data-field="playerCurrency" data-v="BRL">R$</button>
                     <button class="cur-btn${p.currency === 'EUR' ? ' active' : ''}"
-                        data-pi="${pi}" data-field="playerCurrency" data-v="EUR">€ EUR</button>
+                        data-pi="${pi}" data-field="playerCurrency" data-v="EUR">EUR</button>
+                    <button class="cur-btn${p.currency === 'USD' ? ' active' : ''}"
+                        data-pi="${pi}" data-field="playerCurrency" data-v="USD">USD</button>
                 </div>
             </div>
             <div class="player-body">
@@ -1085,6 +1101,9 @@ function hCard(p, pi) {
                             <input class="ded-chk" type="checkbox"
                                 data-pi="${pi}" data-dk="${dk}" data-field="dedOn"
                                 ${d.on ? 'checked' : ''}>
+                            <button class="ded-dot${d.comment ? ' has-note' : ''}"
+                                data-pi="${pi}" data-dk="${dk}" data-field="dedDot"
+                                title="${d.comment ? esc(d.comment) : 'Adicionar comentário'}"></button>
                             <span class="ded-name" title="${esc(d.tip)}">${esc(d.label)}</span>
                             <div class="ded-mode-toggle">
                                 <button class="ded-mode-btn${d.mode === 'pct' ? ' active' : ''}"
@@ -1102,9 +1121,6 @@ function hCard(p, pi) {
                                     min="0" ${d.mode === 'pct' ? 'max="100" step="0.01"' : 'step="100000"'}
                                     ${d.on ? '' : 'tabindex="-1"'}>
                             </div>
-                            <button class="ded-note-btn${d.comment ? ' has-note' : ''}"
-                                data-pi="${pi}" data-dk="${dk}" data-field="dedNoteToggle"
-                                title="${d.comment ? esc(d.comment) : 'Adicionar comentário'}">✎</button>
                         </div>
                         <div class="ded-comment-area" id="ded-note-${pi}-${dk}">
                             <textarea class="ded-comment-ta"
@@ -1124,11 +1140,11 @@ function hCard(p, pi) {
 function hResults(c, p) {
     const { grossLocal, grossBRL, netLocal, netBRL, totalDedLocal, totalDedBRL, dedBreak, taxC1, taxC2, savings, netFinalC1, netFinalC2 } = c;
     const activeDeds = Object.entries(p.deds).filter(([k,d]) => d.on && dedBreak[k] > 0);
-    const isEUR = p.currency === 'EUR';
-    const ptax  = S.ptax || 1;
+    const isFX  = p.currency !== 'BRL';
+    const pfx   = p.currency === 'EUR' ? '€' : p.currency === 'USD' ? 'US$' : 'R$';
 
-    const fmtAmt = (local, brl) => isEUR
-        ? `€ ${N(local)} <span style="color:var(--ink-4);font-size:10px">(R$ ${N(brl)})</span>`
+    const fmtAmt = (local, brl) => isFX
+        ? `${pfx} ${N(local)} <span style="color:var(--ink-4);font-size:10px">(R$ ${N(brl)})</span>`
         : `R$ ${N(brl)}`;
 
     return `
@@ -1362,7 +1378,27 @@ function bindEvents() {
 
     document.querySelectorAll('[data-field="playerCurrency"]').forEach(el => {
         el.addEventListener('click', e => {
-            S.players[+e.target.dataset.pi].currency = e.target.dataset.v;
+            const pi     = +e.target.dataset.pi;
+            const newCur = e.target.dataset.v;
+            const p      = S.players[pi];
+            const oldCur = p.currency;
+            if (oldCur === newCur) return;
+
+            const rateOld = ptaxRate(oldCur);
+            const rateNew = ptaxRate(newCur);
+
+            // Convert gross value
+            if (p.gross != null) {
+                p.gross = p.gross * rateOld / rateNew;
+            }
+            // Convert fixed-mode deduction values
+            Object.values(p.deds).forEach(d => {
+                if (d.mode === 'fixed' && d.value != null) {
+                    d.value = d.value * rateOld / rateNew;
+                }
+            });
+
+            p.currency = newCur;
             render(); saveState();
         });
     });
@@ -1397,10 +1433,10 @@ function bindEvents() {
         });
     });
 
-    document.querySelectorAll('[data-field="dedNoteToggle"]').forEach(el => {
+    document.querySelectorAll('[data-field="dedDot"]').forEach(el => {
         el.addEventListener('click', e => {
-            const pi = e.currentTarget.dataset.pi;
-            const dk = e.currentTarget.dataset.dk;
+            const pi   = e.currentTarget.dataset.pi;
+            const dk   = e.currentTarget.dataset.dk;
             const area = document.getElementById(`ded-note-${pi}-${dk}`);
             if (area) {
                 area.classList.toggle('open');
@@ -1414,32 +1450,30 @@ function bindEvents() {
             const pi = +e.target.dataset.pi;
             const dk = e.target.dataset.dk;
             S.players[pi].deds[dk].comment = e.target.value;
-            const btn = document.querySelector(`[data-field="dedNoteToggle"][data-pi="${pi}"][data-dk="${dk}"]`);
-            if (btn) {
-                btn.classList.toggle('has-note', !!e.target.value);
-                btn.title = e.target.value ? e.target.value : 'Adicionar comentário';
+            const dot = document.querySelector(`[data-field="dedDot"][data-pi="${pi}"][data-dk="${dk}"]`);
+            if (dot) {
+                dot.classList.toggle('has-note', !!e.target.value);
+                dot.title = e.target.value ? e.target.value : 'Adicionar comentário';
             }
             saveState();
         });
     });
 
-    // JS tooltip for note buttons with comments
+    // Tooltip for dots that have a comment
     const tooltip = document.getElementById('_tooltip');
     if (tooltip) {
-        document.querySelectorAll('.ded-note-btn.has-note').forEach(btn => {
-            btn.addEventListener('mouseenter', () => {
-                const pi = +btn.dataset.pi;
-                const dk = btn.dataset.dk;
-                const comment = S.players[pi]?.deds[dk]?.comment;
+        document.querySelectorAll('.ded-dot.has-note').forEach(dot => {
+            dot.addEventListener('mouseenter', () => {
+                const comment = S.players[+dot.dataset.pi]?.deds[dot.dataset.dk]?.comment;
                 if (!comment) return;
                 tooltip.textContent = comment;
                 tooltip.style.display = 'block';
             });
-            btn.addEventListener('mousemove', e => {
+            dot.addEventListener('mousemove', e => {
                 tooltip.style.left = (e.clientX + 14) + 'px';
                 tooltip.style.top  = (e.clientY - 8)  + 'px';
             });
-            btn.addEventListener('mouseleave', () => {
+            dot.addEventListener('mouseleave', () => {
                 tooltip.style.display = 'none';
             });
         });

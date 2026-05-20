@@ -3,381 +3,603 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora TEF — Tributação em Transferências de Atletas</title>
+    <title>Calculadora TEF — Glorioso Finance</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=Cormorant+Garamond:ital,wght@1,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
+        /* ── DESIGN TOKENS ── */
         :root {
-            --green-dark: #0b3d2e;
-            --green: #155c42;
-            --green-mid: #1e7a57;
-            --accent: #4ade80;
-            --bg: #090e18;
-            --surface: #101826;
-            --surface2: #192233;
-            --surface3: #243040;
-            --surface4: #2e3c50;
-            --text: #f1f5f9;
-            --text2: #cbd5e1;
-            --text3: #94a3b8;
-            --text4: #64748b;
-            --border: #1e3048;
-            --border2: #2a3f56;
-            --red: #f87171;
-            --orange: #fb923c;
-            --purple: #c4b5fd;
-            --radius: 10px;
-            --radius-sm: 7px;
+            --gold:          #be8c4a;
+            --gold-soft:     #dcc89a;
+            --gold-deep:     #7a6244;
+            --gold-tint:     rgba(190,140,74,0.12);
+            --gold-ring:     rgba(190,140,74,0.22);
+            --ink-primary:   #1a1410;
+            --ink-secondary: #3a2e1c;
+            --ink-4:         rgba(26,20,16,0.55);
+            --cream-page:    #f9f7f2;
+            --cream-canvas:  #f5f2eb;
+            --cream-card:    #fdfbf6;
+            --cream-inset:   #ece6d8;
+            --tbl-head:      #e7e5de;
+            --on-dark:       #f3eee2;
+            --on-dark-dim:   rgba(243,238,226,0.45);
+            --on-dark-muted: rgba(243,238,226,0.28);
+            --var-pos:       #166534;
+            --var-pos-tint:  #dcf0e4;
+            --var-neg:       #b91c1c;
+            --var-neg-tint:  #fce8e8;
+            --warn:          #b88a2a;
+            --divider:       rgba(26,20,16,0.08);
+            --divider-mid:   rgba(26,20,16,0.13);
+            --shadow-hair:   0 1px 0 rgba(40,32,22,0.04);
+            --shadow-lift:   0 1px 0 rgba(40,32,22,0.04), 0 4px 12px -8px rgba(40,32,22,0.10);
+            --r-xs: 4px; --r-sm: 8px; --r-md: 10px; --r-lg: 14px; --r-pill: 999px;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background: var(--bg);
-            color: var(--text);
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--cream-page);
+            color: var(--ink-primary);
             line-height: 1.5;
             min-height: 100vh;
+            font-size: 15px;
         }
 
-        /* HEADER */
-        .header {
-            background: linear-gradient(135deg, var(--green-dark) 0%, var(--green-mid) 100%);
-            padding: 18px 28px;
-            border-bottom: 2px solid var(--accent);
+        /* ── PAGE HERO ── */
+        .page-hero {
+            background: var(--ink-primary);
+            border-radius: var(--r-lg);
+            margin: 16px 24px 0;
+            padding: clamp(20px, 3vw, 32px) clamp(20px, 3vw, 36px);
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .hero-left {}
+        .hero-eyebrow {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            font-weight: 500;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--on-dark-dim);
+            margin-bottom: 8px;
+        }
+        .hero-title {
+            font-family: 'Fraunces', Georgia, serif;
+            font-size: clamp(1.6rem, 4.5vw, 3rem);
+            font-weight: 700;
+            line-height: 1.08;
+            letter-spacing: -0.025em;
+            color: var(--on-dark);
+        }
+        .hero-title em {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-style: italic;
+            font-weight: 600;
+            color: var(--gold);
+        }
+        .hero-sub {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10.5px;
+            color: var(--on-dark-dim);
+            letter-spacing: 0.04em;
+            margin-top: 10px;
+        }
+        .hero-right {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding-bottom: 4px;
         }
-        .header-left { display: flex; align-items: center; gap: 14px; }
-        .header-icon { font-size: 36px; line-height: 1; }
-        .header h1 { font-size: 20px; font-weight: 700; color: #fff; }
-        .header-sub { font-size: 12px; color: rgba(255,255,255,0.55); margin-top: 2px; }
+        .hero-btn {
+            padding: 9px 18px;
+            border-radius: var(--r-pill);
+            border: 1px solid rgba(243,238,226,0.18);
+            background: rgba(243,238,226,0.07);
+            color: var(--on-dark);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .hero-btn:hover { background: rgba(243,238,226,0.13); }
 
-        /* ALIQUOTA BAR */
-        .aliq-bar {
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
-            padding: 16px 28px;
+        /* ── WRAPPER ── */
+        .page-body { padding: 20px 24px 32px; }
+
+        /* ── SECTION LABEL ── */
+        .section-eyebrow {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            font-weight: 500;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 12px;
+        }
+
+        /* ── CONFIG STRIP ── */
+        .config-strip {
+            background: var(--cream-card);
+            border: 1px solid var(--divider);
+            border-radius: var(--r-md);
+            box-shadow: var(--shadow-hair);
+            padding: 18px 22px;
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
             gap: 32px;
             flex-wrap: wrap;
         }
-        .aliq-label {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--text3);
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-            white-space: nowrap;
-        }
-        .aliq-control {
+        .config-group {
             display: flex;
             align-items: center;
             gap: 14px;
         }
+        .config-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            font-weight: 500;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--gold-deep);
+            white-space: nowrap;
+        }
         .aliq-slider {
             -webkit-appearance: none;
-            width: 220px;
-            height: 6px;
-            border-radius: 3px;
-            background: linear-gradient(to right, var(--accent) 0%, var(--accent) var(--pct, 50%), var(--surface3) var(--pct, 50%), var(--surface3) 100%);
+            width: 200px;
+            height: 4px;
+            border-radius: 2px;
+            background: linear-gradient(to right, var(--gold) 0%, var(--gold) var(--pct, 25%), var(--cream-inset) var(--pct, 25%), var(--cream-inset) 100%);
             outline: none;
             cursor: pointer;
         }
         .aliq-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
+            width: 18px; height: 18px;
             border-radius: 50%;
-            background: var(--accent);
+            background: var(--cream-card);
+            border: 2px solid var(--gold);
             cursor: pointer;
-            border: 3px solid var(--bg);
-            box-shadow: 0 0 0 2px var(--accent);
+            box-shadow: 0 1px 4px rgba(40,32,22,0.18);
         }
-        .aliq-inp-wrap {
+        .aliq-slider::-moz-range-thumb {
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            background: var(--cream-card);
+            border: 2px solid var(--gold);
+            cursor: pointer;
+        }
+        .field-wrap {
             display: flex;
             align-items: center;
-            gap: 6px;
-            background: var(--surface2);
-            border: 1px solid var(--border2);
-            border-radius: var(--radius-sm);
-            padding: 7px 12px;
+            gap: 0;
+            background: var(--cream-card);
+            border: 1px solid var(--divider-mid);
+            border-radius: var(--r-sm);
+            overflow: hidden;
+            transition: border-color 0.15s, box-shadow 0.15s;
         }
-        .aliq-inp {
+        .field-wrap:focus-within {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px var(--gold-ring);
+        }
+        .field-prefix {
+            padding: 8px 10px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--gold-deep);
+            background: var(--cream-inset);
+            border-right: 1px solid var(--divider);
+            white-space: nowrap;
+            letter-spacing: 0.05em;
+        }
+        .field-inp {
             background: transparent;
             border: none;
+            outline: none;
+            padding: 8px 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--ink-primary);
+            min-width: 0;
+        }
+        .aliq-big {
             font-size: 22px;
-            font-weight: 800;
-            color: var(--accent);
-            width: 70px;
+            font-weight: 500;
+            width: 72px;
             text-align: right;
-            outline: none;
+            color: var(--gold-deep);
         }
-        .aliq-unit { font-size: 18px; font-weight: 700; color: var(--accent); }
-        .aliq-hint { font-size: 11px; color: var(--text4); }
+        .field-suffix {
+            padding: 8px 10px 8px 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: var(--ink-4);
+        }
+        .config-divider {
+            width: 1px;
+            height: 32px;
+            background: var(--divider);
+            flex-shrink: 0;
+        }
+        .config-fx { margin-left: auto; }
 
-        /* FX */
-        .fx-wrap {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-left: auto;
-        }
-        .fx-label { font-size: 12px; color: var(--text3); white-space: nowrap; }
-        .fx-inp {
-            background: var(--surface2);
-            border: 1px solid var(--border2);
-            border-radius: 6px;
-            padding: 7px 10px;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text);
-            width: 90px;
-            text-align: right;
-            outline: none;
-        }
-        .fx-inp:focus { border-color: var(--accent); }
-
-        /* LAYOUT */
-        .container { max-width: 1700px; margin: 0 auto; padding: 20px 24px; }
-
-        .section-title {
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--text3);
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 14px;
-        }
-        .section-title::before {
-            content: '';
-            display: block;
-            width: 3px; height: 13px;
-            background: var(--accent);
-            border-radius: 2px;
-        }
-
-        /* PLAYER GRID */
+        /* ── PLAYER GRID ── */
         .players-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
             gap: 14px;
             margin-bottom: 20px;
+            align-items: start;
         }
 
+        /* ── PLAYER CARD ── */
         .player-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
+            background: var(--cream-card);
+            border: 1px solid var(--divider);
+            border-radius: var(--r-md);
+            box-shadow: var(--shadow-hair);
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            transition: box-shadow 0.18s;
         }
+        .player-card:hover { box-shadow: var(--shadow-lift); }
 
         .player-head {
-            background: linear-gradient(135deg, var(--green-dark), var(--green));
-            padding: 12px 14px;
-            border-bottom: 2px solid var(--accent);
+            background: var(--ink-primary);
+            padding: 12px 14px 11px;
         }
-        .player-num { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.4); letter-spacing: 0.8px; margin-bottom: 5px; text-transform: uppercase; }
+        .player-num {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            font-weight: 500;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--on-dark-muted);
+            margin-bottom: 6px;
+        }
         .player-name-inp {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 6px;
-            padding: 7px 10px;
-            font-size: 13px;
-            font-weight: 700;
-            color: #fff;
             width: 100%;
+            background: rgba(243,238,226,0.08);
+            border: 1px solid rgba(243,238,226,0.14);
+            border-radius: var(--r-xs);
+            padding: 7px 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--on-dark);
             outline: none;
+            transition: border-color 0.15s, background 0.15s;
         }
-        .player-name-inp:focus { border-color: var(--accent); background: rgba(255,255,255,0.15); }
-        .player-name-inp::placeholder { color: rgba(255,255,255,0.25); }
+        .player-name-inp:focus {
+            border-color: var(--gold);
+            background: rgba(243,238,226,0.13);
+        }
+        .player-name-inp::placeholder { color: var(--on-dark-muted); }
 
         .player-body { padding: 14px; flex: 1; display: flex; flex-direction: column; }
 
-        /* Value input */
-        .field-label { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
-        .money-wrap {
-            display: flex;
-            align-items: center;
-            background: var(--surface2);
-            border: 1px solid var(--border2);
-            border-radius: var(--radius-sm);
-            overflow: hidden;
+        /* value field */
+        .f-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            font-weight: 500;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--gold-deep);
+            display: block;
+            margin-bottom: 5px;
+        }
+        .gross-field { margin-bottom: 14px; }
+        .gross-field .field-inp { font-size: 15px; font-weight: 500; width: 100%; }
+
+        /* deductions */
+        .ded-block {
+            border-top: 1px solid var(--divider);
+            padding-top: 12px;
             margin-bottom: 14px;
         }
-        .money-prefix {
-            padding: 9px 11px;
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--accent);
-            background: var(--surface3);
-            border-right: 1px solid var(--border2);
+        .ded-block-title {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            font-weight: 500;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--ink-4);
+            margin-bottom: 10px;
         }
-        .money-inp {
-            flex: 1;
-            background: transparent;
-            border: none;
-            padding: 9px 10px;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text);
-            min-width: 0;
-            outline: none;
-        }
-        .money-wrap:focus-within { border-color: var(--accent); }
-
-        /* Deductions */
-        .ded-section { border-top: 1px solid var(--border); padding-top: 12px; margin-bottom: 14px; }
-        .ded-title { font-size: 10px; font-weight: 700; color: var(--text4); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; }
-
         .ded-row {
             display: grid;
-            grid-template-columns: 16px 1fr 60px 14px;
+            grid-template-columns: 15px 1fr 58px 13px;
             align-items: center;
             gap: 6px;
-            margin-bottom: 8px;
+            margin-bottom: 7px;
         }
-        .ded-check { width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer; margin: 0; }
-        .ded-name { font-size: 11px; color: var(--text2); }
-        .ded-row.off .ded-name { color: var(--text4); }
-        .ded-inp {
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            padding: 4px 6px;
+        .ded-chk {
+            width: 14px; height: 14px;
+            accent-color: var(--gold);
+            cursor: pointer;
+            margin: 0;
+        }
+        .ded-name {
             font-size: 12px;
-            font-weight: 600;
-            color: var(--text);
+            color: var(--ink-secondary);
+            cursor: help;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .ded-row.off .ded-name { color: var(--ink-4); }
+        .ded-rate-inp {
+            background: var(--cream-canvas);
+            border: 1px solid var(--divider);
+            border-radius: var(--r-xs);
+            padding: 3px 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 400;
+            color: var(--ink-primary);
             text-align: right;
             width: 100%;
             outline: none;
+            transition: border-color 0.15s;
         }
-        .ded-inp:focus { border-color: var(--accent); }
-        .ded-row.off .ded-inp { opacity: 0.3; pointer-events: none; }
-        .ded-unit { font-size: 11px; color: var(--text4); }
+        .ded-rate-inp:focus { border-color: var(--gold); }
+        .ded-row.off .ded-rate-inp { opacity: 0.30; pointer-events: none; }
+        .ded-unit {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            color: var(--ink-4);
+        }
 
         /* Results */
-        .results { border-top: 1px solid var(--border); padding-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+        .results-block { border-top: 1px solid var(--divider); padding-top: 14px; display: flex; flex-direction: column; gap: 8px; }
 
-        /* value summary */
-        .val-lines { margin-bottom: 4px; }
-        .vl {
+        /* value summary lines */
+        .vsummary { margin-bottom: 4px; }
+        .vrow {
             display: flex;
             justify-content: space-between;
+            align-items: baseline;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+        .vrow .vl { color: var(--ink-4); }
+        .vrow .vv {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .vrow.ded-line .vl { font-size: 11px; color: var(--ink-4); padding-left: 10px; }
+        .vrow.ded-line .vv { font-size: 11px; color: var(--var-neg); }
+        .v-gross { color: var(--warn); }
+        .v-ded   { color: var(--var-neg); }
+        .v-net   { color: var(--var-pos); font-size: 13px !important; }
+        .vsep { border: none; border-top: 1px dashed var(--divider); margin: 7px 0; }
+
+        /* scenario cards */
+        .scard {
+            border-radius: var(--r-sm);
+            padding: 11px 12px;
+        }
+        .scard-c1   { background: var(--var-neg-tint); border: 1px solid rgba(185,28,28,0.14); }
+        .scard-c2   { background: var(--var-pos-tint); border: 1px solid rgba(22,101,52,0.14); }
+        .scard-sav  { background: var(--gold-tint);    border: 1px solid rgba(190,140,74,0.22); }
+
+        .sc-eyebrow {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 8.5px;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .sc-eyebrow-c1  { color: var(--var-neg); }
+        .sc-eyebrow-c2  { color: var(--var-pos); }
+        .sc-eyebrow-sav { color: var(--gold-deep); }
+
+        .sc-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
             font-size: 11.5px;
             margin-bottom: 4px;
         }
-        .vl .ll { color: var(--text3); }
-        .vl .lv { font-weight: 700; }
-        .sep { border: none; border-top: 1px dashed var(--border2); margin: 8px 0; }
-
-        /* scenario boxes */
-        .sbox {
-            border-radius: var(--radius-sm);
-            padding: 11px 12px;
+        .sc-line .sl { color: var(--ink-4); }
+        .sc-line .sv {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11.5px;
+            font-weight: 400;
+            color: var(--ink-secondary);
         }
-        .sbox-c1 { background: rgba(251,146,60,0.07); border: 1px solid rgba(251,146,60,0.2); }
-        .sbox-c2 { background: rgba(74,222,128,0.06); border: 1px solid rgba(74,222,128,0.2); }
-        .sbox-diff { background: rgba(196,181,253,0.05); border: 1px solid rgba(196,181,253,0.2); }
+        .sc-sep { border: none; border-top: 1px solid rgba(26,20,16,0.07); margin: 6px 0; }
+        .sc-line.main .sl { font-weight: 600; color: var(--ink-secondary); font-size: 12px; }
+        .sc-line.main .sv { font-size: 13px; font-weight: 500; }
+        .sv-c1  { color: var(--var-neg) !important; }
+        .sv-c2  { color: var(--var-pos) !important; }
+        .sv-sav { color: var(--gold-deep) !important; font-size: 14px !important; font-weight: 600 !important; }
 
-        .sc-title {
-            font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 8px;
-        }
-        .sc-title-c1 { color: var(--orange); }
-        .sc-title-c2 { color: var(--accent); }
-        .sc-title-diff { color: var(--purple); }
-
-        .sl {
+        .player-empty {
+            flex: 1;
             display: flex;
-            justify-content: space-between;
-            font-size: 11px;
-            margin-bottom: 4px;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 12px;
+            font-size: 12px;
+            color: var(--ink-4);
+            text-align: center;
+            font-style: italic;
         }
-        .sl .l { color: var(--text3); }
-        .sl .v { font-weight: 600; color: var(--text2); }
-        .sl.big .l { font-weight: 700; color: var(--text); font-size: 12px; }
-        .sl.big .v { font-size: 13px; }
-        .v-c1 { color: var(--orange) !important; }
-        .v-c2 { color: var(--accent) !important; }
-        .v-diff { color: var(--purple) !important; font-size: 14px !important; }
-        .sc-sep { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 6px 0; }
 
-        .empty { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px 12px; font-size: 11px; color: var(--text4); text-align: center; }
-
-        /* TOTALS BAR */
-        .totals-bar {
-            background: linear-gradient(135deg, var(--green-dark) 0%, var(--green) 100%);
-            border: 1px solid rgba(74,222,128,0.25);
-            border-radius: var(--radius);
-            padding: 18px 24px;
+        /* ── TOTALS BAND ── */
+        .totals-band {
+            background: var(--ink-primary);
+            border-radius: var(--r-lg);
+            padding: 20px 28px;
             margin-bottom: 20px;
             display: grid;
             grid-template-columns: repeat(6, 1fr);
-            gap: 16px;
+            gap: 0;
         }
-        .tb { text-align: center; }
-        .tb + .tb { border-left: 1px solid rgba(255,255,255,0.08); }
-        .tb-l { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 5px; }
-        .tb-v { font-size: 17px; font-weight: 800; color: #fff; line-height: 1.1; }
-        .tb-s { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 3px; }
-        .tb-v-orange { color: var(--orange); }
-        .tb-v-green { color: var(--accent); }
-        .tb-v-purple { color: #c4b5fd; }
+        .tb-item {
+            padding: 0 20px;
+            text-align: center;
+        }
+        .tb-item + .tb-item { border-left: 1px solid rgba(243,238,226,0.08); }
+        .tb-item:first-child { padding-left: 0; text-align: left; }
+        .tb-eyebrow {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 8.5px;
+            font-weight: 500;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--on-dark-muted);
+            margin-bottom: 6px;
+        }
+        .tb-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--on-dark);
+            line-height: 1.1;
+        }
+        .tb-sub {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            color: var(--on-dark-muted);
+            margin-top: 4px;
+        }
+        .tb-value-neg  { color: #f9a0a0; }
+        .tb-value-pos  { color: #86efac; }
+        .tb-value-gold { color: var(--gold-soft); }
 
-        /* SUMMARY TABLE */
+        /* ── SUMMARY TABLE ── */
         .summary-section {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
+            background: var(--cream-card);
+            border: 1px solid var(--divider);
+            border-radius: var(--r-md);
+            box-shadow: var(--shadow-hair);
             padding: 20px 24px;
             margin-bottom: 24px;
             overflow-x: auto;
         }
-        .summary-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 16px; }
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 14px;
+        }
         .summary-table th {
             padding: 9px 14px;
+            background: var(--tbl-head);
             text-align: right;
-            font-size: 10px; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 0.5px;
-            color: var(--text3);
-            background: var(--surface2);
-            border-bottom: 2px solid var(--border2);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 8.5px;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--gold-deep);
+            border-bottom: 2px solid var(--divider-mid);
             white-space: nowrap;
         }
-        .summary-table th:first-child { text-align: left; }
+        .summary-table th:first-child { text-align: left; border-radius: var(--r-xs) 0 0 0; }
+        .summary-table th:last-child  { border-radius: 0 var(--r-xs) 0 0; }
         .summary-table td {
-            padding: 11px 14px;
-            border-bottom: 1px solid var(--border);
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--divider);
             text-align: right;
-            color: var(--text2);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--ink-secondary);
             white-space: nowrap;
         }
-        .summary-table td:first-child { text-align: left; font-weight: 600; color: var(--text); }
+        .summary-table td:first-child {
+            text-align: left;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--ink-primary);
+        }
         .summary-table tr:last-child td { border-bottom: none; }
-        .summary-table tbody tr:hover td { background: var(--surface2); }
+        .summary-table tbody tr:hover td { background: var(--cream-inset); }
         .summary-table .total-row td {
-            font-weight: 700; color: var(--text);
-            background: var(--surface2);
-            border-top: 2px solid rgba(74,222,128,0.35);
+            background: var(--tbl-head);
+            border-top: 2px solid var(--divider-mid);
+            font-weight: 500;
+            color: var(--ink-primary);
+        }
+        .summary-table .total-row td:first-child {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--gold-deep);
+        }
+        .td-neg  { color: var(--var-neg) !important; }
+        .td-pos  { color: var(--var-pos) !important; }
+        .td-gold { color: var(--gold-deep) !important; font-weight: 600 !important; }
+        .td-warn { color: var(--warn) !important; }
+
+        /* chip */
+        .chip {
+            display: inline-block;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 2px 8px;
+            border-radius: var(--r-xs);
+        }
+        .chip-pos { background: var(--var-pos-tint); color: var(--var-pos); }
+        .chip-neg { background: var(--var-neg-tint); color: var(--var-neg); }
+        .chip-gold { background: var(--gold-tint); color: var(--gold-deep); }
+
+        /* ── FOOTER ── */
+        .footer {
+            text-align: center;
+            padding: 20px 24px;
+            font-size: 11.5px;
+            color: var(--ink-4);
+            border-top: 1px solid var(--divider);
         }
 
-        .footer { text-align: center; padding: 20px; font-size: 11px; color: var(--text4); border-top: 1px solid var(--border); }
-
+        /* ── UTILS ── */
         input[type="number"] { -moz-appearance: textfield; }
         input[type="number"]::-webkit-inner-spin-button,
         input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: var(--surface); }
-        ::-webkit-scrollbar-thumb { background: var(--surface4); border-radius: 3px; }
+        ::-webkit-scrollbar-track { background: var(--cream-canvas); }
+        ::-webkit-scrollbar-thumb { background: var(--cream-inset); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--gold-soft); }
 
-        @media (max-width: 1400px) { .players-grid { grid-template-columns: repeat(3, 1fr); } .totals-bar { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 1400px) {
+            .players-grid { grid-template-columns: repeat(3, 1fr); }
+            .totals-band  { grid-template-columns: repeat(3, 1fr); }
+            .tb-item + .tb-item { border-left: none; }
+            .tb-item:nth-child(3n+1) { padding-left: 0; text-align: left; }
+        }
         @media (max-width: 900px)  { .players-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 600px)  { .players-grid { grid-template-columns: 1fr; } .totals-bar { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 600px)  {
+            .players-grid { grid-template-columns: 1fr; }
+            .totals-band  { grid-template-columns: repeat(2, 1fr); }
+            .page-hero, .page-body { margin-left: 12px; margin-right: 12px; }
+        }
     </style>
 </head>
 <body>
@@ -388,18 +610,18 @@
 // STATE
 // ================================================================
 const S = {
-    aliq: 5,       // % — alíquota global
-    fxRate: 5.80,  // EUR → BRL
+    aliq:    5.00,
+    fxRate:  5.80,
     players: Array.from({ length: 5 }, (_, i) => ({
         name: `Jogador ${i + 1}`,
         gross: 0,
         deds: {
-            intermediacao: { on: false, rate: 5,  label: 'Intermediação',      tip: 'Comissão do agente/intermediário' },
-            sellon:        { on: false, rate: 0,  label: 'Sell-on Fee',        tip: 'Cláusula de revenda — % para o clube anterior' },
-            solidarity:    { on: false, rate: 5,  label: 'Solidariedade FIFA', tip: 'Art. 21 RSTP — 5% distribuído aos clubes formadores' },
-            agenteBuyer:   { on: false, rate: 0,  label: 'Agente Comprador',   tip: 'Comissão do agente do clube comprador' },
-            outros1:       { on: false, rate: 0,  label: 'Outras taxas 1',     tip: 'Deduções adicionais' },
-            outros2:       { on: false, rate: 0,  label: 'Outras taxas 2',     tip: 'Deduções adicionais' },
+            intermediacao: { on: false, rate: 5,   label: 'Intermediação',      tip: 'Comissão do agente/intermediário' },
+            sellon:        { on: false, rate: 0,   label: 'Sell-on Fee',        tip: 'Cláusula de revenda — % para o clube anterior' },
+            solidarity:    { on: false, rate: 5,   label: 'Solidariedade FIFA', tip: 'Art. 21 RSTP — 5% para clubes formadores' },
+            agenteBuyer:   { on: false, rate: 0,   label: 'Agente Comprador',   tip: 'Comissão do agente do clube comprador' },
+            outros1:       { on: false, rate: 0,   label: 'Outras taxas 1',     tip: 'Deduções adicionais' },
+            outros2:       { on: false, rate: 0,   label: 'Outras taxas 2',     tip: 'Deduções adicionais' },
         }
     }))
 };
@@ -416,16 +638,11 @@ function calcPlayer(p) {
         dedBreak[k] = v;
         totalDed += v;
     }
-    const net = gross - totalDed;
+    const net   = gross - totalDed;
     const taxC1 = gross * S.aliq / 100;
     const taxC2 = net   * S.aliq / 100;
-    return {
-        gross, net, totalDed, dedBreak,
-        taxC1, taxC2,
-        savings: taxC1 - taxC2,
-        netFinalC1: gross - taxC1,
-        netFinalC2: net   - taxC2,
-    };
+    return { gross, net, totalDed, dedBreak, taxC1, taxC2,
+             savings: taxC1 - taxC2, netFinalC1: gross - taxC1, netFinalC2: net - taxC2 };
 }
 
 // ================================================================
@@ -436,9 +653,9 @@ const P  = v => (v || 0).toFixed(2).replace('.', ',') + '%';
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
 // ================================================================
-// FOCUS
+// FOCUS PRESERVATION
 // ================================================================
-let _fk = null, _fsel = [0,0];
+let _fk = null, _fsel = [0, 0];
 function saveFocus() {
     const el = document.activeElement;
     if (!el || el === document.body) { _fk = null; return; }
@@ -448,9 +665,9 @@ function saveFocus() {
 function restoreFocus() {
     if (!_fk) return;
     const ds = JSON.parse(_fk);
-    const sel = Object.entries(ds).map(([k,v]) => `[data-${k}="${CSS.escape(v)}"]`).join('');
-    if (!sel) return;
-    const el = document.querySelector(sel);
+    const parts = Object.entries(ds).map(([k,v]) => `[data-${k}="${CSS.escape(v)}"]`).join('');
+    if (!parts) return;
+    const el = document.querySelector(parts);
     if (el) { el.focus(); try { el.setSelectionRange(_fsel[0], _fsel[1]); } catch(e){} }
 }
 
@@ -467,226 +684,271 @@ function render() {
 function buildHTML() {
     const active = S.players.filter(p => p.gross > 0);
     return `
-        ${hHeader()}
-        ${hAliqBar()}
-        <div class="container">
-            <div class="section-title">Simulação por Atleta</div>
+        ${hHero()}
+        <div class="page-body">
+            ${hConfig()}
+            <div class="section-eyebrow">Simulação por Atleta</div>
             <div class="players-grid">${S.players.map((p,i) => hCard(p,i)).join('')}</div>
-            ${active.length ? hTotalsBar(active) : ''}
+            ${active.length ? hTotalsBand(active) : ''}
             ${active.length ? hSummary(active) : ''}
         </div>
-        <div class="footer">Calculadora TEF · Para fins de planejamento tributário · Consulte um especialista fiscal antes de tomar decisões</div>
+        <div class="footer">Calculadora TEF · Glorioso Finance · Para fins de planejamento tributário — consulte um especialista fiscal antes de decisões</div>
     `;
 }
 
-function hHeader() {
+// ── Hero ──
+function hHero() {
     return `
-        <header class="header">
-            <div class="header-left">
-                <div class="header-icon">⚽</div>
-                <div>
-                    <h1>Calculadora TEF</h1>
-                    <div class="header-sub">Tributação Específica em Transferências de Atletas de Futebol</div>
-                </div>
+        <div class="page-hero">
+            <div class="hero-left">
+                <div class="hero-eyebrow">Glorioso Finance · Departamento Jurídico-Tributário</div>
+                <h1 class="hero-title">Calculadora <em>TEF</em></h1>
+                <div class="hero-sub">Tributação Específica em Transferências de Atletas de Futebol</div>
             </div>
-        </header>
+            <div class="hero-right">
+                <button class="hero-btn" onclick="window.print()">Imprimir</button>
+            </div>
+        </div>
     `;
 }
 
-function hAliqBar() {
+// ── Config strip ──
+function hConfig() {
     const min = 0, max = 20;
     const pct = ((S.aliq - min) / (max - min) * 100).toFixed(1);
     return `
-        <div class="aliq-bar">
-            <span class="aliq-label">Alíquota</span>
-            <div class="aliq-control">
+        <div class="config-strip">
+            <div class="config-label">Alíquota</div>
+            <div class="config-group">
                 <input class="aliq-slider" type="range" id="aliq-slider"
                     min="${min}" max="${max}" step="0.1" value="${S.aliq}"
                     style="--pct:${pct}%">
-                <div class="aliq-inp-wrap">
-                    <input class="aliq-inp" type="number" id="aliq-inp"
+                <div class="field-wrap">
+                    <input class="field-inp aliq-big" type="number" id="aliq-inp"
                         min="${min}" max="${max}" step="0.1" value="${S.aliq}">
-                    <span class="aliq-unit">%</span>
+                    <span class="field-suffix">%</span>
                 </div>
             </div>
-            <span class="aliq-hint">Ajuste a alíquota para calcular os dois cenários</span>
-            <div class="fx-wrap">
-                <span class="fx-label">💱 EUR → BRL</span>
-                <input class="fx-inp" type="number" id="fx-inp" value="${S.fxRate}" min="0" step="0.01">
-                <span style="font-size:12px;color:var(--text4)">R$/€</span>
+            <div class="config-divider"></div>
+            <div class="config-label config-fx">Câmbio EUR → BRL</div>
+            <div class="field-wrap">
+                <span class="field-prefix">R$ / €</span>
+                <input class="field-inp" type="number" id="fx-inp"
+                    value="${S.fxRate}" min="0" step="0.01" style="width:80px">
             </div>
         </div>
     `;
 }
 
+// ── Player card ──
 function hCard(p, pi) {
     const c = calcPlayer(p);
     return `
         <div class="player-card">
             <div class="player-head">
                 <div class="player-num">Atleta ${pi + 1}</div>
-                <input class="player-name-inp" type="text" data-pi="${pi}" data-field="name"
+                <input class="player-name-inp" type="text"
+                    data-pi="${pi}" data-field="name"
                     value="${esc(p.name)}" placeholder="Nome do atleta">
             </div>
             <div class="player-body">
-                <div class="field-label">Valor de Transferência (Bruto)</div>
-                <div class="money-wrap">
-                    <span class="money-prefix">€</span>
-                    <input class="money-inp" type="number" data-pi="${pi}" data-field="gross"
-                        value="${p.gross || ''}" placeholder="0,00" min="0" step="500000">
+                <label class="f-label">Valor de Transferência (Bruto)</label>
+                <div class="field-wrap gross-field">
+                    <span class="field-prefix">€</span>
+                    <input class="field-inp" type="number"
+                        data-pi="${pi}" data-field="gross"
+                        value="${p.gross || ''}" placeholder="0,00"
+                        min="0" step="500000" style="width:100%">
                 </div>
 
-                <div class="ded-section">
-                    <div class="ded-title">Deduções</div>
+                <div class="ded-block">
+                    <div class="ded-block-title">Deduções</div>
                     ${Object.entries(p.deds).map(([dk, d]) => `
                         <div class="ded-row${d.on ? '' : ' off'}">
-                            <input class="ded-check" type="checkbox"
-                                data-pi="${pi}" data-dk="${dk}" data-field="dedOn" ${d.on?'checked':''}>
+                            <input class="ded-chk" type="checkbox"
+                                data-pi="${pi}" data-dk="${dk}" data-field="dedOn"
+                                ${d.on ? 'checked' : ''}>
                             <span class="ded-name" title="${esc(d.tip)}">${esc(d.label)}</span>
-                            <input class="ded-inp" type="number"
+                            <input class="ded-rate-inp" type="number"
                                 data-pi="${pi}" data-dk="${dk}" data-field="dedRate"
-                                value="${d.rate}" min="0" max="100" step="0.1" ${d.on?'':'tabindex="-1"'}>
+                                value="${d.rate}" min="0" max="100" step="0.1"
+                                ${d.on ? '' : 'tabindex="-1"'}>
                             <span class="ded-unit">%</span>
                         </div>
                     `).join('')}
                 </div>
 
-                ${p.gross > 0 ? hResults(c, p) : `<div class="empty">Insira o valor de transferência para calcular</div>`}
+                ${p.gross > 0 ? hResults(c, p) : `<div class="player-empty">Insira o valor de transferência</div>`}
             </div>
         </div>
     `;
 }
 
+// ── Results per player ──
 function hResults(c, p) {
     const { gross, net, totalDed, dedBreak, taxC1, taxC2, savings, netFinalC1, netFinalC2 } = c;
     const activeDeds = Object.entries(p.deds).filter(([k,d]) => d.on && dedBreak[k] > 0);
 
     return `
-        <div class="results">
-            <!-- Resumo dos valores -->
-            <div class="val-lines">
-                <div class="vl"><span class="ll">Valor Bruto</span><span class="lv" style="color:var(--orange)">€ ${N(gross)}</span></div>
+        <div class="results-block">
+            <div class="vsummary">
+                <div class="vrow">
+                    <span class="vl">Valor Bruto</span>
+                    <span class="vv v-gross">€ ${N(gross)}</span>
+                </div>
                 ${activeDeds.map(([k,d]) => `
-                    <div class="vl" style="font-size:10.5px;padding-left:8px;">
-                        <span class="ll" style="color:var(--text4)">(−) ${esc(d.label)}</span>
-                        <span class="lv" style="color:var(--red);font-size:11px;font-weight:600">€ ${N(dedBreak[k])}</span>
+                    <div class="vrow ded-line">
+                        <span class="vl">(−) ${esc(d.label)}</span>
+                        <span class="vv v-ded">€ ${N(dedBreak[k])}</span>
                     </div>
                 `).join('')}
-                ${activeDeds.length ? `<div class="vl"><span class="ll">Total Deduções</span><span class="lv" style="color:var(--red)">€ ${N(totalDed)}</span></div>` : ''}
-                <hr class="sep">
-                <div class="vl">
-                    <span class="ll" style="font-weight:700;color:var(--text2)">Valor Líquido</span>
-                    <span class="lv" style="color:var(--accent);font-size:13px">€ ${N(net)}</span>
+                ${activeDeds.length ? `
+                    <div class="vrow">
+                        <span class="vl">Total Deduções</span>
+                        <span class="vv v-ded">€ ${N(totalDed)}</span>
+                    </div>
+                ` : ''}
+                <hr class="vsep">
+                <div class="vrow">
+                    <span class="vl" style="font-weight:600;color:var(--ink-secondary)">Valor Líquido</span>
+                    <span class="vv v-net">€ ${N(net)}</span>
                 </div>
             </div>
 
-            <!-- Cenário 1 -->
-            <div class="sbox sbox-c1">
-                <div class="sc-title sc-title-c1">🔴 Cenário 1 — Tributação sobre o Bruto</div>
-                <div class="sl"><span class="l">Base de cálculo</span><span class="v">€ ${N(gross)}</span></div>
-                <div class="sl"><span class="l">Alíquota</span><span class="v">${P(S.aliq)}</span></div>
+            <div class="scard scard-c1">
+                <div class="sc-eyebrow sc-eyebrow-c1">Cenário 1 — Trib. sobre o Bruto</div>
+                <div class="sc-line">
+                    <span class="sl">Base de cálculo</span>
+                    <span class="sv">€ ${N(gross)}</span>
+                </div>
+                <div class="sc-line">
+                    <span class="sl">Alíquota</span>
+                    <span class="sv">${P(S.aliq)}</span>
+                </div>
                 <div class="sc-sep"></div>
-                <div class="sl big"><span class="l">Tributo</span><span class="v v-c1">€ ${N(taxC1)}</span></div>
-                <div class="sl"><span class="l">Líquido após tributo</span><span class="v">€ ${N(netFinalC1)}</span></div>
+                <div class="sc-line main">
+                    <span class="sl">Tributo</span>
+                    <span class="sv sv-c1">€ ${N(taxC1)}</span>
+                </div>
+                <div class="sc-line">
+                    <span class="sl">Líquido após tributo</span>
+                    <span class="sv">€ ${N(netFinalC1)}</span>
+                </div>
             </div>
 
-            <!-- Cenário 2 -->
-            <div class="sbox sbox-c2">
-                <div class="sc-title sc-title-c2">🟢 Cenário 2 — Tributação sobre o Líquido</div>
-                <div class="sl"><span class="l">Base de cálculo</span><span class="v">€ ${N(net)}</span></div>
-                <div class="sl"><span class="l">Alíquota</span><span class="v">${P(S.aliq)}</span></div>
+            <div class="scard scard-c2">
+                <div class="sc-eyebrow sc-eyebrow-c2">Cenário 2 — Trib. sobre o Líquido</div>
+                <div class="sc-line">
+                    <span class="sl">Base de cálculo</span>
+                    <span class="sv">€ ${N(net)}</span>
+                </div>
+                <div class="sc-line">
+                    <span class="sl">Alíquota</span>
+                    <span class="sv">${P(S.aliq)}</span>
+                </div>
                 <div class="sc-sep"></div>
-                <div class="sl big"><span class="l">Tributo</span><span class="v v-c2">€ ${N(taxC2)}</span></div>
-                <div class="sl"><span class="l">Líquido após tributo + deduções</span><span class="v">€ ${N(netFinalC2)}</span></div>
+                <div class="sc-line main">
+                    <span class="sl">Tributo</span>
+                    <span class="sv sv-c2">€ ${N(taxC2)}</span>
+                </div>
+                <div class="sc-line">
+                    <span class="sl">Líquido após trib. + ded.</span>
+                    <span class="sv">€ ${N(netFinalC2)}</span>
+                </div>
             </div>
 
-            <!-- Diferença -->
-            <div class="sbox sbox-diff">
-                <div class="sc-title sc-title-diff">💡 Economia Tributária</div>
-                <div class="sl"><span class="l">Tributo C1</span><span class="v" style="color:var(--orange)">€ ${N(taxC1)}</span></div>
-                <div class="sl"><span class="l">Tributo C2</span><span class="v" style="color:var(--accent)">€ ${N(taxC2)}</span></div>
-                <div class="sc-sep"></div>
-                <div class="sl big"><span class="l">Economia</span><span class="v v-diff">${savings>=0?'+':''}€ ${N(savings)}</span></div>
-                <div class="sl"><span class="l">Redução</span><span class="v" style="color:var(--purple)">${taxC1 > 0 ? P(savings/taxC1*100) : '—'}</span></div>
+            <div class="scard scard-sav">
+                <div class="sc-eyebrow sc-eyebrow-sav">Economia Tributária</div>
+                <div class="sc-line">
+                    <span class="sl">C1 − C2</span>
+                    <span class="sv sv-sav">${savings>=0?'+':''}€ ${N(savings)}</span>
+                </div>
+                <div class="sc-line">
+                    <span class="sl">Redução</span>
+                    <span class="sv" style="color:var(--gold-deep)">${taxC1 > 0 ? P(savings/taxC1*100) : '—'}</span>
+                </div>
             </div>
         </div>
     `;
 }
 
-function hTotalsBar(active) {
-    const cs = active.map(p => calcPlayer(p));
-    const g   = cs.reduce((s,c) => s+c.gross, 0);
-    const ded = cs.reduce((s,c) => s+c.totalDed, 0);
-    const net = cs.reduce((s,c) => s+c.net, 0);
-    const t1  = cs.reduce((s,c) => s+c.taxC1, 0);
-    const t2  = cs.reduce((s,c) => s+c.taxC2, 0);
-    const sav = cs.reduce((s,c) => s+c.savings, 0);
+// ── Totals band ──
+function hTotalsBand(active) {
+    const cs  = active.map(p => calcPlayer(p));
+    const g   = cs.reduce((s,c) => s+c.gross,    0);
+    const ded = cs.reduce((s,c) => s+c.totalDed,  0);
+    const net = cs.reduce((s,c) => s+c.net,       0);
+    const t1  = cs.reduce((s,c) => s+c.taxC1,     0);
+    const t2  = cs.reduce((s,c) => s+c.taxC2,     0);
+    const sav = cs.reduce((s,c) => s+c.savings,   0);
     return `
-        <div class="totals-bar">
-            <div class="tb">
-                <div class="tb-l">Total Bruto</div>
-                <div class="tb-v">€ ${N(g)}</div>
-                <div class="tb-s">${active.length} atleta${active.length>1?'s':''} · R$ ${N(g*S.fxRate)}</div>
+        <div class="totals-band">
+            <div class="tb-item">
+                <div class="tb-eyebrow">Total Bruto</div>
+                <div class="tb-value">€ ${N(g)}</div>
+                <div class="tb-sub">${active.length} atleta${active.length>1?'s':''} · R$ ${N(g*S.fxRate)}</div>
             </div>
-            <div class="tb">
-                <div class="tb-l">Total Deduções</div>
-                <div class="tb-v" style="color:#fca5a5;font-size:15px">€ ${N(ded)}</div>
-                <div class="tb-s">${g>0?P(ded/g*100):'—'} do bruto</div>
+            <div class="tb-item">
+                <div class="tb-eyebrow">Total Deduções</div>
+                <div class="tb-value tb-value-neg">€ ${N(ded)}</div>
+                <div class="tb-sub">${g>0?P(ded/g*100):'—'} do bruto</div>
             </div>
-            <div class="tb">
-                <div class="tb-l">Total Líquido</div>
-                <div class="tb-v">€ ${N(net)}</div>
-                <div class="tb-s">${g>0?P(net/g*100):'—'} do bruto</div>
+            <div class="tb-item">
+                <div class="tb-eyebrow">Total Líquido</div>
+                <div class="tb-value">€ ${N(net)}</div>
+                <div class="tb-sub">${g>0?P(net/g*100):'—'} do bruto</div>
             </div>
-            <div class="tb">
-                <div class="tb-l">Tributos — C1 (Bruto)</div>
-                <div class="tb-v tb-v-orange">€ ${N(t1)}</div>
-                <div class="tb-s">Alíq. ${P(S.aliq)} s/ bruto</div>
+            <div class="tb-item">
+                <div class="tb-eyebrow">Tributos — C1 Bruto</div>
+                <div class="tb-value tb-value-neg">€ ${N(t1)}</div>
+                <div class="tb-sub">Alíq. ${P(S.aliq)} s/ bruto</div>
             </div>
-            <div class="tb">
-                <div class="tb-l">Tributos — C2 (Líquido)</div>
-                <div class="tb-v tb-v-green">€ ${N(t2)}</div>
-                <div class="tb-s">Alíq. ${P(S.aliq)} s/ líquido</div>
+            <div class="tb-item">
+                <div class="tb-eyebrow">Tributos — C2 Líquido</div>
+                <div class="tb-value tb-value-pos">€ ${N(t2)}</div>
+                <div class="tb-sub">Alíq. ${P(S.aliq)} s/ líquido</div>
             </div>
-            <div class="tb">
-                <div class="tb-l">Economia Total</div>
-                <div class="tb-v tb-v-purple">€ ${N(sav)}</div>
-                <div class="tb-s">${t1>0?P(sav/t1*100):'—'} de redução</div>
+            <div class="tb-item">
+                <div class="tb-eyebrow">Economia Total</div>
+                <div class="tb-value tb-value-gold">€ ${N(sav)}</div>
+                <div class="tb-sub">${t1>0?P(sav/t1*100):'—'} de redução</div>
             </div>
         </div>
     `;
 }
 
+// ── Summary table ──
 function hSummary(active) {
     const rows = active.map(p => {
         const c = calcPlayer(p);
+        const savSign = c.savings >= 0 ? '+' : '';
         return `
             <tr>
                 <td>${esc(p.name)}</td>
-                <td>€ ${N(c.gross)}</td>
-                <td style="color:var(--red)">−€ ${N(c.totalDed)}</td>
+                <td class="td-warn">€ ${N(c.gross)}</td>
+                <td class="td-neg">−€ ${N(c.totalDed)}</td>
                 <td>€ ${N(c.net)}</td>
-                <td style="color:var(--orange)">€ ${N(c.taxC1)}</td>
-                <td style="color:var(--orange)">${P(S.aliq)}</td>
-                <td style="color:var(--accent)">€ ${N(c.taxC2)}</td>
-                <td style="color:var(--accent)">${P(S.aliq)}</td>
-                <td style="color:var(--purple);font-weight:700">+€ ${N(c.savings)}</td>
-                <td style="color:var(--text3)">R$ ${N(c.gross*S.fxRate)}</td>
+                <td class="td-neg">€ ${N(c.taxC1)}</td>
+                <td class="td-neg">${P(S.aliq)}</td>
+                <td class="td-pos">€ ${N(c.taxC2)}</td>
+                <td class="td-pos">${P(S.aliq)}</td>
+                <td class="td-gold">${savSign}€ ${N(c.savings)}</td>
+                <td>R$ ${N(c.gross*S.fxRate)}</td>
             </tr>
         `;
     }).join('');
 
     const cs  = active.map(p => calcPlayer(p));
-    const g   = cs.reduce((s,c) => s+c.gross, 0);
+    const g   = cs.reduce((s,c) => s+c.gross,   0);
     const ded = cs.reduce((s,c) => s+c.totalDed, 0);
-    const net = cs.reduce((s,c) => s+c.net, 0);
-    const t1  = cs.reduce((s,c) => s+c.taxC1, 0);
-    const t2  = cs.reduce((s,c) => s+c.taxC2, 0);
-    const sav = cs.reduce((s,c) => s+c.savings, 0);
+    const net = cs.reduce((s,c) => s+c.net,      0);
+    const t1  = cs.reduce((s,c) => s+c.taxC1,    0);
+    const t2  = cs.reduce((s,c) => s+c.taxC2,    0);
+    const sav = cs.reduce((s,c) => s+c.savings,  0);
 
     return `
         <div class="summary-section">
-            <div class="section-title">Resumo Comparativo</div>
+            <div class="section-eyebrow">Resumo Comparativo</div>
             <table class="summary-table">
                 <thead>
                     <tr>
@@ -694,10 +956,10 @@ function hSummary(active) {
                         <th>Valor Bruto (€)</th>
                         <th>Deduções (€)</th>
                         <th>Valor Líquido (€)</th>
-                        <th>Tributo C1 — Bruto</th>
-                        <th>Alíquota C1</th>
-                        <th>Tributo C2 — Líquido</th>
-                        <th>Alíquota C2</th>
+                        <th>Tributo C1</th>
+                        <th>Alíq. C1</th>
+                        <th>Tributo C2</th>
+                        <th>Alíq. C2</th>
                         <th>Economia (€)</th>
                         <th>Bruto (R$)</th>
                     </tr>
@@ -705,16 +967,16 @@ function hSummary(active) {
                 <tbody>
                     ${rows}
                     <tr class="total-row">
-                        <td>TOTAL</td>
-                        <td>€ ${N(g)}</td>
-                        <td style="color:var(--red)">−€ ${N(ded)}</td>
+                        <td>Total</td>
+                        <td class="td-warn">€ ${N(g)}</td>
+                        <td class="td-neg">−€ ${N(ded)}</td>
                         <td>€ ${N(net)}</td>
-                        <td style="color:var(--orange)">€ ${N(t1)}</td>
-                        <td style="color:var(--orange)">${P(S.aliq)}</td>
-                        <td style="color:var(--accent)">€ ${N(t2)}</td>
-                        <td style="color:var(--accent)">${P(S.aliq)}</td>
-                        <td style="color:var(--purple);font-weight:800">+€ ${N(sav)}</td>
-                        <td style="color:var(--text3)">R$ ${N(g*S.fxRate)}</td>
+                        <td class="td-neg">€ ${N(t1)}</td>
+                        <td class="td-neg">${P(S.aliq)}</td>
+                        <td class="td-pos">€ ${N(t2)}</td>
+                        <td class="td-pos">${P(S.aliq)}</td>
+                        <td class="td-gold">+€ ${N(sav)}</td>
+                        <td>R$ ${N(g*S.fxRate)}</td>
                     </tr>
                 </tbody>
             </table>
@@ -726,38 +988,36 @@ function hSummary(active) {
 // EVENTS
 // ================================================================
 function bindEvents() {
-    // Alíquota slider
     const slider = document.getElementById('aliq-slider');
     const inp    = document.getElementById('aliq-inp');
+
     if (slider) slider.addEventListener('input', e => {
         S.aliq = parseFloat(e.target.value) || 0;
-        inp.value = S.aliq;
-        updateSliderGradient(slider);
+        if (inp) inp.value = S.aliq;
+        updateSlider(slider);
         render();
     });
     if (inp) inp.addEventListener('input', e => {
         S.aliq = parseFloat(e.target.value) || 0;
-        slider.value = S.aliq;
-        updateSliderGradient(slider);
+        if (slider) { slider.value = S.aliq; updateSlider(slider); }
         render();
     });
 
-    // FX
     const fx = document.getElementById('fx-inp');
     if (fx) fx.addEventListener('input', e => { S.fxRate = parseFloat(e.target.value) || 1; render(); });
 
-    // Player name
     document.querySelectorAll('[data-field="name"]').forEach(el => {
         el.addEventListener('input', e => { S.players[+e.target.dataset.pi].name = e.target.value; });
         el.addEventListener('blur', () => render());
     });
 
-    // Player gross
     document.querySelectorAll('[data-field="gross"]').forEach(el => {
-        el.addEventListener('input', e => { S.players[+e.target.dataset.pi].gross = parseFloat(e.target.value) || 0; render(); });
+        el.addEventListener('input', e => {
+            S.players[+e.target.dataset.pi].gross = parseFloat(e.target.value) || 0;
+            render();
+        });
     });
 
-    // Ded toggle
     document.querySelectorAll('[data-field="dedOn"]').forEach(el => {
         el.addEventListener('change', e => {
             S.players[+e.target.dataset.pi].deds[e.target.dataset.dk].on = e.target.checked;
@@ -765,7 +1025,6 @@ function bindEvents() {
         });
     });
 
-    // Ded rate
     document.querySelectorAll('[data-field="dedRate"]').forEach(el => {
         el.addEventListener('input', e => {
             S.players[+e.target.dataset.pi].deds[e.target.dataset.dk].rate = parseFloat(e.target.value) || 0;
@@ -774,9 +1033,8 @@ function bindEvents() {
     });
 }
 
-function updateSliderGradient(slider) {
-    const min = +slider.min, max = +slider.max, val = +slider.value;
-    const pct = ((val - min) / (max - min) * 100).toFixed(1);
+function updateSlider(slider) {
+    const pct = ((+slider.value - +slider.min) / (+slider.max - +slider.min) * 100).toFixed(1);
     slider.style.setProperty('--pct', pct + '%');
 }
 

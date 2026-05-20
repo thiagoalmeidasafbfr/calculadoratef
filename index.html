@@ -692,18 +692,32 @@ function render() {
 }
 
 function buildHTML() {
-    const active = S.players.filter(p => p.gross > 0);
+    const active = S.players.filter(p => p.gross != null && p.gross > 0);
     return `
         ${hHero()}
         <div class="page-body">
             ${hConfig()}
             <div class="section-eyebrow">Simulação por Atleta</div>
             <div class="players-grid">${S.players.map((p,i) => hCard(p,i)).join('')}</div>
-            ${active.length ? hTotalsBand(active) : ''}
-            ${active.length ? hSummary(active) : ''}
+            <div id="dynamic-bottom">${active.length ? hTotalsBand(active) + hSummary(active) : ''}</div>
         </div>
         <div class="footer">Calculadora TEF · Glorioso Finance · Para fins de planejamento tributário — consulte um especialista fiscal antes de decisões</div>
     `;
+}
+
+// Atualiza só os resultados sem tocar nos inputs — resolve o bug do cursor
+function renderResults() {
+    S.players.forEach((p, i) => {
+        const el = document.getElementById(`player-results-${i}`);
+        if (!el) return;
+        const c = calcPlayer(p);
+        el.innerHTML = (p.gross != null && p.gross > 0)
+            ? hResults(c, p)
+            : '<div class="player-empty">Insira o valor de transferência</div>';
+    });
+    const active = S.players.filter(p => p.gross != null && p.gross > 0);
+    const bottom = document.getElementById('dynamic-bottom');
+    if (bottom) bottom.innerHTML = active.length ? hTotalsBand(active) + hSummary(active) : '';
 }
 
 // ── Hero ──
@@ -784,7 +798,7 @@ function hCard(p, pi) {
                     `).join('')}
                 </div>
 
-                ${p.gross > 0 ? hResults(c, p) : `<div class="player-empty">Insira o valor de transferência</div>`}
+                <div id="player-results-${pi}">${p.gross != null && p.gross > 0 ? hResults(c, p) : '<div class="player-empty">Insira o valor de transferência</div>'}</div>
             </div>
         </div>
     `;
@@ -1015,7 +1029,7 @@ function bindEvents() {
         el.addEventListener('input', e => {
             const raw = e.target.value;
             S.players[+e.target.dataset.pi].gross = raw === '' ? null : parseFloat(raw);
-            render();
+            renderResults();
         });
     });
 
@@ -1030,7 +1044,7 @@ function bindEvents() {
         el.addEventListener('input', e => {
             const raw = e.target.value;
             S.players[+e.target.dataset.pi].deds[e.target.dataset.dk].value = raw === '' ? null : parseFloat(raw);
-            render();
+            renderResults();
         });
     });
 }

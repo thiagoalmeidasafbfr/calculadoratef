@@ -325,7 +325,7 @@
         }
         .ded-row {
             display: grid;
-            grid-template-columns: 15px 1fr 58px 13px;
+            grid-template-columns: 15px 1fr auto;
             align-items: center;
             gap: 6px;
             margin-bottom: 7px;
@@ -345,26 +345,37 @@
             text-overflow: ellipsis;
         }
         .ded-row.off .ded-name { color: var(--ink-4); }
-        .ded-rate-inp {
+        .ded-value-wrap {
+            display: flex;
+            align-items: center;
             background: var(--cream-canvas);
             border: 1px solid var(--divider);
             border-radius: var(--r-xs);
+            overflow: hidden;
+            transition: border-color 0.15s;
+        }
+        .ded-value-wrap:focus-within { border-color: var(--gold); }
+        .ded-row.off .ded-value-wrap { opacity: 0.30; pointer-events: none; }
+        .ded-prefix {
+            padding: 3px 5px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            font-weight: 500;
+            color: var(--gold-deep);
+            background: var(--cream-inset);
+            border-right: 1px solid var(--divider);
+        }
+        .ded-value-inp {
+            background: transparent;
+            border: none;
+            outline: none;
             padding: 3px 6px;
             font-family: 'JetBrains Mono', monospace;
             font-size: 11px;
             font-weight: 400;
             color: var(--ink-primary);
             text-align: right;
-            width: 100%;
-            outline: none;
-            transition: border-color 0.15s;
-        }
-        .ded-rate-inp:focus { border-color: var(--gold); }
-        .ded-row.off .ded-rate-inp { opacity: 0.30; pointer-events: none; }
-        .ded-unit {
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 10px;
-            color: var(--ink-4);
+            width: 90px;
         }
 
         /* Results */
@@ -616,12 +627,12 @@ const S = {
         name: `Jogador ${i + 1}`,
         gross: 0,
         deds: {
-            intermediacao: { on: false, rate: 5,   label: 'Intermediação',      tip: 'Comissão do agente/intermediário' },
-            sellon:        { on: false, rate: 0,   label: 'Sell-on Fee',        tip: 'Cláusula de revenda — % para o clube anterior' },
-            solidarity:    { on: false, rate: 5,   label: 'Solidariedade FIFA', tip: 'Art. 21 RSTP — 5% para clubes formadores' },
-            agenteBuyer:   { on: false, rate: 0,   label: 'Agente Comprador',   tip: 'Comissão do agente do clube comprador' },
-            outros1:       { on: false, rate: 0,   label: 'Outras taxas 1',     tip: 'Deduções adicionais' },
-            outros2:       { on: false, rate: 0,   label: 'Outras taxas 2',     tip: 'Deduções adicionais' },
+            intermediacao: { on: false, value: 0, label: 'Intermediação',      tip: 'Comissão do agente/intermediário' },
+            sellon:        { on: false, value: 0, label: 'Sell-on Fee',        tip: 'Cláusula de revenda para o clube anterior' },
+            solidarity:    { on: false, value: 0, label: 'Solidariedade FIFA', tip: 'Art. 21 RSTP — distribuído aos clubes formadores' },
+            agenteBuyer:   { on: false, value: 0, label: 'Agente Comprador',   tip: 'Comissão do agente do clube comprador' },
+            outros1:       { on: false, value: 0, label: 'Outras taxas 1',     tip: 'Deduções adicionais' },
+            outros2:       { on: false, value: 0, label: 'Outras taxas 2',     tip: 'Deduções adicionais' },
         }
     }))
 };
@@ -634,7 +645,7 @@ function calcPlayer(p) {
     let totalDed = 0;
     const dedBreak = {};
     for (const [k, d] of Object.entries(p.deds)) {
-        const v = d.on ? gross * d.rate / 100 : 0;
+        const v = d.on ? (d.value || 0) : 0;
         dedBreak[k] = v;
         totalDed += v;
     }
@@ -769,11 +780,14 @@ function hCard(p, pi) {
                                 data-pi="${pi}" data-dk="${dk}" data-field="dedOn"
                                 ${d.on ? 'checked' : ''}>
                             <span class="ded-name" title="${esc(d.tip)}">${esc(d.label)}</span>
-                            <input class="ded-rate-inp" type="number"
-                                data-pi="${pi}" data-dk="${dk}" data-field="dedRate"
-                                value="${d.rate}" min="0" max="100" step="0.1"
-                                ${d.on ? '' : 'tabindex="-1"'}>
-                            <span class="ded-unit">%</span>
+                            <div class="ded-value-wrap">
+                                <span class="ded-prefix">€</span>
+                                <input class="ded-value-inp" type="number"
+                                    data-pi="${pi}" data-dk="${dk}" data-field="dedValue"
+                                    value="${d.value || ''}" placeholder="0"
+                                    min="0" step="100000"
+                                    ${d.on ? '' : 'tabindex="-1"'}>
+                            </div>
                         </div>
                     `).join('')}
                 </div>
@@ -1025,9 +1039,9 @@ function bindEvents() {
         });
     });
 
-    document.querySelectorAll('[data-field="dedRate"]').forEach(el => {
+    document.querySelectorAll('[data-field="dedValue"]').forEach(el => {
         el.addEventListener('input', e => {
-            S.players[+e.target.dataset.pi].deds[e.target.dataset.dk].rate = parseFloat(e.target.value) || 0;
+            S.players[+e.target.dataset.pi].deds[e.target.dataset.dk].value = parseFloat(e.target.value) || 0;
             render();
         });
     });

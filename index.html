@@ -619,6 +619,98 @@
             border-top: 1px solid var(--divider);
         }
 
+        /* ── CURRENCY TOGGLE ── */
+        .cur-toggle {
+            display: flex;
+            background: rgba(243,238,226,0.08);
+            border: 1px solid rgba(243,238,226,0.14);
+            border-radius: var(--r-xs);
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .cur-btn {
+            flex: 1;
+            padding: 5px 0;
+            border: none;
+            background: transparent;
+            color: rgba(243,238,226,0.4);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .cur-btn.active {
+            background: rgba(243,238,226,0.12);
+            color: var(--on-dark);
+        }
+
+        /* ── NOTE / COMMENT ── */
+        .ded-note-btn {
+            width: 18px; height: 18px;
+            border: none; background: transparent;
+            cursor: pointer; padding: 0;
+            color: var(--ink-4);
+            font-size: 11px;
+            border-radius: 3px;
+            flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            transition: color 0.15s;
+        }
+        .ded-note-btn:hover { color: var(--gold); }
+        .ded-note-btn.has-note { color: var(--gold-deep); }
+        .ded-comment-area {
+            display: none;
+            padding: 5px 0 2px 21px;
+        }
+        .ded-comment-area.open { display: block; }
+        .ded-comment-ta {
+            width: 100%; height: 48px;
+            background: var(--cream-canvas);
+            border: 1px solid var(--divider);
+            border-radius: var(--r-xs);
+            padding: 5px 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 11px; line-height: 1.4;
+            color: var(--ink-secondary);
+            resize: none; outline: none;
+        }
+        .ded-comment-ta:focus { border-color: var(--gold); }
+
+        /* ── PTAX chip ── */
+        .ptax-chip {
+            display: flex; align-items: center; gap: 8px;
+            padding: 6px 14px;
+            background: var(--cream-canvas);
+            border: 1px solid var(--divider);
+            border-radius: var(--r-pill);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px; color: var(--gold-deep);
+        }
+        .ptax-chip strong { font-weight: 600; color: var(--ink-primary); }
+        .ptax-refresh {
+            border: none; background: transparent; cursor: pointer;
+            font-size: 12px; color: var(--ink-4); padding: 0;
+            transition: color 0.15s;
+        }
+        .ptax-refresh:hover { color: var(--gold); }
+
+        /* ── TOOLTIP (JS-driven) ── */
+        #_tooltip {
+            position: fixed; z-index: 9999; pointer-events: none;
+            display: none;
+            background: var(--ink-primary);
+            color: var(--on-dark);
+            font-family: 'Inter', sans-serif;
+            font-size: 11px; line-height: 1.5;
+            padding: 7px 11px;
+            border-radius: var(--r-sm);
+            max-width: 240px;
+            white-space: pre-wrap;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.28);
+        }
+
         /* ── UTILS ── */
         input[type="number"] { -moz-appearance: textfield; }
         input[type="number"]::-webkit-inner-spin-button,
@@ -647,15 +739,14 @@
 <div id="app"></div>
 
 
-<parameter name="new_string"><script>
+<script>
 // ================================================================
 // SUPABASE
-// Preencha com os dados do seu projeto em supabase.com > Project Settings > API
 // ================================================================
 const SUPABASE_URL = 'https://upodpuuxpgjslzsjmznm.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwb2RwdXV4cGdqc2x6c2ptem5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNzMwNzcsImV4cCI6MjA5NDg0OTA3N30.gkFpm2qoYNvfxunfYuYiLz7yMcf-Zu1103Xa2uI4KrA';
-const DB_TABLE     = 'tef_state';
-const DB_ROW_ID    = 'default';
+const DB_TABLE  = 'tef_state';
+const DB_ROW_ID = 'default';
 
 let _db = null;
 let _saveTimer = null;
@@ -677,14 +768,16 @@ async function loadState() {
         (d.players || []).forEach((src, i) => {
             if (!S.players[i]) return;
             const p = S.players[i];
-            if (src.name  != null) p.name  = src.name;
-            if (src.gross != null) p.gross = src.gross;
+            if (src.name     != null) p.name     = src.name;
+            if (src.gross    != null) p.gross    = src.gross;
+            if (src.currency)         p.currency = src.currency;
             Object.keys(p.deds).forEach(k => {
                 if (!src.deds?.[k]) return;
-                p.deds[k].on    = src.deds[k].on    ?? false;
-                p.deds[k].mode  = src.deds[k].mode  ?? p.deds[k].mode;
-                p.deds[k].rate  = src.deds[k].rate  ?? null;
-                p.deds[k].value = src.deds[k].value ?? null;
+                p.deds[k].on      = src.deds[k].on      ?? false;
+                p.deds[k].mode    = src.deds[k].mode    ?? 'pct';
+                p.deds[k].rate    = src.deds[k].rate    ?? null;
+                p.deds[k].value   = src.deds[k].value   ?? null;
+                p.deds[k].comment = src.deds[k].comment ?? '';
             });
         });
     }
@@ -701,10 +794,13 @@ function saveState() {
             state: {
                 aliq:    S.aliq,
                 players: S.players.map(p => ({
-                    name:  p.name,
-                    gross: p.gross,
-                    deds:  Object.fromEntries(
-                        Object.entries(p.deds).map(([k, d]) => [k, { on: d.on, mode: d.mode, rate: d.rate, value: d.value }])
+                    name:     p.name,
+                    gross:    p.gross,
+                    currency: p.currency,
+                    deds:     Object.fromEntries(
+                        Object.entries(p.deds).map(([k, d]) => [k, {
+                            on: d.on, mode: d.mode, rate: d.rate, value: d.value, comment: d.comment
+                        }])
                     ),
                 })),
             },
@@ -733,20 +829,71 @@ function setStatus(s) {
 }
 
 // ================================================================
+// PTAX (EUR/BRL — Banco Central do Brasil)
+// ================================================================
+async function fetchPTAX() {
+    const tryDate = async (d) => {
+        const mm   = String(d.getMonth() + 1).padStart(2, '0');
+        const dd   = String(d.getDate()).padStart(2, '0');
+        const yyyy = d.getFullYear();
+        const dateStr = `${mm}-${dd}-${yyyy}`;
+        const url = `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaDia(moeda=@moeda,dataCotacao=@dataCotacao)?@moeda='EUR'&@dataCotacao='${dateStr}'&$top=1&$format=json&$select=cotacaoVenda`;
+        const res  = await fetch(url);
+        const json = await res.json();
+        if (json.value && json.value.length > 0) {
+            return { rate: json.value[0].cotacaoVenda, dateStr: `${dd}/${mm}/${yyyy}` };
+        }
+        return null;
+    };
+    const today = new Date();
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        try {
+            const result = await tryDate(d);
+            if (result) {
+                S.ptax     = result.rate;
+                S.ptaxDate = result.dateStr;
+                updatePTAXChip();
+                return;
+            }
+        } catch(e) { /* try previous day */ }
+    }
+}
+
+function updatePTAXChip() {
+    const chip = document.getElementById('ptax-chip');
+    if (!chip) return;
+    if (S.ptax) {
+        chip.innerHTML = `
+            <span>PTAX EUR/BRL</span>
+            <strong>${S.ptax.toLocaleString('pt-BR', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</strong>
+            <span style="color:var(--ink-4);font-size:9px">${S.ptaxDate}</span>
+            <button class="ptax-refresh" title="Atualizar PTAX" onclick="fetchPTAX()">↻</button>
+        `;
+    } else {
+        chip.innerHTML = `<span>PTAX EUR/BRL</span><span style="color:var(--ink-4)">—</span><button class="ptax-refresh" title="Atualizar PTAX" onclick="fetchPTAX()">↻</button>`;
+    }
+}
+
+// ================================================================
 // STATE
 // ================================================================
 const S = {
-    aliq:    5.00,
-    players: Array.from({ length: 5 }, (_, i) => ({
-        name: `Jogador ${i + 1}`,
-        gross: null,
+    aliq:     5.00,
+    ptax:     null,
+    ptaxDate: '',
+    players:  Array.from({ length: 5 }, (_, i) => ({
+        name:     `Jogador ${i + 1}`,
+        gross:    null,
+        currency: 'BRL',
         deds: {
-            intermediacao: { on: false, mode: 'pct',   rate: null, value: null, label: 'Intermediação',      tip: 'Comissão do agente/intermediário' },
-            sellon:        { on: false, mode: 'pct',   rate: null, value: null, label: 'Sell-on Fee',        tip: 'Cláusula de revenda para o clube anterior' },
-            solidarity:    { on: false, mode: 'pct',   rate: null, value: null, label: 'Solidariedade FIFA', tip: 'Art. 21 RSTP — distribuído aos clubes formadores' },
-            agenteBuyer:   { on: false, mode: 'fixed', rate: null, value: null, label: 'Agente Comprador',   tip: 'Comissão do agente do clube comprador' },
-            outros1:       { on: false, mode: 'fixed', rate: null, value: null, label: 'Outras taxas 1',     tip: 'Deduções adicionais' },
-            outros2:       { on: false, mode: 'fixed', rate: null, value: null, label: 'Outras taxas 2',     tip: 'Deduções adicionais' },
+            intermediacao: { on: false, mode: 'pct', rate: null, value: null, comment: '', label: 'Intermediação',      tip: 'Comissão do agente/intermediário' },
+            sellon:        { on: false, mode: 'pct', rate: null, value: null, comment: '', label: 'Sell-on Fee',        tip: 'Cláusula de revenda para o clube anterior' },
+            solidarity:    { on: false, mode: 'pct', rate: null, value: null, comment: '', label: 'Solidariedade FIFA', tip: 'Art. 21 RSTP — distribuído aos clubes formadores' },
+            agenteBuyer:   { on: false, mode: 'pct', rate: null, value: null, comment: '', label: 'Agente Comprador',   tip: 'Comissão do agente do clube comprador' },
+            outros1:       { on: false, mode: 'pct', rate: null, value: null, comment: '', label: 'Outras taxas 1',     tip: 'Deduções adicionais' },
+            outros2:       { on: false, mode: 'pct', rate: null, value: null, comment: '', label: 'Outras taxas 2',     tip: 'Deduções adicionais' },
         }
     }))
 };
@@ -755,21 +902,39 @@ const S = {
 // CALC
 // ================================================================
 function calcPlayer(p) {
-    const gross = p.gross ?? 0;
-    let totalDed = 0;
+    const grossLocal = p.gross ?? 0;
+    const ptax       = S.ptax || 1;
+    const grossBRL   = p.currency === 'EUR' ? grossLocal * ptax : grossLocal;
+
+    let totalDedLocal = 0;
     const dedBreak = {};
     for (const [k, d] of Object.entries(p.deds)) {
-        const v = d.on
-            ? (d.mode === 'pct' ? gross * (d.rate ?? 0) / 100 : (d.value ?? 0))
-            : 0;
-        dedBreak[k] = v;
-        totalDed += v;
+        let vLocal = 0;
+        if (d.on) {
+            vLocal = d.mode === 'pct'
+                ? grossLocal * (d.rate  ?? 0) / 100
+                : (d.value ?? 0);
+        }
+        dedBreak[k]    = vLocal;
+        totalDedLocal += vLocal;
     }
-    const net   = gross - totalDed;
-    const taxC1 = gross * S.aliq / 100;
-    const taxC2 = net   * S.aliq / 100;
-    return { gross, net, totalDed, dedBreak, taxC1, taxC2,
-             savings: taxC1 - taxC2, netFinalC1: gross - taxC1, netFinalC2: net - taxC2 };
+
+    const netLocal    = grossLocal - totalDedLocal;
+    const totalDedBRL = p.currency === 'EUR' ? totalDedLocal * ptax : totalDedLocal;
+    const netBRL      = grossBRL - totalDedBRL;
+    const taxC1       = grossBRL * S.aliq / 100;
+    const taxC2       = netBRL   * S.aliq / 100;
+
+    return {
+        grossLocal, grossBRL,
+        netLocal,   netBRL,
+        totalDedLocal, totalDedBRL,
+        dedBreak,
+        taxC1, taxC2,
+        savings:    taxC1 - taxC2,
+        netFinalC1: grossBRL - taxC1,
+        netFinalC2: netBRL   - taxC2,
+    };
 }
 
 // ================================================================
@@ -819,6 +984,7 @@ function buildHTML() {
             <div id="dynamic-bottom">${active.length ? hTotalsBand(active) + hSummary(active) : ''}</div>
         </div>
         <div class="footer">Calculadora TEF · Glorioso Finance · Para fins de planejamento tributário — consulte um especialista fiscal antes de decisões</div>
+        <div id="_tooltip"></div>
     `;
 }
 
@@ -858,6 +1024,9 @@ function hHero() {
 function hConfig() {
     const min = 0, max = 20;
     const pct = ((S.aliq - min) / (max - min) * 100).toFixed(1);
+    const ptaxLabel = S.ptax
+        ? S.ptax.toLocaleString('pt-BR', { minimumFractionDigits: 4, maximumFractionDigits: 4 })
+        : '—';
     return `
         <div class="config-strip">
             <div class="config-label">Alíquota</div>
@@ -871,13 +1040,20 @@ function hConfig() {
                     <span class="field-suffix">%</span>
                 </div>
             </div>
+            <div id="ptax-chip" class="ptax-chip" style="margin-left:auto">
+                <span>PTAX EUR/BRL</span>
+                <strong>${ptaxLabel}</strong>
+                ${S.ptaxDate ? `<span style="color:var(--ink-4);font-size:9px">${S.ptaxDate}</span>` : ''}
+                <button class="ptax-refresh" title="Atualizar PTAX" onclick="fetchPTAX()">↻</button>
+            </div>
         </div>
     `;
 }
 
 // ── Player card ──
 function hCard(p, pi) {
-    const c = calcPlayer(p);
+    const c   = calcPlayer(p);
+    const pfx = p.currency === 'EUR' ? '€' : 'R$';
     return `
         <div class="player-card">
             <div class="player-head">
@@ -885,11 +1061,17 @@ function hCard(p, pi) {
                 <input class="player-name-inp" type="text"
                     data-pi="${pi}" data-field="name"
                     value="${esc(p.name)}" placeholder="Nome do atleta">
+                <div class="cur-toggle" style="margin-left:auto;width:76px;flex-shrink:0">
+                    <button class="cur-btn${p.currency === 'BRL' ? ' active' : ''}"
+                        data-pi="${pi}" data-field="playerCurrency" data-v="BRL">R$</button>
+                    <button class="cur-btn${p.currency === 'EUR' ? ' active' : ''}"
+                        data-pi="${pi}" data-field="playerCurrency" data-v="EUR">€ EUR</button>
+                </div>
             </div>
             <div class="player-body">
                 <label class="f-label">Valor de Transferência (Bruto)</label>
                 <div class="field-wrap gross-field">
-                    <span class="field-prefix">R$</span>
+                    <span class="field-prefix">${pfx}</span>
                     <input class="field-inp" type="number"
                         data-pi="${pi}" data-field="gross"
                         value="${p.gross ?? ''}" placeholder="0,00"
@@ -908,10 +1090,10 @@ function hCard(p, pi) {
                                 <button class="ded-mode-btn${d.mode === 'pct' ? ' active' : ''}"
                                     data-pi="${pi}" data-dk="${dk}" data-field="dedMode" data-v="pct">%</button>
                                 <button class="ded-mode-btn${d.mode === 'fixed' ? ' active' : ''}"
-                                    data-pi="${pi}" data-dk="${dk}" data-field="dedMode" data-v="fixed">R$</button>
+                                    data-pi="${pi}" data-dk="${dk}" data-field="dedMode" data-v="fixed">${pfx}</button>
                             </div>
                             <div class="ded-value-wrap">
-                                <span class="ded-prefix">${d.mode === 'pct' ? '%' : 'R$'}</span>
+                                <span class="ded-prefix">${d.mode === 'pct' ? '%' : pfx}</span>
                                 <input class="ded-value-inp" type="number"
                                     data-pi="${pi}" data-dk="${dk}"
                                     data-field="${d.mode === 'pct' ? 'dedRate' : 'dedValue'}"
@@ -920,6 +1102,14 @@ function hCard(p, pi) {
                                     min="0" ${d.mode === 'pct' ? 'max="100" step="0.01"' : 'step="100000"'}
                                     ${d.on ? '' : 'tabindex="-1"'}>
                             </div>
+                            <button class="ded-note-btn${d.comment ? ' has-note' : ''}"
+                                data-pi="${pi}" data-dk="${dk}" data-field="dedNoteToggle"
+                                title="${d.comment ? esc(d.comment) : 'Adicionar comentário'}">✎</button>
+                        </div>
+                        <div class="ded-comment-area" id="ded-note-${pi}-${dk}">
+                            <textarea class="ded-comment-ta"
+                                data-pi="${pi}" data-dk="${dk}" data-field="dedComment"
+                                placeholder="Comentário / premissas…">${esc(d.comment)}</textarea>
                         </div>
                     `).join('')}
                 </div>
@@ -932,32 +1122,42 @@ function hCard(p, pi) {
 
 // ── Results per player ──
 function hResults(c, p) {
-    const { gross, net, totalDed, dedBreak, taxC1, taxC2, savings, netFinalC1, netFinalC2 } = c;
+    const { grossLocal, grossBRL, netLocal, netBRL, totalDedLocal, totalDedBRL, dedBreak, taxC1, taxC2, savings, netFinalC1, netFinalC2 } = c;
     const activeDeds = Object.entries(p.deds).filter(([k,d]) => d.on && dedBreak[k] > 0);
+    const isEUR = p.currency === 'EUR';
+    const ptax  = S.ptax || 1;
+
+    const fmtAmt = (local, brl) => isEUR
+        ? `€ ${N(local)} <span style="color:var(--ink-4);font-size:10px">(R$ ${N(brl)})</span>`
+        : `R$ ${N(brl)}`;
 
     return `
         <div class="results-block">
             <div class="vsummary">
                 <div class="vrow">
                     <span class="vl">Valor Bruto</span>
-                    <span class="vv v-gross">R$ ${N(gross)}</span>
+                    <span class="vv v-gross">${fmtAmt(grossLocal, grossBRL)}</span>
                 </div>
-                ${activeDeds.map(([k,d]) => `
-                    <div class="vrow ded-line">
-                        <span class="vl">(−) ${esc(d.label)}</span>
-                        <span class="vv v-ded">R$ ${N(dedBreak[k])}</span>
-                    </div>
-                `).join('')}
+                ${activeDeds.map(([k,d]) => {
+                    const vL = dedBreak[k];
+                    const vB = isEUR ? vL * ptax : vL;
+                    return `
+                        <div class="vrow ded-line">
+                            <span class="vl">(−) ${esc(d.label)}</span>
+                            <span class="vv v-ded">${fmtAmt(vL, vB)}</span>
+                        </div>
+                    `;
+                }).join('')}
                 ${activeDeds.length ? `
                     <div class="vrow">
                         <span class="vl">Total Deduções</span>
-                        <span class="vv v-ded">R$ ${N(totalDed)}</span>
+                        <span class="vv v-ded">${fmtAmt(totalDedLocal, totalDedBRL)}</span>
                     </div>
                 ` : ''}
                 <hr class="vsep">
                 <div class="vrow">
                     <span class="vl" style="font-weight:600;color:var(--ink-secondary)">Valor Líquido</span>
-                    <span class="vv v-net">R$ ${N(net)}</span>
+                    <span class="vv v-net">${fmtAmt(netLocal, netBRL)}</span>
                 </div>
             </div>
 
@@ -965,7 +1165,7 @@ function hResults(c, p) {
                 <div class="sc-eyebrow sc-eyebrow-c1">Cenário 1 — Trib. sobre o Bruto</div>
                 <div class="sc-line">
                     <span class="sl">Base de cálculo</span>
-                    <span class="sv">R$ ${N(gross)}</span>
+                    <span class="sv">R$ ${N(grossBRL)}</span>
                 </div>
                 <div class="sc-line">
                     <span class="sl">Alíquota</span>
@@ -986,7 +1186,7 @@ function hResults(c, p) {
                 <div class="sc-eyebrow sc-eyebrow-c2">Cenário 2 — Trib. sobre o Líquido</div>
                 <div class="sc-line">
                     <span class="sl">Base de cálculo</span>
-                    <span class="sv">R$ ${N(net)}</span>
+                    <span class="sv">R$ ${N(netBRL)}</span>
                 </div>
                 <div class="sc-line">
                     <span class="sl">Alíquota</span>
@@ -1021,12 +1221,12 @@ function hResults(c, p) {
 // ── Totals band ──
 function hTotalsBand(active) {
     const cs  = active.map(p => calcPlayer(p));
-    const g   = cs.reduce((s,c) => s+c.gross,    0);
-    const ded = cs.reduce((s,c) => s+c.totalDed,  0);
-    const net = cs.reduce((s,c) => s+c.net,       0);
-    const t1  = cs.reduce((s,c) => s+c.taxC1,     0);
-    const t2  = cs.reduce((s,c) => s+c.taxC2,     0);
-    const sav = cs.reduce((s,c) => s+c.savings,   0);
+    const g   = cs.reduce((s,c) => s+c.grossBRL,    0);
+    const ded = cs.reduce((s,c) => s+c.totalDedBRL,  0);
+    const net = cs.reduce((s,c) => s+c.netBRL,       0);
+    const t1  = cs.reduce((s,c) => s+c.taxC1,        0);
+    const t2  = cs.reduce((s,c) => s+c.taxC2,        0);
+    const sav = cs.reduce((s,c) => s+c.savings,      0);
     return `
         <div class="totals-band">
             <div class="tb-item">
@@ -1071,9 +1271,9 @@ function hSummary(active) {
         return `
             <tr>
                 <td>${esc(p.name)}</td>
-                <td class="td-warn">R$ ${N(c.gross)}</td>
-                <td class="td-neg">−R$ ${N(c.totalDed)}</td>
-                <td>R$ ${N(c.net)}</td>
+                <td class="td-warn">R$ ${N(c.grossBRL)}</td>
+                <td class="td-neg">−R$ ${N(c.totalDedBRL)}</td>
+                <td>R$ ${N(c.netBRL)}</td>
                 <td class="td-neg">R$ ${N(c.taxC1)}</td>
                 <td class="td-neg">${P(S.aliq)}</td>
                 <td class="td-pos">R$ ${N(c.taxC2)}</td>
@@ -1084,12 +1284,12 @@ function hSummary(active) {
     }).join('');
 
     const cs  = active.map(p => calcPlayer(p));
-    const g   = cs.reduce((s,c) => s+c.gross,   0);
-    const ded = cs.reduce((s,c) => s+c.totalDed, 0);
-    const net = cs.reduce((s,c) => s+c.net,      0);
-    const t1  = cs.reduce((s,c) => s+c.taxC1,    0);
-    const t2  = cs.reduce((s,c) => s+c.taxC2,    0);
-    const sav = cs.reduce((s,c) => s+c.savings,  0);
+    const g   = cs.reduce((s,c) => s+c.grossBRL,    0);
+    const ded = cs.reduce((s,c) => s+c.totalDedBRL,  0);
+    const net = cs.reduce((s,c) => s+c.netBRL,       0);
+    const t1  = cs.reduce((s,c) => s+c.taxC1,        0);
+    const t2  = cs.reduce((s,c) => s+c.taxC2,        0);
+    const sav = cs.reduce((s,c) => s+c.savings,      0);
 
     return `
         <div class="summary-section">
@@ -1160,6 +1360,13 @@ function bindEvents() {
         });
     });
 
+    document.querySelectorAll('[data-field="playerCurrency"]').forEach(el => {
+        el.addEventListener('click', e => {
+            S.players[+e.target.dataset.pi].currency = e.target.dataset.v;
+            render(); saveState();
+        });
+    });
+
     document.querySelectorAll('[data-field="dedOn"]').forEach(el => {
         el.addEventListener('change', e => {
             S.players[+e.target.dataset.pi].deds[e.target.dataset.dk].on = e.target.checked;
@@ -1189,6 +1396,54 @@ function bindEvents() {
             renderResults(); saveState();
         });
     });
+
+    document.querySelectorAll('[data-field="dedNoteToggle"]').forEach(el => {
+        el.addEventListener('click', e => {
+            const pi = e.currentTarget.dataset.pi;
+            const dk = e.currentTarget.dataset.dk;
+            const area = document.getElementById(`ded-note-${pi}-${dk}`);
+            if (area) {
+                area.classList.toggle('open');
+                if (area.classList.contains('open')) area.querySelector('textarea')?.focus();
+            }
+        });
+    });
+
+    document.querySelectorAll('[data-field="dedComment"]').forEach(el => {
+        el.addEventListener('input', e => {
+            const pi = +e.target.dataset.pi;
+            const dk = e.target.dataset.dk;
+            S.players[pi].deds[dk].comment = e.target.value;
+            const btn = document.querySelector(`[data-field="dedNoteToggle"][data-pi="${pi}"][data-dk="${dk}"]`);
+            if (btn) {
+                btn.classList.toggle('has-note', !!e.target.value);
+                btn.title = e.target.value ? e.target.value : 'Adicionar comentário';
+            }
+            saveState();
+        });
+    });
+
+    // JS tooltip for note buttons with comments
+    const tooltip = document.getElementById('_tooltip');
+    if (tooltip) {
+        document.querySelectorAll('.ded-note-btn.has-note').forEach(btn => {
+            btn.addEventListener('mouseenter', () => {
+                const pi = +btn.dataset.pi;
+                const dk = btn.dataset.dk;
+                const comment = S.players[pi]?.deds[dk]?.comment;
+                if (!comment) return;
+                tooltip.textContent = comment;
+                tooltip.style.display = 'block';
+            });
+            btn.addEventListener('mousemove', e => {
+                tooltip.style.left = (e.clientX + 14) + 'px';
+                tooltip.style.top  = (e.clientY - 8)  + 'px';
+            });
+            btn.addEventListener('mouseleave', () => {
+                tooltip.style.display = 'none';
+            });
+        });
+    }
 }
 
 function updateSlider(slider) {
@@ -1201,12 +1456,14 @@ function updateSlider(slider) {
 // ================================================================
 async function init() {
     initDB();
+    const tasks = [fetchPTAX()];
     if (_db) {
         setStatus('loading');
-        await loadState();
+        tasks.push(loadState());
     } else {
         setStatus('offline');
     }
+    await Promise.all(tasks);
     render();
 }
 

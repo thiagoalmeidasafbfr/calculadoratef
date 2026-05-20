@@ -832,41 +832,24 @@ function setStatus(s) {
 }
 
 // ================================================================
-// PTAX (BCB — EUR e USD vs BRL)
+// Taxas de câmbio — AwesomeAPI (CORS habilitado)
 // ================================================================
 const _ptaxFmt = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
 
-async function _fetchRateForCurrency(moeda) {
-    const tryDate = async (d) => {
-        const mm   = String(d.getMonth() + 1).padStart(2, '0');
-        const dd   = String(d.getDate()).padStart(2, '0');
-        const yyyy = d.getFullYear();
-        const url  = `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaDia(moeda=@moeda,dataCotacao=@dataCotacao)?@moeda='${moeda}'&@dataCotacao='${mm}-${dd}-${yyyy}'&$top=1&$format=json&$select=cotacaoVenda`;
-        const res  = await fetch(url);
-        const json = await res.json();
-        if (json.value && json.value.length > 0)
-            return { rate: json.value[0].cotacaoVenda, dateStr: `${dd}/${mm}/${yyyy}` };
-        return null;
-    };
-    const today = new Date();
-    for (let i = 0; i < 7; i++) {
-        const d = new Date(today);
-        d.setDate(today.getDate() - i);
-        try {
-            const r = await tryDate(d);
-            if (r) return r;
-        } catch(e) { /* try previous day */ }
-    }
-    return null;
-}
-
 async function fetchPTAX() {
-    const [resEUR, resUSD] = await Promise.all([
-        _fetchRateForCurrency('EUR'),
-        _fetchRateForCurrency('USD'),
-    ]);
-    if (resEUR) { S.ptax.EUR = resEUR.rate; S.ptaxDate = resEUR.dateStr; }
-    if (resUSD)   S.ptax.USD = resUSD.rate;
+    try {
+        const res  = await fetch('https://economia.awesomeapi.com.br/json/last/EUR-BRL,USD-BRL');
+        const json = await res.json();
+        if (json.EURBRL) S.ptax.EUR = parseFloat(json.EURBRL.bid);
+        if (json.USDBRL) S.ptax.USD = parseFloat(json.USDBRL.bid);
+        // Date from API timestamp
+        if (json.EURBRL?.create_date) {
+            const parts = json.EURBRL.create_date.split(' ')[0].split('-');
+            S.ptaxDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+    } catch(e) {
+        console.warn('Falha ao buscar taxas de câmbio:', e);
+    }
     updatePTAXChip();
 }
 
@@ -1156,7 +1139,7 @@ function hResults(c, p) {
                 </div>
                 ${activeDeds.map(([k,d]) => {
                     const vL = dedBreak[k];
-                    const vB = isEUR ? vL * ptax : vL;
+                    const vB = isFX ? vL * ptaxRate(p.currency) : vL;
                     return `
                         <div class="vrow ded-line">
                             <span class="vl">(−) ${esc(d.label)}</span>

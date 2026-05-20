@@ -622,17 +622,16 @@
 // ================================================================
 const S = {
     aliq:    5.00,
-    fxRate:  5.80,
     players: Array.from({ length: 5 }, (_, i) => ({
         name: `Jogador ${i + 1}`,
-        gross: 0,
+        gross: null,
         deds: {
-            intermediacao: { on: false, value: 0, label: 'Intermediação',      tip: 'Comissão do agente/intermediário' },
-            sellon:        { on: false, value: 0, label: 'Sell-on Fee',        tip: 'Cláusula de revenda para o clube anterior' },
-            solidarity:    { on: false, value: 0, label: 'Solidariedade FIFA', tip: 'Art. 21 RSTP — distribuído aos clubes formadores' },
-            agenteBuyer:   { on: false, value: 0, label: 'Agente Comprador',   tip: 'Comissão do agente do clube comprador' },
-            outros1:       { on: false, value: 0, label: 'Outras taxas 1',     tip: 'Deduções adicionais' },
-            outros2:       { on: false, value: 0, label: 'Outras taxas 2',     tip: 'Deduções adicionais' },
+            intermediacao: { on: false, value: null, label: 'Intermediação',      tip: 'Comissão do agente/intermediário' },
+            sellon:        { on: false, value: null, label: 'Sell-on Fee',        tip: 'Cláusula de revenda para o clube anterior' },
+            solidarity:    { on: false, value: null, label: 'Solidariedade FIFA', tip: 'Art. 21 RSTP — distribuído aos clubes formadores' },
+            agenteBuyer:   { on: false, value: null, label: 'Agente Comprador',   tip: 'Comissão do agente do clube comprador' },
+            outros1:       { on: false, value: null, label: 'Outras taxas 1',     tip: 'Deduções adicionais' },
+            outros2:       { on: false, value: null, label: 'Outras taxas 2',     tip: 'Deduções adicionais' },
         }
     }))
 };
@@ -641,11 +640,11 @@ const S = {
 // CALC
 // ================================================================
 function calcPlayer(p) {
-    const gross = p.gross || 0;
+    const gross = p.gross ?? 0;
     let totalDed = 0;
     const dedBreak = {};
     for (const [k, d] of Object.entries(p.deds)) {
-        const v = d.on ? (d.value || 0) : 0;
+        const v = d.on ? (d.value ?? 0) : 0;
         dedBreak[k] = v;
         totalDed += v;
     }
@@ -740,13 +739,6 @@ function hConfig() {
                     <span class="field-suffix">%</span>
                 </div>
             </div>
-            <div class="config-divider"></div>
-            <div class="config-label config-fx">Câmbio EUR → BRL</div>
-            <div class="field-wrap">
-                <span class="field-prefix">R$ / €</span>
-                <input class="field-inp" type="number" id="fx-inp"
-                    value="${S.fxRate}" min="0" step="0.01" style="width:80px">
-            </div>
         </div>
     `;
 }
@@ -765,10 +757,10 @@ function hCard(p, pi) {
             <div class="player-body">
                 <label class="f-label">Valor de Transferência (Bruto)</label>
                 <div class="field-wrap gross-field">
-                    <span class="field-prefix">€</span>
+                    <span class="field-prefix">R$</span>
                     <input class="field-inp" type="number"
                         data-pi="${pi}" data-field="gross"
-                        value="${p.gross || ''}" placeholder="0,00"
+                        value="${p.gross ?? ''}" placeholder="0,00"
                         min="0" step="500000" style="width:100%">
                 </div>
 
@@ -781,10 +773,10 @@ function hCard(p, pi) {
                                 ${d.on ? 'checked' : ''}>
                             <span class="ded-name" title="${esc(d.tip)}">${esc(d.label)}</span>
                             <div class="ded-value-wrap">
-                                <span class="ded-prefix">€</span>
+                                <span class="ded-prefix">R$</span>
                                 <input class="ded-value-inp" type="number"
                                     data-pi="${pi}" data-dk="${dk}" data-field="dedValue"
-                                    value="${d.value || ''}" placeholder="0"
+                                    value="${d.value ?? ''}" placeholder="0"
                                     min="0" step="100000"
                                     ${d.on ? '' : 'tabindex="-1"'}>
                             </div>
@@ -808,24 +800,24 @@ function hResults(c, p) {
             <div class="vsummary">
                 <div class="vrow">
                     <span class="vl">Valor Bruto</span>
-                    <span class="vv v-gross">€ ${N(gross)}</span>
+                    <span class="vv v-gross">R$ ${N(gross)}</span>
                 </div>
                 ${activeDeds.map(([k,d]) => `
                     <div class="vrow ded-line">
                         <span class="vl">(−) ${esc(d.label)}</span>
-                        <span class="vv v-ded">€ ${N(dedBreak[k])}</span>
+                        <span class="vv v-ded">R$ ${N(dedBreak[k])}</span>
                     </div>
                 `).join('')}
                 ${activeDeds.length ? `
                     <div class="vrow">
                         <span class="vl">Total Deduções</span>
-                        <span class="vv v-ded">€ ${N(totalDed)}</span>
+                        <span class="vv v-ded">R$ ${N(totalDed)}</span>
                     </div>
                 ` : ''}
                 <hr class="vsep">
                 <div class="vrow">
                     <span class="vl" style="font-weight:600;color:var(--ink-secondary)">Valor Líquido</span>
-                    <span class="vv v-net">€ ${N(net)}</span>
+                    <span class="vv v-net">R$ ${N(net)}</span>
                 </div>
             </div>
 
@@ -833,7 +825,7 @@ function hResults(c, p) {
                 <div class="sc-eyebrow sc-eyebrow-c1">Cenário 1 — Trib. sobre o Bruto</div>
                 <div class="sc-line">
                     <span class="sl">Base de cálculo</span>
-                    <span class="sv">€ ${N(gross)}</span>
+                    <span class="sv">R$ ${N(gross)}</span>
                 </div>
                 <div class="sc-line">
                     <span class="sl">Alíquota</span>
@@ -842,11 +834,11 @@ function hResults(c, p) {
                 <div class="sc-sep"></div>
                 <div class="sc-line main">
                     <span class="sl">Tributo</span>
-                    <span class="sv sv-c1">€ ${N(taxC1)}</span>
+                    <span class="sv sv-c1">R$ ${N(taxC1)}</span>
                 </div>
                 <div class="sc-line">
                     <span class="sl">Líquido após tributo</span>
-                    <span class="sv">€ ${N(netFinalC1)}</span>
+                    <span class="sv">R$ ${N(netFinalC1)}</span>
                 </div>
             </div>
 
@@ -854,7 +846,7 @@ function hResults(c, p) {
                 <div class="sc-eyebrow sc-eyebrow-c2">Cenário 2 — Trib. sobre o Líquido</div>
                 <div class="sc-line">
                     <span class="sl">Base de cálculo</span>
-                    <span class="sv">€ ${N(net)}</span>
+                    <span class="sv">R$ ${N(net)}</span>
                 </div>
                 <div class="sc-line">
                     <span class="sl">Alíquota</span>
@@ -863,11 +855,11 @@ function hResults(c, p) {
                 <div class="sc-sep"></div>
                 <div class="sc-line main">
                     <span class="sl">Tributo</span>
-                    <span class="sv sv-c2">€ ${N(taxC2)}</span>
+                    <span class="sv sv-c2">R$ ${N(taxC2)}</span>
                 </div>
                 <div class="sc-line">
                     <span class="sl">Líquido após trib. + ded.</span>
-                    <span class="sv">€ ${N(netFinalC2)}</span>
+                    <span class="sv">R$ ${N(netFinalC2)}</span>
                 </div>
             </div>
 
@@ -875,7 +867,7 @@ function hResults(c, p) {
                 <div class="sc-eyebrow sc-eyebrow-sav">Economia Tributária</div>
                 <div class="sc-line">
                     <span class="sl">C1 − C2</span>
-                    <span class="sv sv-sav">${savings>=0?'+':''}€ ${N(savings)}</span>
+                    <span class="sv sv-sav">${savings>=0?'+':''}R$ ${N(savings)}</span>
                 </div>
                 <div class="sc-line">
                     <span class="sl">Redução</span>
@@ -899,32 +891,32 @@ function hTotalsBand(active) {
         <div class="totals-band">
             <div class="tb-item">
                 <div class="tb-eyebrow">Total Bruto</div>
-                <div class="tb-value">€ ${N(g)}</div>
-                <div class="tb-sub">${active.length} atleta${active.length>1?'s':''} · R$ ${N(g*S.fxRate)}</div>
+                <div class="tb-value">R$ ${N(g)}</div>
+                <div class="tb-sub">${active.length} atleta${active.length>1?'s':''}</div>
             </div>
             <div class="tb-item">
                 <div class="tb-eyebrow">Total Deduções</div>
-                <div class="tb-value tb-value-neg">€ ${N(ded)}</div>
+                <div class="tb-value tb-value-neg">R$ ${N(ded)}</div>
                 <div class="tb-sub">${g>0?P(ded/g*100):'—'} do bruto</div>
             </div>
             <div class="tb-item">
                 <div class="tb-eyebrow">Total Líquido</div>
-                <div class="tb-value">€ ${N(net)}</div>
+                <div class="tb-value">R$ ${N(net)}</div>
                 <div class="tb-sub">${g>0?P(net/g*100):'—'} do bruto</div>
             </div>
             <div class="tb-item">
                 <div class="tb-eyebrow">Tributos — C1 Bruto</div>
-                <div class="tb-value tb-value-neg">€ ${N(t1)}</div>
+                <div class="tb-value tb-value-neg">R$ ${N(t1)}</div>
                 <div class="tb-sub">Alíq. ${P(S.aliq)} s/ bruto</div>
             </div>
             <div class="tb-item">
                 <div class="tb-eyebrow">Tributos — C2 Líquido</div>
-                <div class="tb-value tb-value-pos">€ ${N(t2)}</div>
+                <div class="tb-value tb-value-pos">R$ ${N(t2)}</div>
                 <div class="tb-sub">Alíq. ${P(S.aliq)} s/ líquido</div>
             </div>
             <div class="tb-item">
                 <div class="tb-eyebrow">Economia Total</div>
-                <div class="tb-value tb-value-gold">€ ${N(sav)}</div>
+                <div class="tb-value tb-value-gold">R$ ${N(sav)}</div>
                 <div class="tb-sub">${t1>0?P(sav/t1*100):'—'} de redução</div>
             </div>
         </div>
@@ -939,15 +931,14 @@ function hSummary(active) {
         return `
             <tr>
                 <td>${esc(p.name)}</td>
-                <td class="td-warn">€ ${N(c.gross)}</td>
-                <td class="td-neg">−€ ${N(c.totalDed)}</td>
-                <td>€ ${N(c.net)}</td>
-                <td class="td-neg">€ ${N(c.taxC1)}</td>
+                <td class="td-warn">R$ ${N(c.gross)}</td>
+                <td class="td-neg">−R$ ${N(c.totalDed)}</td>
+                <td>R$ ${N(c.net)}</td>
+                <td class="td-neg">R$ ${N(c.taxC1)}</td>
                 <td class="td-neg">${P(S.aliq)}</td>
-                <td class="td-pos">€ ${N(c.taxC2)}</td>
+                <td class="td-pos">R$ ${N(c.taxC2)}</td>
                 <td class="td-pos">${P(S.aliq)}</td>
-                <td class="td-gold">${savSign}€ ${N(c.savings)}</td>
-                <td>R$ ${N(c.gross*S.fxRate)}</td>
+                <td class="td-gold">${savSign}R$ ${N(c.savings)}</td>
             </tr>
         `;
     }).join('');
@@ -967,30 +958,28 @@ function hSummary(active) {
                 <thead>
                     <tr>
                         <th style="text-align:left">Atleta</th>
-                        <th>Valor Bruto (€)</th>
-                        <th>Deduções (€)</th>
-                        <th>Valor Líquido (€)</th>
+                        <th>Valor Bruto (R$)</th>
+                        <th>Deduções (R$)</th>
+                        <th>Valor Líquido (R$)</th>
                         <th>Tributo C1</th>
                         <th>Alíq. C1</th>
                         <th>Tributo C2</th>
                         <th>Alíq. C2</th>
-                        <th>Economia (€)</th>
-                        <th>Bruto (R$)</th>
+                        <th>Economia (R$)</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${rows}
                     <tr class="total-row">
                         <td>Total</td>
-                        <td class="td-warn">€ ${N(g)}</td>
-                        <td class="td-neg">−€ ${N(ded)}</td>
-                        <td>€ ${N(net)}</td>
-                        <td class="td-neg">€ ${N(t1)}</td>
+                        <td class="td-warn">R$ ${N(g)}</td>
+                        <td class="td-neg">−R$ ${N(ded)}</td>
+                        <td>R$ ${N(net)}</td>
+                        <td class="td-neg">R$ ${N(t1)}</td>
                         <td class="td-neg">${P(S.aliq)}</td>
-                        <td class="td-pos">€ ${N(t2)}</td>
+                        <td class="td-pos">R$ ${N(t2)}</td>
                         <td class="td-pos">${P(S.aliq)}</td>
-                        <td class="td-gold">+€ ${N(sav)}</td>
-                        <td>R$ ${N(g*S.fxRate)}</td>
+                        <td class="td-gold">+R$ ${N(sav)}</td>
                     </tr>
                 </tbody>
             </table>
@@ -1017,9 +1006,6 @@ function bindEvents() {
         render();
     });
 
-    const fx = document.getElementById('fx-inp');
-    if (fx) fx.addEventListener('input', e => { S.fxRate = parseFloat(e.target.value) || 1; render(); });
-
     document.querySelectorAll('[data-field="name"]').forEach(el => {
         el.addEventListener('input', e => { S.players[+e.target.dataset.pi].name = e.target.value; });
         el.addEventListener('blur', () => render());
@@ -1027,7 +1013,8 @@ function bindEvents() {
 
     document.querySelectorAll('[data-field="gross"]').forEach(el => {
         el.addEventListener('input', e => {
-            S.players[+e.target.dataset.pi].gross = parseFloat(e.target.value) || 0;
+            const raw = e.target.value;
+            S.players[+e.target.dataset.pi].gross = raw === '' ? null : parseFloat(raw);
             render();
         });
     });
@@ -1041,7 +1028,8 @@ function bindEvents() {
 
     document.querySelectorAll('[data-field="dedValue"]').forEach(el => {
         el.addEventListener('input', e => {
-            S.players[+e.target.dataset.pi].deds[e.target.dataset.dk].value = parseFloat(e.target.value) || 0;
+            const raw = e.target.value;
+            S.players[+e.target.dataset.pi].deds[e.target.dataset.dk].value = raw === '' ? null : parseFloat(raw);
             render();
         });
     });

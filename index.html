@@ -95,10 +95,21 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream-page);color
 .items-total-lbl{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-4)}
 .items-total-val{font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:500;color:var(--warn)}
 
-/* sale row */
-.pcard-sale{display:flex;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--div);background:var(--cream-canvas);flex-wrap:wrap}
-.sale-lbl{font-family:'IBM Plex Mono',monospace;font-size:7.5px;font-weight:500;letter-spacing:.15em;text-transform:uppercase;color:var(--gold-deep);white-space:nowrap}
+/* sale rows */
+.pcard-sale{display:flex;flex-direction:column;gap:7px;padding:8px 12px;border-top:1px solid var(--div);background:var(--cream-canvas)}
+.sale-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sale-lbl{font-family:'IBM Plex Mono',monospace;font-size:7.5px;font-weight:500;letter-spacing:.15em;text-transform:uppercase;color:var(--gold-deep);white-space:nowrap;min-width:118px}
 .sale-brl-tag{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-4)}
+
+/* venda equation */
+.venda-eq{display:flex;align-items:stretch;flex-wrap:wrap;background:var(--dark);border-radius:0;overflow:hidden;border-top:1px solid rgba(243,238,226,.08)}
+.eq-cell{padding:8px 10px;text-align:center;border-right:1px solid rgba(243,238,226,.07);display:flex;flex-direction:column;justify-content:center}
+.eq-cell:last-child{border-right:none;flex:1}
+.eq-lbl{font-family:'IBM Plex Mono',monospace;font-size:7px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--on-dark-m);display:block;margin-bottom:3px;white-space:nowrap}
+.eq-val{font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:500;color:var(--on-dark);white-space:nowrap}
+.eq-op{padding:0 5px;color:var(--on-dark-m);font-size:14px;font-weight:300;align-self:center;flex-shrink:0}
+.eq-pos{color:#86efac!important}
+.eq-neg{color:#f9a0a0!important}
 
 /* mini results strip */
 .pcard-results{border-top:2px solid var(--div-m)}
@@ -318,7 +329,7 @@ function getRate(currency, ym) {
 // ═══════════════════════════════════════════════════════════════════
 let _pid=0, _iid=0;
 function newItem(label='Transfer Fee',currency='BRL'){return {id:++_iid,label,amount:null,currency};}
-function newPlayer(){return {id:++_pid,name:'',start:'',end:'',exit:'',saleAmount:null,saleCurrency:'BRL',items:[newItem('Transfer Fee'),newItem('Intermediação'),newItem('Luva')]};}
+function newPlayer(){return {id:++_pid,name:'',start:'',end:'',exit:'',saleAmount:null,saleCurrency:'BRL',sellOnPct:null,sellOnMethod:'maisValia',saleIntermed:null,saleIntermedCurrency:'BRL',items:[newItem('Transfer Fee'),newItem('Intermediação'),newItem('Luva')]};}
 let S = {players:[]};
 
 function saveLocal(){
@@ -434,15 +445,24 @@ function calcPlayer(p) {
     return {...it,rate,src,totalBRL,monthlyBRL,amortBRL,residBRL:totalBRL-amortBRL};
   });
 
-  let saleBRL=0,saleRate=1,saleSrc='',gain=null;
+  let saleBRL=0,saleRate=1,saleSrc='',gain=null,sellOnFee=0,maisValia=0,saleIntermedBRL=0;
   if (p.saleAmount&&exitD){
     const {rate,src}=getRate(p.saleCurrency,ymStr(p.exit));
     saleRate=rate; saleSrc=src;
     saleBRL=p.saleAmount*saleRate;
-    gain=saleBRL-totResid;
+
+    maisValia=Math.max(0,saleBRL-totAct);
+    const sellOnBase=(p.sellOnMethod==='bruto')?saleBRL:maisValia;
+    sellOnFee=p.sellOnPct?sellOnBase*(p.sellOnPct/100):0;
+
+    if (p.saleIntermed) {
+      const {rate:ir}=getRate(p.saleIntermedCurrency||'BRL',ymStr(p.exit));
+      saleIntermedBRL=p.saleIntermed*ir;
+    }
+    gain=saleBRL-sellOnFee-saleIntermedBRL-totResid;
   }
 
-  return {contractMonths,exitMonths,monthsRemaining,monthlyTotal,futureAmortAvoided,items,totAct,totAmort,totResid,saleBRL,saleRate,saleSrc,gain,pctAmort:totAct>0?totAmort/totAct*100:0};
+  return {contractMonths,exitMonths,monthsRemaining,monthlyTotal,futureAmortAvoided,items,totAct,totAmort,totResid,saleBRL,saleRate,saleSrc,gain,sellOnFee,maisValia,saleIntermedBRL,pctAmort:totAct>0?totAmort/totAct*100:0};
 }
 
 // monthly amort for a player in a given month (Date object, first of month)
@@ -474,7 +494,7 @@ function exportToExcel() {
   const wb=XLSX.utils.book_new();
 
   // Sheet 1: Resumo
-  const resumoHeader=['Atleta','Início','Fim','Total Ativado (R$)','Amort. Mensal (R$)','Meses Contrato','Meses Amortizados','Baixa/Residual (R$)','Receita da Venda (R$)','Ganho Econômico (R$)','Amort. Evitada (R$)'];
+  const resumoHeader=['Atleta','Início','Fim','Total Ativado (R$)','Amort. Mensal (R$)','Meses Contrato','Meses Amortizados','Baixa/Residual (R$)','Receita da Venda (R$)','Sell-on Fee (R$)','Intermed. Venda (R$)','Lucro/Prejuízo (R$)','Amort. Evitada (R$)'];
   const resumoRows=active.map(p=>{
     const c=calcPlayer(p);
     return [
@@ -483,6 +503,8 @@ function exportToExcel() {
       c.exitMonths??'',
       c.exitMonths!==null?+c.totResid.toFixed(2):'',
       c.saleBRL>0?+c.saleBRL.toFixed(2):'',
+      c.sellOnFee>0?+c.sellOnFee.toFixed(2):'',
+      c.saleIntermedBRL>0?+c.saleIntermedBRL.toFixed(2):'',
       c.gain!==null?+c.gain.toFixed(2):'',
       c.futureAmortAvoided!=null?+c.futureAmortAvoided.toFixed(2):'',
     ];
@@ -495,6 +517,8 @@ function exportToExcel() {
     '','',
     +calcsAll.filter(c=>c.exitMonths!==null).reduce((s,c)=>s+c.totResid,0).toFixed(2),
     +calcsAll.filter(c=>c.saleBRL>0).reduce((s,c)=>s+c.saleBRL,0).toFixed(2),
+    +calcsAll.reduce((s,c)=>s+(c.sellOnFee||0),0).toFixed(2),
+    +calcsAll.reduce((s,c)=>s+(c.saleIntermedBRL||0),0).toFixed(2),
     +calcsAll.filter(c=>c.gain!==null).reduce((s,c)=>s+c.gain,0).toFixed(2),
     +calcsAll.reduce((s,c)=>s+(c.futureAmortAvoided??0),0).toFixed(2),
   ]);
@@ -652,18 +676,48 @@ function hCard(p) {
     </div>
 
     <div class="pcard-sale">
-      <span class="sale-lbl">Receita da venda</span>
-      <div class="amt-wrap" style="width:160px">
-        <input class="amt-inp" type="number" min="0" step="100000"
-          data-pid="${p.id}" data-field="saleAmount"
-          value="${p.saleAmount??''}" placeholder="0">
+      <div class="sale-row">
+        <span class="sale-lbl">Receita da venda</span>
+        <div class="amt-wrap" style="width:140px">
+          <input class="amt-inp" type="number" min="0" step="100000"
+            data-pid="${p.id}" data-field="saleAmount"
+            value="${p.saleAmount??''}" placeholder="0">
+        </div>
+        <div class="cur-toggle" style="width:90px">
+          <button class="cur-btn${p.saleCurrency==='BRL'?' on':''}" data-pid="${p.id}" data-field="saleCur" data-v="BRL">R$</button>
+          <button class="cur-btn${p.saleCurrency==='EUR'?' on':''}" data-pid="${p.id}" data-field="saleCur" data-v="EUR">EUR</button>
+          <button class="cur-btn${p.saleCurrency==='USD'?' on':''}" data-pid="${p.id}" data-field="saleCur" data-v="USD">USD</button>
+        </div>
+        <span id="sale-brl-${p.id}" class="sale-brl-tag">${hSaleBRL(p)}</span>
       </div>
-      <div class="cur-toggle" style="width:90px">
-        <button class="cur-btn${p.saleCurrency==='BRL'?' on':''}" data-pid="${p.id}" data-field="saleCur" data-v="BRL">R$</button>
-        <button class="cur-btn${p.saleCurrency==='EUR'?' on':''}" data-pid="${p.id}" data-field="saleCur" data-v="EUR">EUR</button>
-        <button class="cur-btn${p.saleCurrency==='USD'?' on':''}" data-pid="${p.id}" data-field="saleCur" data-v="USD">USD</button>
+      <div class="sale-row">
+        <span class="sale-lbl">Sell-on fee</span>
+        <div class="amt-wrap" style="width:80px">
+          <input class="amt-inp" type="number" min="0" max="100" step="0.5"
+            data-pid="${p.id}" data-field="sellOnPct"
+            value="${p.sellOnPct??''}" placeholder="0">
+          <span style="padding:0 7px 0 2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-4);flex-shrink:0">%</span>
+        </div>
+        <div class="cur-toggle" style="width:116px">
+          <button class="cur-btn${(p.sellOnMethod||'maisValia')==='maisValia'?' on':''}" data-pid="${p.id}" data-field="sellOnMethod" data-v="maisValia">+ valia</button>
+          <button class="cur-btn${(p.sellOnMethod||'maisValia')==='bruto'?' on':''}" data-pid="${p.id}" data-field="sellOnMethod" data-v="bruto">Bruto</button>
+        </div>
+        <span id="sell-on-brl-${p.id}" class="sale-brl-tag">${hSellOnBRL(p)}</span>
       </div>
-      <span id="sale-brl-${p.id}" class="sale-brl-tag">${hSaleBRL(p)}</span>
+      <div class="sale-row">
+        <span class="sale-lbl">Intermed. venda</span>
+        <div class="amt-wrap" style="width:140px">
+          <input class="amt-inp" type="number" min="0" step="50000"
+            data-pid="${p.id}" data-field="saleIntermed"
+            value="${p.saleIntermed??''}" placeholder="0">
+        </div>
+        <div class="cur-toggle" style="width:90px">
+          <button class="cur-btn${(p.saleIntermedCurrency||'BRL')==='BRL'?' on':''}" data-pid="${p.id}" data-field="saleIntermedCur" data-v="BRL">R$</button>
+          <button class="cur-btn${(p.saleIntermedCurrency||'BRL')==='EUR'?' on':''}" data-pid="${p.id}" data-field="saleIntermedCur" data-v="EUR">EUR</button>
+          <button class="cur-btn${(p.saleIntermedCurrency||'BRL')==='USD'?' on':''}" data-pid="${p.id}" data-field="saleIntermedCur" data-v="USD">USD</button>
+        </div>
+        <span id="intermed-brl-${p.id}" class="sale-brl-tag">${hIntermedBRL(p)}</span>
+      </div>
     </div>
 
     <div class="pcard-results">
@@ -703,36 +757,60 @@ function hSaleBRL(p) {
   return p.saleCurrency!=='BRL'?`= R$ ${N(p.saleAmount*rate)}`:'';
 }
 
+function hSellOnBRL(p) {
+  if (!p.sellOnPct||!p.saleAmount||!p.exit) return '';
+  const c=calcPlayer(p);
+  if (!c||!c.saleBRL) return '';
+  const method=(p.sellOnMethod||'maisValia')==='bruto'?`${p.sellOnPct}% bruto`:`${p.sellOnPct}% +valia`;
+  return `= R$ ${N(c.sellOnFee)} <span style="font-size:9px;opacity:.65">(${method})</span>`;
+}
+
+function hIntermedBRL(p) {
+  if (!p.saleIntermed||!p.exit) return '';
+  const cur=p.saleIntermedCurrency||'BRL';
+  if (cur==='BRL') return '';
+  const {rate}=getRate(cur,ymStr(p.exit));
+  return `= R$ ${N(p.saleIntermed*rate)}`;
+}
+
 function hResults(p) {
   const c=calcPlayer(p);
   const totalAct=p.items.reduce((s,it)=>{const{rate}=getRate(it.currency,ymStr(p.start));return s+(it.amount??0)*rate;},0);
   if (!c || totalAct===0) {
     return `<div class="rs-empty">Preencha vigência e valores para ver os resultados</div>`;
   }
-  const monthly=c.monthlyTotal;
   const exitOk=c.exitMonths!==null;
+  const hasSale=c.gain!==null;
+  const eqSellOn=c.sellOnFee>0?`<span class="eq-op">−</span><div class="eq-cell"><span class="eq-lbl">Sell-on${(p.sellOnMethod||'maisValia')==='bruto'?` ${p.sellOnPct}% bruto`:` ${p.sellOnPct}% +valia`}</span><span class="eq-val" style="color:#f9a0a0">R$ ${N(c.sellOnFee)}</span></div>`:'';
+  const eqIntermed=c.saleIntermedBRL>0?`<span class="eq-op">−</span><div class="eq-cell"><span class="eq-lbl">Intermed. venda</span><span class="eq-val" style="color:#f9a0a0">R$ ${N(c.saleIntermedBRL)}</span></div>`:'';
   return `
   <div class="results-strip">
     <div class="rs-box">
       <span class="rs-lbl">Amort. Mensal</span>
-      <span class="rs-val rs-val-amber">R$ ${N(monthly)}</span>
-      <span class="rs-sub">${c.contractMonths} meses de contrato</span>
+      <span class="rs-val rs-val-amber">R$ ${N(c.monthlyTotal)}</span>
+      <span class="rs-sub">${c.contractMonths} meses contrato</span>
     </div>
-    ${exitOk?`
+    <div class="rs-box">
+      <span class="rs-lbl">Amort. Acumulada</span>
+      <span class="rs-val rs-val-amber">${exitOk?`R$ ${N(c.totAmort)}`:'—'}</span>
+      <span class="rs-sub">${exitOk?`até ${fmtD(p.exit)} · info`:'saída pendente'}</span>
+    </div>
     <div class="rs-box">
       <span class="rs-lbl">Baixa (residual)</span>
-      <span class="rs-val rs-val-gold">R$ ${N(c.totResid)}</span>
-      <span class="rs-sub">${c.exitMonths} meses amortizados · ${N0(c.pctAmort)}%</span>
+      <span class="rs-val rs-val-gold">${exitOk?`R$ ${N(c.totResid)}`:'—'}</span>
+      <span class="rs-sub">${exitOk?`${N0(c.pctAmort)}% amortizado`:'—'}</span>
     </div>
-    `:'<div class="rs-box"><span class="rs-lbl">Baixa</span><span class="rs-val" style="color:var(--ink-4)">—</span><span class="rs-sub">data de saída pendente</span></div>'}
-    ${c.gain!==null?`
-    <div class="rs-box">
-      <span class="rs-lbl">Ganho Econômico</span>
-      <span class="rs-val ${c.gain>=0?'rs-val-pos':'rs-val-neg'}">${c.gain>=0?'+':''}R$ ${N(c.gain)}</span>
-      <span class="rs-sub">receita − baixa</span>
-    </div>
-    `:`<div class="rs-box"><span class="rs-lbl">Ganho Econômico</span><span class="rs-val" style="color:var(--ink-4)">—</span><span class="rs-sub">informar receita da venda</span></div>`}
-  </div>`;
+  </div>
+  ${hasSale?`<div class="venda-eq">
+    <div class="eq-cell"><span class="eq-lbl">Receita</span><span class="eq-val">R$ ${N(c.saleBRL)}</span></div>
+    ${eqSellOn}
+    ${eqIntermed}
+    <span class="eq-op">−</span>
+    <div class="eq-cell"><span class="eq-lbl">Baixa</span><span class="eq-val" style="color:#fbbf24">R$ ${N(c.totResid)}</span></div>
+    <span class="eq-op">=</span>
+    <div class="eq-cell"><span class="eq-lbl">Lucro / Prejuízo</span><span class="eq-val ${c.gain>=0?'eq-pos':'eq-neg'}">${c.gain>=0?'+':''}R$ ${N(c.gain)}</span></div>
+  </div>
+  ${c.futureAmortAvoided!==null&&c.futureAmortAvoided>0?`<div style="padding:7px 12px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--ink-4);letter-spacing:.04em;background:var(--cream-canvas);border-top:1px solid var(--div)">Amort. evitada: <strong style="color:var(--pos)">R$ ${N(c.futureAmortAvoided)}</strong> · ${c.monthsRemaining} meses × R$ ${N(c.monthlyTotal)}/mês</div>`:''}`:``}`;
 }
 
 // ── Summary table ──────────────────────────────────────────────────
@@ -744,15 +822,17 @@ function hSummary() {
     const c=calcPlayer(p);
     const chipGain=c.gain!==null?(c.gain>=0?`<span class="chip-saída chip-pos">ganho</span>`:`<span class="chip-saída chip-neg">perda</span>`):'';
     const exitLabel=c.exitMonths!==null?`${c.exitMonths}/${c.contractMonths} meses <span class="chip-saída">${fmtD(p.exit)}</span>`:`— <span class="chip-saída" style="opacity:.4">sem data</span>`;
+    const custosVenda=(c.sellOnFee||0)+(c.saleIntermedBRL||0);
     return `<tr>
       <td>${esc(p.name||'Sem nome')}</td>
       <td class="td-dim">${fmtD(p.start)} → ${fmtD(p.end)}</td>
       <td class="td-warn">R$ ${N(c.totAct)}</td>
       <td class="td-amber">R$ ${N(c.monthlyTotal)}<span style="font-size:8px;color:var(--ink-4)">/mês</span></td>
       <td>${exitLabel}</td>
-      <td class="td-neg">${c.exitMonths!==null?`R$ ${N(c.totAmort)}`:'—'}</td>
+      <td class="td-dim">${c.exitMonths!==null?`R$ ${N(c.totAmort)}`:'—'}</td>
       <td class="td-gold">${c.exitMonths!==null?`R$ ${N(c.totResid)}`:'—'}</td>
       <td>${c.saleBRL>0?`R$ ${N(c.saleBRL)}`:'—'}</td>
+      <td class="td-neg">${custosVenda>0?`R$ ${N(custosVenda)}`:'—'}</td>
       <td class="${c.gain!==null?(c.gain>=0?'td-pos':'td-neg'):''}">${c.gain!==null?`${c.gain>=0?'+':''}R$ ${N(c.gain)} ${chipGain}`:'—'}</td>
       <td class="td-pos">${c.futureAmortAvoided!==null&&c.futureAmortAvoided>0?`R$ ${N(c.futureAmortAvoided)}`:'—'}</td>
     </tr>`;
@@ -765,6 +845,7 @@ function hSummary() {
     amort:calcs.filter(c=>c.exitMonths!==null).reduce((s,c)=>s+c.totAmort,0),
     res:  calcs.filter(c=>c.exitMonths!==null).reduce((s,c)=>s+c.totResid,0),
     sale: calcs.filter(c=>c.saleBRL>0).reduce((s,c)=>s+c.saleBRL,0),
+    custos:calcs.filter(c=>c.gain!==null).reduce((s,c)=>s+(c.sellOnFee||0)+(c.saleIntermedBRL||0),0),
     gain: calcs.filter(c=>c.gain!==null).reduce((s,c)=>s+c.gain,0),
     avoid:calcs.filter(c=>c.futureAmortAvoided!==null).reduce((s,c)=>s+(c.futureAmortAvoided??0),0),
   };
@@ -783,7 +864,8 @@ function hSummary() {
         <th>Amort. Acum.</th>
         <th>Baixa (Residual)</th>
         <th>Receita da Venda</th>
-        <th>Ganho Econômico</th>
+        <th>Custos Venda</th>
+        <th>Lucro / Prejuízo</th>
         <th>Amort. Evitada</th>
       </tr></thead>
       <tbody>${rows}</tbody>
@@ -793,9 +875,10 @@ function hSummary() {
         <td class="td-warn">R$ ${N(tt.act)}</td>
         <td class="td-amber">R$ ${N(tt.mo)}/mês</td>
         <td class="td-dim">—</td>
-        <td class="td-neg">${tt.amort>0?`R$ ${N(tt.amort)}`:'—'}</td>
+        <td class="td-dim">${tt.amort>0?`R$ ${N(tt.amort)}`:'—'}</td>
         <td class="td-gold">${tt.res>0?`R$ ${N(tt.res)}`:'—'}</td>
         <td>${tt.sale>0?`R$ ${N(tt.sale)}`:'—'}</td>
+        <td class="td-neg">${tt.custos>0?`R$ ${N(tt.custos)}`:'—'}</td>
         <td class="${hasGain?(tt.gain>=0?'td-pos':'td-neg'):''}">${hasGain?`${tt.gain>=0?'+':''}R$ ${N(tt.gain)}`:'—'}</td>
         <td class="td-pos">${tt.avoid>0?`R$ ${N(tt.avoid)}`:'—'}</td>
       </tr></tfoot>
@@ -941,8 +1024,8 @@ function bindEvents() {
   }, true);
 
   document.addEventListener('click', e => {
-    // Currency toggles
-    const t=e.target.closest('[data-field="itemCur"],[data-field="saleCur"]');
+    // Currency and method toggles
+    const t=e.target.closest('[data-field="itemCur"],[data-field="saleCur"],[data-field="sellOnMethod"],[data-field="saleIntermedCur"]');
     if(!t) return;
     const pid=+t.dataset.pid, iid=t.dataset.iid?+t.dataset.iid:null;
     const p=S.players.find(x=>x.id===pid);
@@ -959,9 +1042,22 @@ function bindEvents() {
     if(t.dataset.field==='saleCur') {
       p.saleCurrency=t.dataset.v;
       saveLocal();
-      // update toggle active state
       document.querySelectorAll(`[data-field="saleCur"][data-pid="${pid}"]`).forEach(b=>b.classList.toggle('on',b.dataset.v===p.saleCurrency));
-      document.getElementById(`sale-brl-${pid}`).textContent=hSaleBRL(p);
+      document.getElementById(`sale-brl-${pid}`).innerHTML=hSaleBRL(p);
+      refreshResults(pid);
+    }
+    if(t.dataset.field==='sellOnMethod') {
+      p.sellOnMethod=t.dataset.v;
+      saveLocal();
+      document.querySelectorAll(`[data-field="sellOnMethod"][data-pid="${pid}"]`).forEach(b=>b.classList.toggle('on',b.dataset.v===p.sellOnMethod));
+      document.getElementById(`sell-on-brl-${pid}`).innerHTML=hSellOnBRL(p);
+      refreshResults(pid);
+    }
+    if(t.dataset.field==='saleIntermedCur') {
+      p.saleIntermedCurrency=t.dataset.v;
+      saveLocal();
+      document.querySelectorAll(`[data-field="saleIntermedCur"][data-pid="${pid}"]`).forEach(b=>b.classList.toggle('on',b.dataset.v===(p.saleIntermedCurrency||'BRL')));
+      document.getElementById(`intermed-brl-${pid}`).innerHTML=hIntermedBRL(p);
       refreshResults(pid);
     }
   });
@@ -980,8 +1076,10 @@ function bindEvents() {
       if(field==='label')  it.label =t.value;
       if(field==='amount') it.amount=t.value===''?null:parseFloat(t.value);
     } else {
-      if(field==='name')       p.name=t.value;
-      if(field==='saleAmount') p.saleAmount=t.value===''?null:parseFloat(t.value);
+      if(field==='name')         p.name=t.value;
+      if(field==='saleAmount')   p.saleAmount=t.value===''?null:parseFloat(t.value);
+      if(field==='sellOnPct')    p.sellOnPct=t.value===''?null:parseFloat(t.value);
+      if(field==='saleIntermed') p.saleIntermed=t.value===''?null:parseFloat(t.value);
     }
     saveLocal();
 
@@ -1002,7 +1100,17 @@ function bindEvents() {
     }
     if(field==='saleAmount') {
       const brlEl=document.getElementById(`sale-brl-${pid}`);
-      if(brlEl) brlEl.textContent=hSaleBRL(p);
+      if(brlEl) brlEl.innerHTML=hSaleBRL(p);
+      const soEl=document.getElementById(`sell-on-brl-${pid}`);
+      if(soEl) soEl.innerHTML=hSellOnBRL(p);
+    }
+    if(field==='sellOnPct') {
+      const soEl=document.getElementById(`sell-on-brl-${pid}`);
+      if(soEl) soEl.innerHTML=hSellOnBRL(p);
+    }
+    if(field==='saleIntermed') {
+      const imEl=document.getElementById(`intermed-brl-${pid}`);
+      if(imEl) imEl.innerHTML=hIntermedBRL(p);
     }
     refreshResults(pid);
   });
@@ -1022,7 +1130,11 @@ function bindEvents() {
       if(container) container.innerHTML=p.items.map(it=>hItemRow(pid,it)).join('');
     }
     const brlEl=document.getElementById(`sale-brl-${pid}`);
-    if(brlEl) brlEl.textContent=hSaleBRL(p);
+    if(brlEl) brlEl.innerHTML=hSaleBRL(p);
+    const soEl=document.getElementById(`sell-on-brl-${pid}`);
+    if(soEl) soEl.innerHTML=hSellOnBRL(p);
+    const imEl=document.getElementById(`intermed-brl-${pid}`);
+    if(imEl) imEl.innerHTML=hIntermedBRL(p);
     refreshResults(pid);
   });
 }

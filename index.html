@@ -941,7 +941,8 @@ function hMonthly() {
     const rowTotal=active.reduce((s,p)=>{const{amort,status}=monthAmort(p,month);return s+(status==='active'||status==='exit'?amort:0);},0);
     const saved=monthPeak(month)-rowTotal;
     if(saved>0) cumulativeSaved+=saved;
-    const totalCls=rowTotal<peakTotal&&peakTotal>0?'td-total td-total-drop':'td-total';
+    const peak=monthPeak(month);
+    const totalCls=rowTotal<peak&&peak>0?'td-total td-total-drop':'td-total';
     const moStr=`${MONTHS_PT[month.getMonth()]}/${String(month.getFullYear()).slice(2)}`;
     const row=`<tr>
       <td>${moStr}</td>

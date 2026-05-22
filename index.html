@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=Cormorant+Garamond:ital,wght@1,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --gold:#be8c4a;--gold-soft:#dcc89a;--gold-deep:#7a6244;
@@ -196,6 +197,66 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 </datalist>
 <script>
 // ═══════════════════════════════════════════════════════════════════
+// SUPABASE
+// ═══════════════════════════════════════════════════════════════════
+const SUPA_URL   = 'https://upodpuuxpgjslzsjmznm.supabase.co';
+const SUPA_KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwb2RwdXV4cGdqc2x6c2ptem5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNzMwNzcsImV4cCI6MjA5NDg0OTA3N30.gkFpm2qoYNvfxunfYuYiLz7yMcf-Zu1103Xa2uI4KrA';
+const DB_TABLE   = 'tef_state';
+const DB_ROW     = 'baixa_v1';
+
+let _db        = null;
+let _saveTimer = null;
+
+function initDB() {
+  if (typeof supabase === 'undefined') return;
+  _db = supabase.createClient(SUPA_URL, SUPA_KEY);
+}
+
+function setStatus(s) {
+  const el = document.getElementById('save-status');
+  if (!el) return;
+  const MAP = {
+    loading: ['Carregando…',   'rgba(243,238,226,.38)'],
+    saving:  ['Salvando…',     'rgba(243,238,226,.38)'],
+    saved:   ['● Salvo',       '#86efac'],
+    error:   ['● Erro ao salvar', '#f87171'],
+    offline: ['● Offline',     'rgba(243,238,226,.25)'],
+  };
+  const [txt, clr] = MAP[s] ?? MAP.offline;
+  el.textContent = txt;
+  el.style.color = clr;
+}
+
+async function loadFromDB() {
+  if (!_db) return;
+  setStatus('loading');
+  const { data, error } = await _db
+    .from(DB_TABLE).select('state').eq('id', DB_ROW).maybeSingle();
+  if (error) { console.error('Supabase load:', error); setStatus('error'); return; }
+  if (data?.state) {
+    const d = data.state;
+    if (d.S?.players?.length) { S = d.S; _pid = d._pid || _pid; _iid = d._iid || _iid; }
+    saveLocal();   // keep localStorage in sync
+    renderAll();
+  }
+  setStatus('saved');
+}
+
+function saveToDB() {
+  if (!_db) return;
+  setStatus('saving');
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(async () => {
+    const { error } = await _db.from(DB_TABLE).upsert(
+      { id: DB_ROW, state: { S, _pid, _iid }, updated_at: new Date().toISOString() },
+      { onConflict: 'id' }
+    );
+    if (error) { console.error('Supabase save:', error); setStatus('error'); }
+    else setStatus('saved');
+  }, 700);
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // PTAX HISTÓRICO (xlsx Cotações, cotação mensal de fechamento)
 // ═══════════════════════════════════════════════════════════════════
 const FX_HIST = {
@@ -259,7 +320,10 @@ function newItem(label='Transfer Fee',currency='BRL'){return {id:++_iid,label,am
 function newPlayer(){return {id:++_pid,name:'',start:'',end:'',exit:'',saleAmount:null,saleCurrency:'BRL',items:[newItem('Transfer Fee'),newItem('Intermediação'),newItem('Luva')]};}
 let S = {players:[]};
 
-function saveLocal(){try{localStorage.setItem('gbai_v3',JSON.stringify({S,_pid,_iid}));}catch(e){}}
+function saveLocal(){
+  try{localStorage.setItem('gbai_v3',JSON.stringify({S,_pid,_iid}));}catch(e){}
+  saveToDB();
+}
 function loadLocal(){
   try{
     const d=JSON.parse(localStorage.getItem('gbai_v3')||'null');
@@ -399,6 +463,7 @@ function hHero() {
       <div class="hero-sub">Custo de aquisição · Amortização mensal · Ganho econômico na transferência</div>
     </div>
     <div class="hero-right">
+      <span id="save-status" style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;color:rgba(243,238,226,.25)"></span>
       <div id="ptax-chip" class="ptax-chip">
         <span>EUR</span><strong>—</strong><span style="opacity:.3">|</span><span>USD</span><strong>—</strong>
         <button class="ptax-refresh" onclick="fetchLivePTAX()">↻</button>
@@ -828,9 +893,20 @@ function bindEvents() {
 // INIT
 // ═══════════════════════════════════════════════════════════════════
 async function init() {
-  if(!loadLocal()) S.players=[newPlayer()];
+  initDB();
+
+  // Show something immediately from localStorage while DB loads
+  if (!loadLocal()) S.players = [newPlayer()];
   renderAll();
-  await fetchLivePTAX();
+
+  const tasks = [fetchLivePTAX()];
+  if (_db) {
+    setStatus('loading');
+    tasks.push(loadFromDB());
+  } else {
+    setStatus('offline');
+  }
+  await Promise.all(tasks);
 }
 init();
 </script>

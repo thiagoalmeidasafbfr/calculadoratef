@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora TEF — Glorioso Finance</title>
+    <title>Baixa de Intangível — Glorioso Finance</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=Cormorant+Garamond:ital,wght@1,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        /* ── DESIGN TOKENS ── */
         :root {
             --gold:          #be8c4a;
             --gold-soft:     #dcc89a;
@@ -31,15 +30,14 @@
             --var-neg:       #b91c1c;
             --var-neg-tint:  #fce8e8;
             --warn:          #b88a2a;
+            --amber:         #d97706;
             --divider:       rgba(26,20,16,0.08);
             --divider-mid:   rgba(26,20,16,0.13);
             --shadow-hair:   0 1px 0 rgba(40,32,22,0.04);
             --shadow-lift:   0 1px 0 rgba(40,32,22,0.04), 0 4px 12px -8px rgba(40,32,22,0.10);
             --r-xs: 4px; --r-sm: 8px; --r-md: 10px; --r-lg: 14px; --r-pill: 999px;
         }
-
         * { box-sizing: border-box; margin: 0; padding: 0; }
-
         body {
             font-family: 'Inter', system-ui, sans-serif;
             background: var(--cream-page);
@@ -49,669 +47,296 @@
             font-size: 15px;
         }
 
-        /* ── PAGE HERO ── */
+        /* ── HERO ── */
         .page-hero {
             background: var(--ink-primary);
             border-radius: var(--r-lg);
             margin: 16px 24px 0;
-            padding: clamp(20px, 3vw, 32px) clamp(20px, 3vw, 36px);
+            padding: clamp(20px,3vw,32px) clamp(20px,3vw,36px);
             display: flex;
             align-items: flex-end;
             justify-content: space-between;
             gap: 20px;
             flex-wrap: wrap;
         }
-        .hero-left {}
         .hero-eyebrow {
             font-family: 'IBM Plex Mono', monospace;
-            font-size: 9px;
-            font-weight: 500;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: var(--on-dark-dim);
-            margin-bottom: 8px;
+            font-size: 9px; font-weight: 500; letter-spacing: 0.18em;
+            text-transform: uppercase; color: var(--on-dark-dim); margin-bottom: 8px;
         }
         .hero-title {
             font-family: 'Fraunces', Georgia, serif;
-            font-size: clamp(1.6rem, 4.5vw, 3rem);
-            font-weight: 700;
-            line-height: 1.08;
-            letter-spacing: -0.025em;
-            color: var(--on-dark);
+            font-size: clamp(1.6rem,4.5vw,3rem); font-weight: 700;
+            line-height: 1.08; letter-spacing: -0.025em; color: var(--on-dark);
         }
         .hero-title em {
             font-family: 'Cormorant Garamond', Georgia, serif;
-            font-style: italic;
-            font-weight: 600;
-            color: var(--gold);
+            font-style: italic; font-weight: 600; color: var(--gold);
         }
         .hero-sub {
             font-family: 'IBM Plex Mono', monospace;
-            font-size: 10.5px;
-            color: var(--on-dark-dim);
-            letter-spacing: 0.04em;
-            margin-top: 10px;
+            font-size: 10.5px; color: var(--on-dark-dim);
+            letter-spacing: 0.04em; margin-top: 10px;
         }
         .hero-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-            padding-bottom: 4px;
+            display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; padding-bottom: 4px;
         }
         .hero-btn {
-            padding: 9px 18px;
-            border-radius: var(--r-pill);
+            padding: 9px 18px; border-radius: var(--r-pill);
             border: 1px solid rgba(243,238,226,0.18);
-            background: rgba(243,238,226,0.07);
-            color: var(--on-dark);
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 10px;
-            font-weight: 500;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: background 0.15s;
+            background: rgba(243,238,226,0.07); color: var(--on-dark);
+            font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+            font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase;
+            cursor: pointer; transition: background 0.15s;
         }
         .hero-btn:hover { background: rgba(243,238,226,0.13); }
 
-        /* ── WRAPPER ── */
+        /* ── LAYOUT ── */
         .page-body { padding: 20px 24px 32px; }
-
-        /* ── SECTION LABEL ── */
         .section-eyebrow {
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 9px;
-            font-weight: 500;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: var(--gold);
-            margin-bottom: 12px;
+            font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+            font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase;
+            color: var(--gold); margin-bottom: 12px;
         }
 
         /* ── CONFIG STRIP ── */
         .config-strip {
-            background: var(--cream-card);
-            border: 1px solid var(--divider);
-            border-radius: var(--r-md);
-            box-shadow: var(--shadow-hair);
-            padding: 18px 22px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 32px;
-            flex-wrap: wrap;
-        }
-        .config-group {
-            display: flex;
-            align-items: center;
-            gap: 14px;
+            background: var(--cream-card); border: 1px solid var(--divider);
+            border-radius: var(--r-md); box-shadow: var(--shadow-hair);
+            padding: 18px 22px; margin-bottom: 20px;
+            display: flex; align-items: center; gap: 28px; flex-wrap: wrap;
         }
         .config-label {
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 9px;
-            font-weight: 500;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: var(--gold-deep);
-            white-space: nowrap;
-        }
-        .aliq-slider {
-            -webkit-appearance: none;
-            width: 200px;
-            height: 4px;
-            border-radius: 2px;
-            background: linear-gradient(to right, var(--gold) 0%, var(--gold) var(--pct, 25%), var(--cream-inset) var(--pct, 25%), var(--cream-inset) 100%);
-            outline: none;
-            cursor: pointer;
-        }
-        .aliq-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 18px; height: 18px;
-            border-radius: 50%;
-            background: var(--cream-card);
-            border: 2px solid var(--gold);
-            cursor: pointer;
-            box-shadow: 0 1px 4px rgba(40,32,22,0.18);
-        }
-        .aliq-slider::-moz-range-thumb {
-            width: 18px; height: 18px;
-            border-radius: 50%;
-            background: var(--cream-card);
-            border: 2px solid var(--gold);
-            cursor: pointer;
+            font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+            font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase;
+            color: var(--gold-deep); white-space: nowrap;
         }
         .field-wrap {
-            display: flex;
-            align-items: center;
-            gap: 0;
-            background: var(--cream-card);
-            border: 1px solid var(--divider-mid);
-            border-radius: var(--r-sm);
-            overflow: hidden;
+            display: flex; align-items: center;
+            background: var(--cream-card); border: 1px solid var(--divider-mid);
+            border-radius: var(--r-sm); overflow: hidden;
             transition: border-color 0.15s, box-shadow 0.15s;
         }
-        .field-wrap:focus-within {
-            border-color: var(--gold);
-            box-shadow: 0 0 0 3px var(--gold-ring);
-        }
+        .field-wrap:focus-within { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-ring); }
         .field-prefix {
-            padding: 8px 10px;
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 10px;
-            font-weight: 500;
-            color: var(--gold-deep);
-            background: var(--cream-inset);
-            border-right: 1px solid var(--divider);
-            white-space: nowrap;
-            letter-spacing: 0.05em;
+            padding: 8px 10px; font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px; font-weight: 500; color: var(--gold-deep);
+            background: var(--cream-inset); border-right: 1px solid var(--divider);
+            white-space: nowrap; letter-spacing: 0.05em;
         }
         .field-inp {
-            background: transparent;
-            border: none;
-            outline: none;
-            padding: 8px 10px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--ink-primary);
-            min-width: 0;
+            background: transparent; border: none; outline: none;
+            padding: 8px 10px; font-family: 'JetBrains Mono', monospace;
+            font-size: 13px; font-weight: 500; color: var(--ink-primary);
         }
-        .aliq-big {
-            font-size: 22px;
-            font-weight: 500;
-            width: 72px;
-            text-align: right;
+        .info-chip {
+            display: flex; align-items: center; gap: 8px;
+            padding: 6px 14px; background: var(--cream-canvas);
+            border: 1px solid var(--divider); border-radius: var(--r-pill);
+            font-family: 'IBM Plex Mono', monospace; font-size: 10px;
             color: var(--gold-deep);
         }
-        .field-suffix {
-            padding: 8px 10px 8px 4px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 14px;
-            color: var(--ink-4);
-        }
-        .config-divider {
-            width: 1px;
-            height: 32px;
-            background: var(--divider);
-            flex-shrink: 0;
-        }
-        .config-fx { margin-left: auto; }
+        .info-chip strong { font-weight: 600; color: var(--ink-primary); }
 
         /* ── PLAYER GRID ── */
         .players-grid {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 14px;
-            margin-bottom: 20px;
-            align-items: start;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px; margin-bottom: 20px; align-items: start;
         }
 
         /* ── PLAYER CARD ── */
         .player-card {
-            background: var(--cream-card);
-            border: 1px solid var(--divider);
-            border-radius: var(--r-md);
-            box-shadow: var(--shadow-hair);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
+            background: var(--cream-card); border: 1px solid var(--divider);
+            border-radius: var(--r-md); box-shadow: var(--shadow-hair);
+            overflow: hidden; display: flex; flex-direction: column;
             transition: box-shadow 0.18s;
         }
         .player-card:hover { box-shadow: var(--shadow-lift); }
-
-        .player-head {
-            background: var(--ink-primary);
-            padding: 12px 14px 11px;
-        }
+        .player-head { background: var(--ink-primary); padding: 12px 14px 12px; }
         .player-num {
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 9px;
-            font-weight: 500;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: var(--on-dark-muted);
-            margin-bottom: 6px;
+            font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+            font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase;
+            color: var(--on-dark-muted); margin-bottom: 4px;
         }
-        .player-name-inp {
-            width: 100%;
-            background: rgba(243,238,226,0.08);
-            border: 1px solid rgba(243,238,226,0.14);
-            border-radius: var(--r-xs);
-            padding: 7px 10px;
-            font-family: 'Inter', sans-serif;
-            font-size: 13px;
-            font-weight: 600;
+        .player-name {
+            font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600;
             color: var(--on-dark);
-            outline: none;
-            transition: border-color 0.15s, background 0.15s;
         }
-        .player-name-inp:focus {
-            border-color: var(--gold);
-            background: rgba(243,238,226,0.13);
+        .player-contract {
+            font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+            color: var(--on-dark-dim); margin-top: 6px; letter-spacing: 0.04em;
         }
-        .player-name-inp::placeholder { color: var(--on-dark-muted); }
+        .player-body { padding: 14px; flex: 1; display: flex; flex-direction: column; gap: 12px; }
 
-        .player-body { padding: 14px; flex: 1; display: flex; flex-direction: column; }
-
-        /* value field */
-        .f-label {
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 9px;
-            font-weight: 500;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
+        /* ── ACTIVATED BLOCK ── */
+        .act-block {
+            background: var(--cream-canvas); border: 1px solid var(--divider);
+            border-radius: var(--r-sm); padding: 10px 12px;
+        }
+        .act-block-title {
+            font-family: 'IBM Plex Mono', monospace; font-size: 8.5px;
+            font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase;
+            color: var(--ink-4); margin-bottom: 8px;
+        }
+        .act-row {
+            display: flex; justify-content: space-between; align-items: baseline;
+            font-size: 11.5px; margin-bottom: 3px;
+        }
+        .act-row .al { color: var(--ink-4); }
+        .act-row .av {
+            font-family: 'JetBrains Mono', monospace; font-size: 11px;
+            font-weight: 500; color: var(--ink-secondary);
+        }
+        .act-total {
+            border-top: 1px solid var(--divider); margin-top: 6px; padding-top: 6px;
+            display: flex; justify-content: space-between; align-items: baseline;
+        }
+        .act-total .al {
+            font-family: 'IBM Plex Mono', monospace; font-size: 8px;
+            font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase;
             color: var(--gold-deep);
-            display: block;
-            margin-bottom: 5px;
         }
-        .gross-field { margin-bottom: 14px; }
-        .gross-field .field-inp { font-size: 15px; font-weight: 500; width: 100%; }
-
-        /* deductions */
-        .ded-block {
-            border-top: 1px solid var(--divider);
-            padding-top: 12px;
-            margin-bottom: 14px;
+        .act-total .av {
+            font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
+            font-weight: 500; color: var(--warn);
         }
-        .ded-block-title {
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 9px;
-            font-weight: 500;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: var(--ink-4);
-            margin-bottom: 10px;
-        }
-        .ded-row {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 7px;
-        }
-        .ded-chk {
-            width: 14px; height: 14px;
-            accent-color: var(--gold);
-            cursor: pointer;
-            margin: 0;
-            flex-shrink: 0;
-        }
-        .ded-name {
-            font-size: 11px;
-            color: var(--ink-secondary);
-            cursor: help;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            flex: 1;
-            min-width: 0;
-        }
-        .ded-row.off .ded-name { color: var(--ink-4); }
-        .ded-mode-toggle {
-            display: flex;
-            background: var(--cream-inset);
-            border: 1px solid var(--divider);
-            border-radius: var(--r-xs);
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-        .ded-mode-btn {
-            padding: 3px 7px;
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 9px;
-            font-weight: 500;
-            letter-spacing: 0.05em;
-            color: var(--ink-4);
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            transition: background 0.12s, color 0.12s;
-            line-height: 1.4;
-        }
-        .ded-mode-btn.active {
-            background: var(--ink-primary);
-            color: var(--gold-soft);
-        }
-        .ded-row.off .ded-mode-toggle { opacity: 0.30; pointer-events: none; }
-        .ded-value-wrap {
-            display: flex;
-            align-items: center;
-            background: var(--cream-canvas);
-            border: 1px solid var(--divider);
-            border-radius: var(--r-xs);
-            overflow: hidden;
-            transition: border-color 0.15s;
-            flex-shrink: 0;
-        }
-        .ded-value-wrap:focus-within { border-color: var(--gold); }
-        .ded-row.off .ded-value-wrap { opacity: 0.30; pointer-events: none; }
-        .ded-prefix {
-            padding: 3px 5px;
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 9px;
-            font-weight: 500;
-            color: var(--gold-deep);
-            background: var(--cream-inset);
-            border-right: 1px solid var(--divider);
-        }
-        .ded-value-inp {
-            background: transparent;
-            border: none;
-            outline: none;
-            padding: 3px 6px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 11px;
-            font-weight: 400;
-            color: var(--ink-primary);
-            text-align: right;
-            width: 68px;
+        .fx-note {
+            font-family: 'IBM Plex Mono', monospace; font-size: 8px;
+            color: var(--ink-4); margin-top: 4px; letter-spacing: 0.03em;
         }
 
-        /* Results */
-        .results-block { border-top: 1px solid var(--divider); padding-top: 14px; display: flex; flex-direction: column; gap: 8px; }
-
-        /* value summary lines */
-        .vsummary { margin-bottom: 4px; }
-        .vrow {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            font-size: 12px;
-            margin-bottom: 4px;
+        /* ── AMORT BLOCK ── */
+        .amort-block {
+            border-top: 1px solid var(--divider); padding-top: 12px;
         }
-        .vrow .vl { color: var(--ink-4); }
-        .vrow .vv {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            font-weight: 500;
+        .amort-row {
+            display: flex; justify-content: space-between; align-items: baseline;
+            font-size: 12px; margin-bottom: 6px;
         }
-        .vrow.ded-line .vl { font-size: 11px; color: var(--ink-4); padding-left: 10px; }
-        .vrow.ded-line .vv { font-size: 11px; color: var(--var-neg); }
-        .v-gross { color: var(--warn); }
-        .v-ded   { color: var(--var-neg); }
-        .v-net   { color: var(--var-pos); font-size: 13px !important; }
-        .vsep { border: none; border-top: 1px dashed var(--divider); margin: 7px 0; }
-
-        /* scenario cards */
-        .scard {
-            border-radius: var(--r-sm);
-            padding: 11px 12px;
-        }
-        .scard-c1   { background: var(--var-neg-tint); border: 1px solid rgba(185,28,28,0.14); }
-        .scard-c2   { background: var(--var-pos-tint); border: 1px solid rgba(22,101,52,0.14); }
-        .scard-sav  { background: var(--gold-tint);    border: 1px solid rgba(190,140,74,0.22); }
-
-        .sc-eyebrow {
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 8.5px;
-            font-weight: 500;
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
-            margin-bottom: 8px;
-        }
-        .sc-eyebrow-c1  { color: var(--var-neg); }
-        .sc-eyebrow-c2  { color: var(--var-pos); }
-        .sc-eyebrow-sav { color: var(--gold-deep); }
-
-        .sc-line {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            font-size: 11.5px;
-            margin-bottom: 4px;
-        }
-        .sc-line .sl { color: var(--ink-4); }
-        .sc-line .sv {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 11.5px;
-            font-weight: 400;
+        .amort-row .rl { color: var(--ink-4); font-size: 11px; }
+        .amort-row .rv {
+            font-family: 'JetBrains Mono', monospace; font-size: 11px;
             color: var(--ink-secondary);
         }
-        .sc-sep { border: none; border-top: 1px solid rgba(26,20,16,0.07); margin: 6px 0; }
-        .sc-line.main .sl { font-weight: 600; color: var(--ink-secondary); font-size: 12px; }
-        .sc-line.main .sv { font-size: 13px; font-weight: 500; }
-        .sv-c1  { color: var(--var-neg) !important; }
-        .sv-c2  { color: var(--var-pos) !important; }
-        .sv-sav { color: var(--gold-deep) !important; font-size: 14px !important; font-weight: 600 !important; }
+        .amort-row .rv-neg { color: var(--var-neg) !important; }
+        .amort-row .rv-amber { color: var(--amber) !important; }
+        .amort-sep { border: none; border-top: 1px dashed var(--divider); margin: 8px 0; }
 
-        .player-empty {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 28px 12px;
-            font-size: 12px;
-            color: var(--ink-4);
-            text-align: center;
-            font-style: italic;
+        /* ── BAIXA HIGHLIGHT ── */
+        .baixa-card {
+            background: var(--ink-primary); border-radius: var(--r-sm);
+            padding: 12px 14px;
+        }
+        .baixa-eyebrow {
+            font-family: 'IBM Plex Mono', monospace; font-size: 8.5px;
+            font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase;
+            color: var(--on-dark-muted); margin-bottom: 8px;
+        }
+        .baixa-row {
+            display: flex; justify-content: space-between; align-items: baseline;
+            font-size: 11.5px; margin-bottom: 4px;
+        }
+        .baixa-row .bl { color: var(--on-dark-dim); }
+        .baixa-row .bv {
+            font-family: 'JetBrains Mono', monospace; font-size: 11px;
+            color: rgba(243,238,226,0.7);
+        }
+        .baixa-sep { border: none; border-top: 1px solid rgba(243,238,226,0.08); margin: 7px 0; }
+        .baixa-main {
+            display: flex; justify-content: space-between; align-items: baseline;
+        }
+        .baixa-main .bl {
+            font-weight: 600; color: var(--on-dark); font-size: 12px;
+        }
+        .baixa-main .bv {
+            font-family: 'JetBrains Mono', monospace; font-size: 16px;
+            font-weight: 500; color: var(--gold-soft) !important;
+        }
+
+        /* ── DAILY RATE ── */
+        .daily-tag {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+            color: var(--ink-4); letter-spacing: 0.04em;
+        }
+        .daily-val {
+            font-family: 'JetBrains Mono', monospace; font-size: 10px;
+            font-weight: 500; color: var(--gold-deep);
         }
 
         /* ── TOTALS BAND ── */
         .totals-band {
-            background: var(--ink-primary);
-            border-radius: var(--r-lg);
-            padding: 20px 28px;
-            margin-bottom: 20px;
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 0;
+            background: var(--ink-primary); border-radius: var(--r-lg);
+            padding: 20px 28px; margin-bottom: 20px;
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 0;
         }
-        .tb-item {
-            padding: 0 20px;
-            text-align: center;
-        }
+        .tb-item { padding: 0 20px; text-align: center; }
         .tb-item + .tb-item { border-left: 1px solid rgba(243,238,226,0.08); }
         .tb-item:first-child { padding-left: 0; text-align: left; }
         .tb-eyebrow {
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 8.5px;
-            font-weight: 500;
-            letter-spacing: 0.16em;
-            text-transform: uppercase;
-            color: var(--on-dark-muted);
-            margin-bottom: 6px;
+            font-family: 'IBM Plex Mono', monospace; font-size: 8.5px;
+            font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase;
+            color: var(--on-dark-muted); margin-bottom: 6px;
         }
         .tb-value {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 15px;
-            font-weight: 500;
-            color: var(--on-dark);
-            line-height: 1.1;
+            font-family: 'JetBrains Mono', monospace; font-size: 15px;
+            font-weight: 500; color: var(--on-dark); line-height: 1.1;
         }
-        .tb-sub {
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 9px;
-            color: var(--on-dark-muted);
-            margin-top: 4px;
-        }
+        .tb-sub { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--on-dark-muted); margin-top: 4px; }
         .tb-value-neg  { color: #f9a0a0; }
         .tb-value-pos  { color: #86efac; }
         .tb-value-gold { color: var(--gold-soft); }
+        .tb-value-amber { color: #fcd34d; }
 
         /* ── SUMMARY TABLE ── */
         .summary-section {
-            background: var(--cream-card);
-            border: 1px solid var(--divider);
-            border-radius: var(--r-md);
-            box-shadow: var(--shadow-hair);
-            padding: 20px 24px;
-            margin-bottom: 24px;
-            overflow-x: auto;
+            background: var(--cream-card); border: 1px solid var(--divider);
+            border-radius: var(--r-md); box-shadow: var(--shadow-hair);
+            padding: 20px 24px; margin-bottom: 24px; overflow-x: auto;
         }
-        .summary-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 14px;
-        }
+        .summary-table { width: 100%; border-collapse: collapse; margin-top: 14px; }
         .summary-table th {
-            padding: 9px 14px;
-            background: var(--tbl-head);
-            text-align: right;
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 8.5px;
-            font-weight: 500;
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
-            color: var(--gold-deep);
-            border-bottom: 2px solid var(--divider-mid);
-            white-space: nowrap;
+            padding: 9px 14px; background: var(--tbl-head);
+            text-align: right; font-family: 'IBM Plex Mono', monospace;
+            font-size: 8.5px; font-weight: 500; letter-spacing: 0.15em;
+            text-transform: uppercase; color: var(--gold-deep);
+            border-bottom: 2px solid var(--divider-mid); white-space: nowrap;
         }
         .summary-table th:first-child { text-align: left; border-radius: var(--r-xs) 0 0 0; }
         .summary-table th:last-child  { border-radius: 0 var(--r-xs) 0 0; }
         .summary-table td {
-            padding: 10px 14px;
-            border-bottom: 1px solid var(--divider);
-            text-align: right;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            color: var(--ink-secondary);
-            white-space: nowrap;
+            padding: 10px 14px; border-bottom: 1px solid var(--divider);
+            text-align: right; font-family: 'JetBrains Mono', monospace;
+            font-size: 12px; color: var(--ink-secondary); white-space: nowrap;
         }
         .summary-table td:first-child {
-            text-align: left;
-            font-family: 'Inter', sans-serif;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--ink-primary);
+            text-align: left; font-family: 'Inter', sans-serif;
+            font-size: 13px; font-weight: 600; color: var(--ink-primary);
         }
         .summary-table tr:last-child td { border-bottom: none; }
         .summary-table tbody tr:hover td { background: var(--cream-inset); }
         .summary-table .total-row td {
-            background: var(--tbl-head);
-            border-top: 2px solid var(--divider-mid);
-            font-weight: 500;
-            color: var(--ink-primary);
+            background: var(--tbl-head); border-top: 2px solid var(--divider-mid);
+            font-weight: 500; color: var(--ink-primary);
         }
         .summary-table .total-row td:first-child {
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 10px;
-            font-weight: 500;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
+            font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+            font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase;
             color: var(--gold-deep);
         }
         .td-neg  { color: var(--var-neg) !important; }
         .td-pos  { color: var(--var-pos) !important; }
         .td-gold { color: var(--gold-deep) !important; font-weight: 600 !important; }
         .td-warn { color: var(--warn) !important; }
-
-        /* chip */
-        .chip {
-            display: inline-block;
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 9px;
-            font-weight: 500;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            padding: 2px 8px;
-            border-radius: var(--r-xs);
-        }
-        .chip-pos { background: var(--var-pos-tint); color: var(--var-pos); }
-        .chip-neg { background: var(--var-neg-tint); color: var(--var-neg); }
-        .chip-gold { background: var(--gold-tint); color: var(--gold-deep); }
+        .td-amber { color: var(--amber) !important; }
 
         /* ── FOOTER ── */
         .footer {
-            text-align: center;
-            padding: 20px 24px;
-            font-size: 11.5px;
-            color: var(--ink-4);
+            text-align: center; padding: 20px 24px;
+            font-size: 11.5px; color: var(--ink-4);
             border-top: 1px solid var(--divider);
-        }
-
-        /* ── CURRENCY TOGGLE ── */
-        .cur-toggle {
-            display: flex;
-            background: rgba(243,238,226,0.08);
-            border: 1px solid rgba(243,238,226,0.14);
-            border-radius: var(--r-xs);
-            overflow: hidden;
-            margin-top: 8px;
-        }
-        .cur-btn {
-            flex: 1;
-            padding: 5px 0;
-            border: none;
-            background: transparent;
-            color: rgba(243,238,226,0.4);
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 9px;
-            font-weight: 500;
-            letter-spacing: 0.1em;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-        .cur-btn.active {
-            background: rgba(243,238,226,0.12);
-            color: var(--on-dark);
-        }
-
-        /* ── NOTE / COMMENT ── */
-        .ded-dot {
-            width: 7px; height: 7px;
-            border-radius: 50%;
-            background: transparent;
-            border: 1px solid rgba(243,238,226,0.18);
-            cursor: pointer;
-            flex-shrink: 0;
-            transition: all 0.15s;
-            padding: 0;
-            margin: 0;
-            outline: none;
-            display: inline-block;
-        }
-        .ded-dot:hover { border-color: var(--gold); background: rgba(212,175,55,0.18); }
-        .ded-dot.has-note { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 0 2px rgba(212,175,55,0.22); }
-        .ded-row.off .ded-dot { opacity: 0.35; }
-        .ded-comment-area {
-            display: none;
-            padding: 5px 0 2px 21px;
-        }
-        .ded-comment-area.open { display: block; }
-        .ded-comment-ta {
-            width: 100%; height: 48px;
-            background: var(--cream-canvas);
-            border: 1px solid var(--divider);
-            border-radius: var(--r-xs);
-            padding: 5px 8px;
-            font-family: 'Inter', sans-serif;
-            font-size: 11px; line-height: 1.4;
-            color: var(--ink-secondary);
-            resize: none; outline: none;
-        }
-        .ded-comment-ta:focus { border-color: var(--gold); }
-
-        /* ── PTAX chip ── */
-        .ptax-chip {
-            display: flex; align-items: center; gap: 8px;
-            padding: 6px 14px;
-            background: var(--cream-canvas);
-            border: 1px solid var(--divider);
-            border-radius: var(--r-pill);
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 10px; color: var(--gold-deep);
-        }
-        .ptax-chip strong { font-weight: 600; color: var(--ink-primary); }
-        .ptax-refresh {
-            border: none; background: transparent; cursor: pointer;
-            font-size: 12px; color: var(--ink-4); padding: 0;
-            transition: color 0.15s;
-        }
-        .ptax-refresh:hover { color: var(--gold); }
-
-        /* ── TOOLTIP (JS-driven) ── */
-        #_tooltip {
-            position: fixed; z-index: 9999; pointer-events: none;
-            display: none;
-            background: var(--ink-primary);
-            color: var(--on-dark);
-            font-family: 'Inter', sans-serif;
-            font-size: 11px; line-height: 1.5;
-            padding: 7px 11px;
-            border-radius: var(--r-sm);
-            max-width: 240px;
-            white-space: pre-wrap;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.28);
         }
 
         /* ── UTILS ── */
@@ -724,601 +349,373 @@
         ::-webkit-scrollbar-thumb:hover { background: var(--gold-soft); }
 
         @media (max-width: 1400px) {
-            .players-grid { grid-template-columns: repeat(3, 1fr); }
-            .totals-band  { grid-template-columns: repeat(3, 1fr); }
+            .players-grid  { grid-template-columns: repeat(2, 1fr); }
+            .totals-band   { grid-template-columns: repeat(3, 1fr); }
             .tb-item + .tb-item { border-left: none; }
             .tb-item:nth-child(3n+1) { padding-left: 0; text-align: left; }
         }
-        @media (max-width: 900px)  { .players-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 600px)  {
-            .players-grid { grid-template-columns: 1fr; }
-            .totals-band  { grid-template-columns: repeat(2, 1fr); }
+        @media (max-width: 700px) {
+            .players-grid  { grid-template-columns: 1fr; }
+            .totals-band   { grid-template-columns: repeat(2, 1fr); }
             .page-hero, .page-body { margin-left: 12px; margin-right: 12px; }
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-<div id="app"></div>
 
-
+<!-- ================================================================
+     DATA
+     ================================================================ -->
 <script>
-// ================================================================
-// SUPABASE
-// ================================================================
-const SUPABASE_URL = 'https://upodpuuxpgjslzsjmznm.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwb2RwdXV4cGdqc2x6c2ptem5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNzMwNzcsImV4cCI6MjA5NDg0OTA3N30.gkFpm2qoYNvfxunfYuYiLz7yMcf-Zu1103Xa2uI4KrA';
-const DB_TABLE  = 'tef_state';
-const DB_ROW_ID = 'default';
+// Contract periods supplied by the user
+// totalBRL = sum of all activated amounts converted to BRL using
+//   the cotações sheet rate for each item's lançamento month
+const PLAYERS = [
+    {
+        name: 'Matheus Martins',
+        contractStart: '2024-07-29',
+        contractEnd:   '2028-12-31',
+        contractDays:  1616,
+        totalBRL:      65156079.49,
+        fxLines: [
+            // EUR installments at different activation dates
+            { moeda: 'EUR', local: 2047502.00, brl:  2047502.00 * 6.0677, rateKey: '2024-09', rate: 6.0677 },
+            { moeda: 'EUR', local: 2047502.00, brl:  2047502.00 * 6.4269, rateKey: '2025-04', rate: 6.4269 },
+            { moeda: 'EUR', local: 2047502.00, brl:  2047502.00 * 6.2447, rateKey: '2025-09', rate: 6.2447 },
+            // Two future installments (2026-04 & 2026-09 → using 2026-04 rate)
+            { moeda: 'EUR', local: 4095004.00, brl:  4095004.00 * 5.8109, rateKey: '2026-04', rate: 5.8109 },
+            { moeda: 'BRL', local: 2991666.52, brl:  2991666.52,          rateKey: null,       rate: 1      },
+        ],
+    },
+    {
+        name: 'Danilo',
+        contractStart: '2025-07-18',
+        contractEnd:   '2029-07-31',
+        contractDays:  1474,
+        totalBRL:      166225800.00,
+        fxLines: [
+            { moeda: 'EUR', local: 26000000.00, brl: 26000000.00 * 6.3933, rateKey: '2025-07', rate: 6.3933 },
+        ],
+    },
+    {
+        name: 'Montoro',
+        contractStart: '2025-06-01',
+        contractEnd:   '2029-12-31',
+        contractDays:  1674,
+        totalBRL:      51985197.00,
+        fxLines: [
+            { moeda: 'USD', local: 9570000.00, brl: 9570000.00 * 5.4321, rateKey: '2025-06', rate: 5.4321 },
+        ],
+    },
+    {
+        name: 'Vitinho',
+        contractStart: '2024-08-30',
+        contractEnd:   '2029-08-28',
+        contractDays:  1824,
+        totalBRL:      53343600.00,
+        fxLines: [
+            { moeda: 'EUR', local: 8000000.00, brl: 8000000.00 * 6.0677, rateKey: '2024-09', rate: 6.0677 },
+            { moeda: 'BRL', local: 4802000.00, brl: 4802000.00,           rateKey: null,      rate: 1      },
+        ],
+    },
+];
 
-let _db = null;
-let _saveTimer = null;
+const TODAY_STR      = '2026-05-22';
+const DEFAULT_SALE   = '2026-07-15';
 
-function initDB() {
-    if (typeof supabase === 'undefined' || SUPABASE_URL.includes('SEU-PROJETO')) return;
-    _db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// ─── State ───────────────────────────────────────────────────────
+let S = { saleDate: DEFAULT_SALE };
+
+// ─── Utils ───────────────────────────────────────────────────────
+function parseDate(s) {
+    const [y, m, d] = s.split('-').map(Number);
+    return new Date(y, m - 1, d);
 }
-
-async function loadState() {
-    if (!_db) return;
-    setStatus('loading');
-    const { data, error } = await _db
-        .from(DB_TABLE).select('state').eq('id', DB_ROW_ID).maybeSingle();
-    if (error) { console.error('Supabase load error:', error); setStatus('error'); return; }
-    if (data?.state) {
-        const d = data.state;
-        if (d.aliq != null) S.aliq = d.aliq;
-        (d.players || []).forEach((src, i) => {
-            if (!S.players[i]) return;
-            const p = S.players[i];
-            if (src.name     != null) p.name     = src.name;
-            if (src.gross    != null) p.gross    = src.gross;
-            if (src.currency && ['BRL','EUR','USD'].includes(src.currency)) p.currency = src.currency;
-            Object.keys(p.deds).forEach(k => {
-                if (!src.deds?.[k]) return;
-                p.deds[k].on      = src.deds[k].on      ?? false;
-                p.deds[k].mode    = src.deds[k].mode    ?? 'pct';
-                p.deds[k].rate    = src.deds[k].rate    ?? null;
-                p.deds[k].value   = src.deds[k].value   ?? null;
-                p.deds[k].comment = src.deds[k].comment ?? '';
-            });
-        });
-    }
-    setStatus('saved');
+function daysBetween(a, b) {
+    return Math.round((b - a) / 86400000);
 }
+const N  = v => new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v ?? 0);
+const N0 = v => new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v ?? 0);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const fmtDate = s => { const [y,m,d] = s.split('-'); return `${d}/${m}/${y}`; };
 
-function saveState() {
-    if (!_db) return;
-    setStatus('saving');
-    clearTimeout(_saveTimer);
-    _saveTimer = setTimeout(async () => {
-        const payload = {
-            id:    DB_ROW_ID,
-            state: {
-                aliq:    S.aliq,
-                players: S.players.map(p => ({
-                    name:     p.name,
-                    gross:    p.gross,
-                    currency: p.currency,
-                    deds:     Object.fromEntries(
-                        Object.entries(p.deds).map(([k, d]) => [k, {
-                            on: d.on, mode: d.mode, rate: d.rate, value: d.value, comment: d.comment
-                        }])
-                    ),
-                })),
-            },
-            updated_at: new Date().toISOString(),
-        };
-        const { error } = await _db
-            .from(DB_TABLE).upsert(payload, { onConflict: 'id' });
-        if (error) { console.error('Supabase save error:', error); setStatus('error'); }
-        else setStatus('saved');
-    }, 700);
-}
-
-function setStatus(s) {
-    const el = document.getElementById('save-status');
-    if (!el) return;
-    const cfg = {
-        loading: ['Carregando…',     'rgba(243,238,226,0.38)'],
-        saving:  ['Salvando…',       'rgba(243,238,226,0.38)'],
-        saved:   ['● Salvo',         '#86efac'],
-        error:   ['● Erro ao salvar','#f87171'],
-        offline: ['● Offline',       'rgba(243,238,226,0.25)'],
-    };
-    const [text, color] = cfg[s] ?? cfg.offline;
-    el.textContent = text;
-    el.style.color = color;
-}
-
-// ================================================================
-// Taxas de câmbio — AwesomeAPI (CORS habilitado)
-// ================================================================
-const _ptaxFmt = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
-
-async function fetchPTAX() {
-    try {
-        const res  = await fetch('https://economia.awesomeapi.com.br/json/last/EUR-BRL,USD-BRL');
-        const json = await res.json();
-        if (json.EURBRL) S.ptax.EUR = parseFloat(json.EURBRL.bid);
-        if (json.USDBRL) S.ptax.USD = parseFloat(json.USDBRL.bid);
-        // Date from API timestamp
-        if (json.EURBRL?.create_date) {
-            const parts = json.EURBRL.create_date.split(' ')[0].split('-');
-            S.ptaxDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
-        }
-    } catch(e) {
-        console.warn('Falha ao buscar taxas de câmbio:', e);
-    }
-    updatePTAXChip();
-}
-
-function updatePTAXChip() {
-    const chip = document.getElementById('ptax-chip');
-    if (!chip) return;
-    const fEUR = S.ptax.EUR ? _ptaxFmt(S.ptax.EUR) : '—';
-    const fUSD = S.ptax.USD ? _ptaxFmt(S.ptax.USD) : '—';
-    chip.innerHTML = `
-        <span style="color:var(--ink-4)">PTAX</span>
-        <span>EUR</span><strong>${fEUR}</strong>
-        <span style="color:var(--divider)">|</span>
-        <span>USD</span><strong>${fUSD}</strong>
-        ${S.ptaxDate ? `<span style="color:var(--ink-4);font-size:9px">${S.ptaxDate}</span>` : ''}
-        <button class="ptax-refresh" title="Atualizar PTAX" onclick="fetchPTAX()">↻</button>
-    `;
-}
-
-// ================================================================
-// STATE
-// ================================================================
-const S = {
-    aliq:     5.00,
-    ptax:     { BRL: 1, EUR: null, USD: null },
-    ptaxDate: '',
-    players:  Array.from({ length: 5 }, (_, i) => ({
-        name:     `Jogador ${i + 1}`,
-        gross:    null,
-        currency: 'BRL',
-        deds: {
-            intermediacao: { on: false, mode: 'pct', rate: null, value: null, comment: '', label: 'Intermediação',      tip: 'Comissão do agente/intermediário' },
-            sellon:        { on: false, mode: 'pct', rate: null, value: null, comment: '', label: 'Sell-on Fee',        tip: 'Cláusula de revenda para o clube anterior' },
-            solidarity:    { on: false, mode: 'pct', rate: null, value: null, comment: '', label: 'Solidariedade FIFA', tip: 'Art. 21 RSTP — distribuído aos clubes formadores' },
-            agenteBuyer:   { on: false, mode: 'pct', rate: null, value: null, comment: '', label: 'Agente Comprador',   tip: 'Comissão do agente do clube comprador' },
-            outros1:       { on: false, mode: 'pct', rate: null, value: null, comment: '', label: 'Outras taxas 1',     tip: 'Deduções adicionais' },
-            outros2:       { on: false, mode: 'pct', rate: null, value: null, comment: '', label: 'Outras taxas 2',     tip: 'Deduções adicionais' },
-        }
-    }))
-};
-
-// ================================================================
-// CALC
-// ================================================================
-function ptaxRate(currency) {
-    return (currency === 'BRL') ? 1 : (S.ptax[currency] || 1);
-}
-
+// ─── Calculation ─────────────────────────────────────────────────
 function calcPlayer(p) {
-    const grossLocal = p.gross ?? 0;
-    const rate       = ptaxRate(p.currency);
-    const grossBRL   = p.currency === 'BRL' ? grossLocal : grossLocal * rate;
+    const start = parseDate(p.contractStart);
+    const end   = parseDate(p.contractEnd);
+    const today = parseDate(TODAY_STR);
+    const sale  = parseDate(S.saleDate);
 
-    let totalDedLocal = 0;
-    const dedBreak = {};
-    for (const [k, d] of Object.entries(p.deds)) {
-        let vLocal = 0;
-        if (d.on) {
-            vLocal = d.mode === 'pct'
-                ? grossLocal * (d.rate  ?? 0) / 100
-                : (d.value ?? 0);
-        }
-        dedBreak[k]    = vLocal;
-        totalDedLocal += vLocal;
-    }
-
-    const netLocal    = grossLocal - totalDedLocal;
-    const totalDedBRL = p.currency === 'BRL' ? totalDedLocal : totalDedLocal * rate;
-    const netBRL      = grossBRL - totalDedBRL;
-    const taxC1       = grossBRL * S.aliq / 100;
-    const taxC2       = netBRL   * S.aliq / 100;
+    const contractDays      = daysBetween(start, end);
+    const dailyAmort        = p.totalBRL / contractDays;
+    const daysToToday       = Math.max(0, daysBetween(start, today));
+    const daysToSale        = Math.max(0, daysBetween(start, sale));
+    const daysTodayToSale   = Math.max(0, daysBetween(today, sale));
+    const amortToToday      = daysToToday     * dailyAmort;
+    const amortRemaining    = daysTodayToSale * dailyAmort;
+    const totalAmortAtSale  = daysToSale      * dailyAmort;
+    const baixa             = p.totalBRL - totalAmortAtSale;
 
     return {
-        grossLocal, grossBRL,
-        netLocal,   netBRL,
-        totalDedLocal, totalDedBRL,
-        dedBreak,
-        taxC1, taxC2,
-        savings:    taxC1 - taxC2,
-        netFinalC1: grossBRL - taxC1,
-        netFinalC2: netBRL   - taxC2,
+        contractDays, dailyAmort, daysToToday, daysToSale, daysTodayToSale,
+        amortToToday, amortRemaining, totalAmortAtSale, baixa,
+        pct: p.totalBRL > 0 ? (totalAmortAtSale / p.totalBRL * 100) : 0,
     };
 }
 
-// ================================================================
-// FORMAT
-// ================================================================
-const N  = v => new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v || 0);
-const P  = v => (v || 0).toFixed(2).replace('.', ',') + '%';
-const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-
-// ================================================================
-// FOCUS PRESERVATION
-// ================================================================
-let _fk = null, _fsel = [0, 0];
-function saveFocus() {
-    const el = document.activeElement;
-    if (!el || el === document.body) { _fk = null; return; }
-    _fk = JSON.stringify(el.dataset);
-    try { _fsel = [el.selectionStart, el.selectionEnd]; } catch(e) { _fsel = [0,0]; }
-}
-function restoreFocus() {
-    if (!_fk) return;
-    const ds = JSON.parse(_fk);
-    const parts = Object.entries(ds).map(([k,v]) => `[data-${k}="${CSS.escape(v)}"]`).join('');
-    if (!parts) return;
-    const el = document.querySelector(parts);
-    if (el) { el.focus(); try { el.setSelectionRange(_fsel[0], _fsel[1]); } catch(e){} }
-}
-
-// ================================================================
-// RENDER
-// ================================================================
+// ─── Render ──────────────────────────────────────────────────────
 function render() {
-    saveFocus();
     document.getElementById('app').innerHTML = buildHTML();
     bindEvents();
-    restoreFocus();
 }
 
 function buildHTML() {
-    const active = S.players.filter(p => p.gross != null && p.gross > 0);
     return `
         ${hHero()}
         <div class="page-body">
             ${hConfig()}
-            <div class="section-eyebrow">Simulação por Atleta</div>
-            <div class="players-grid">${S.players.map((p,i) => hCard(p,i)).join('')}</div>
-            <div id="dynamic-bottom">${active.length ? hTotalsBand(active) + hSummary(active) : ''}</div>
+            <div class="section-eyebrow">Amortização por Atleta</div>
+            <div class="players-grid">${PLAYERS.map((p,i) => hCard(p,i)).join('')}</div>
+            ${hTotalsBand()}
+            ${hSummary()}
         </div>
-        <div class="footer">Calculadora TEF · Glorioso Finance · Para fins de planejamento tributário — consulte um especialista fiscal antes de decisões</div>
-        <div id="_tooltip"></div>
+        <div class="footer">
+            Glorioso Finance · Baixa de Ativo Intangível · Referência: ${fmtDate(S.saleDate)} ·
+            Amortização linear / pro-rata die · Taxas de câmbio: PTAX histórico (cotações mensais)
+        </div>
     `;
 }
 
-// Atualiza só os resultados sem tocar nos inputs — resolve o bug do cursor
-function renderResults() {
-    S.players.forEach((p, i) => {
-        const el = document.getElementById(`player-results-${i}`);
-        if (!el) return;
-        const c = calcPlayer(p);
-        el.innerHTML = (p.gross != null && p.gross > 0)
-            ? hResults(c, p)
-            : '<div class="player-empty">Insira o valor de transferência</div>';
-    });
-    const active = S.players.filter(p => p.gross != null && p.gross > 0);
-    const bottom = document.getElementById('dynamic-bottom');
-    if (bottom) bottom.innerHTML = active.length ? hTotalsBand(active) + hSummary(active) : '';
-}
-
-// ── Hero ──
 function hHero() {
     return `
         <div class="page-hero">
             <div class="hero-left">
-                <div class="hero-eyebrow">Glorioso Finance · Departamento Jurídico-Tributário</div>
-                <h1 class="hero-title">Calculadora <em>TEF</em></h1>
-                <div class="hero-sub">Tributação Específica em Transferências de Atletas de Futebol</div>
+                <div class="hero-eyebrow">Glorioso Finance · Departamento Financeiro</div>
+                <h1 class="hero-title">Baixa de <em>Intangível</em></h1>
+                <div class="hero-sub">Amortização acumulada e valor residual na data de transferência dos atletas</div>
             </div>
             <div class="hero-right">
-                <span id="save-status" style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:rgba(243,238,226,0.25);"></span>
                 <button class="hero-btn" onclick="window.print()">Imprimir</button>
             </div>
         </div>
     `;
 }
 
-// ── Config strip ──
 function hConfig() {
-    const min = 0, max = 20;
-    const pct = ((S.aliq - min) / (max - min) * 100).toFixed(1);
-    const fEUR = S.ptax.EUR ? _ptaxFmt(S.ptax.EUR) : '—';
-    const fUSD = S.ptax.USD ? _ptaxFmt(S.ptax.USD) : '—';
     return `
         <div class="config-strip">
-            <div class="config-label">Alíquota</div>
-            <div class="config-group">
-                <input class="aliq-slider" type="range" id="aliq-slider"
-                    min="${min}" max="${max}" step="0.01" value="${S.aliq}"
-                    style="--pct:${pct}%">
-                <div class="field-wrap">
-                    <input class="field-inp aliq-big" type="number" id="aliq-inp"
-                        min="${min}" max="${max}" step="0.01" value="${S.aliq}">
-                    <span class="field-suffix">%</span>
-                </div>
+            <div class="config-label">Data da Venda</div>
+            <div class="field-wrap">
+                <span class="field-prefix">Data</span>
+                <input class="field-inp" type="date" id="sale-date-inp"
+                    value="${S.saleDate}" min="2025-01-01" max="2030-12-31">
             </div>
-            <div id="ptax-chip" class="ptax-chip" style="margin-left:auto">
-                <span style="color:var(--ink-4)">PTAX</span>
-                <span>EUR</span><strong>${fEUR}</strong>
-                <span style="color:var(--divider)">|</span>
-                <span>USD</span><strong>${fUSD}</strong>
-                ${S.ptaxDate ? `<span style="color:var(--ink-4);font-size:9px">${S.ptaxDate}</span>` : ''}
-                <button class="ptax-refresh" title="Atualizar PTAX" onclick="fetchPTAX()">↻</button>
+            <div class="info-chip" style="margin-left:auto">
+                <span>Referência hoje</span>
+                <strong>${fmtDate(TODAY_STR)}</strong>
+            </div>
+            <div class="info-chip">
+                <span>Venda</span>
+                <strong id="sale-date-display">${fmtDate(S.saleDate)}</strong>
             </div>
         </div>
     `;
 }
 
-// ── Player card ──
 function hCard(p, pi) {
-    const c   = calcPlayer(p);
-    const pfx = p.currency === 'EUR' ? '€' : p.currency === 'USD' ? 'US$' : 'R$';
+    const c = calcPlayer(p);
+    const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const sd = parseDate(p.contractStart);
+    const ed = parseDate(p.contractEnd);
+    const periodStr = `${sd.getDate()} ${months[sd.getMonth()]} ${sd.getFullYear()} → ${ed.getDate()} ${months[ed.getMonth()]} ${ed.getFullYear()}`;
+
+    // FX lines grouped by currency
+    const byMoeda = {};
+    for (const fl of p.fxLines) {
+        if (!byMoeda[fl.moeda]) byMoeda[fl.moeda] = { local: 0, brl: 0, rates: [] };
+        byMoeda[fl.moeda].local += fl.local;
+        byMoeda[fl.moeda].brl   += fl.brl;
+        if (fl.rate !== 1) byMoeda[fl.moeda].rates.push(fl.rate);
+    }
+
+    const fxRows = Object.entries(byMoeda).map(([moeda, v]) => {
+        const sym  = moeda === 'EUR' ? '€' : moeda === 'USD' ? 'US$' : 'R$';
+        const note = v.rates.length > 0
+            ? (v.rates.length === 1
+                ? `cotação ${v.rates[0].toFixed(4)}`
+                : `cotações múltiplas: ${[...new Set(v.rates)].map(r => r.toFixed(4)).join(' / ')}`)
+            : '';
+        if (moeda === 'BRL') {
+            return `
+                <div class="act-row">
+                    <span class="al">BRL</span>
+                    <span class="av">R$ ${N(v.brl)}</span>
+                </div>`;
+        }
+        return `
+            <div class="act-row">
+                <span class="al">${moeda} ${sym} ${N(v.local)}</span>
+                <span class="av">R$ ${N(v.brl)}</span>
+            </div>
+            ${note ? `<div class="fx-note">↳ ${note}</div>` : ''}`;
+    }).join('');
+
     return `
         <div class="player-card">
             <div class="player-head">
                 <div class="player-num">Atleta ${pi + 1}</div>
-                <input class="player-name-inp" type="text"
-                    data-pi="${pi}" data-field="name"
-                    value="${esc(p.name)}" placeholder="Nome do atleta">
-                <div class="cur-toggle" style="margin-left:auto;width:104px;flex-shrink:0">
-                    <button class="cur-btn${p.currency === 'BRL' ? ' active' : ''}"
-                        data-pi="${pi}" data-field="playerCurrency" data-v="BRL">R$</button>
-                    <button class="cur-btn${p.currency === 'EUR' ? ' active' : ''}"
-                        data-pi="${pi}" data-field="playerCurrency" data-v="EUR">EUR</button>
-                    <button class="cur-btn${p.currency === 'USD' ? ' active' : ''}"
-                        data-pi="${pi}" data-field="playerCurrency" data-v="USD">USD</button>
-                </div>
+                <div class="player-name">${esc(p.name)}</div>
+                <div class="player-contract">${periodStr} · ${N0(c.contractDays)} dias</div>
             </div>
             <div class="player-body">
-                <label class="f-label">Valor de Transferência (Bruto)</label>
-                <div class="field-wrap gross-field">
-                    <span class="field-prefix">${pfx}</span>
-                    <input class="field-inp" type="number"
-                        data-pi="${pi}" data-field="gross"
-                        value="${p.gross ?? ''}" placeholder="0,00"
-                        min="0" step="500000" style="width:100%">
-                </div>
-
-                <div class="ded-block">
-                    <div class="ded-block-title">Deduções</div>
-                    ${Object.entries(p.deds).map(([dk, d]) => `
-                        <div class="ded-row${d.on ? '' : ' off'}">
-                            <input class="ded-chk" type="checkbox"
-                                data-pi="${pi}" data-dk="${dk}" data-field="dedOn"
-                                ${d.on ? 'checked' : ''}>
-                            <button class="ded-dot${d.comment ? ' has-note' : ''}"
-                                data-pi="${pi}" data-dk="${dk}" data-field="dedDot"
-                                title="${d.comment ? esc(d.comment) : 'Adicionar comentário'}"></button>
-                            <span class="ded-name" title="${esc(d.tip)}">${esc(d.label)}</span>
-                            <div class="ded-mode-toggle">
-                                <button class="ded-mode-btn${d.mode === 'pct' ? ' active' : ''}"
-                                    data-pi="${pi}" data-dk="${dk}" data-field="dedMode" data-v="pct">%</button>
-                                <button class="ded-mode-btn${d.mode === 'fixed' ? ' active' : ''}"
-                                    data-pi="${pi}" data-dk="${dk}" data-field="dedMode" data-v="fixed">${pfx}</button>
-                            </div>
-                            <div class="ded-value-wrap">
-                                <span class="ded-prefix">${d.mode === 'pct' ? '%' : pfx}</span>
-                                <input class="ded-value-inp" type="number"
-                                    data-pi="${pi}" data-dk="${dk}"
-                                    data-field="${d.mode === 'pct' ? 'dedRate' : 'dedValue'}"
-                                    value="${d.mode === 'pct' ? (d.rate ?? '') : (d.value ?? '')}"
-                                    placeholder="0"
-                                    min="0" ${d.mode === 'pct' ? 'max="100" step="0.01"' : 'step="100000"'}
-                                    ${d.on ? '' : 'tabindex="-1"'}>
-                            </div>
-                        </div>
-                        <div class="ded-comment-area" id="ded-note-${pi}-${dk}">
-                            <textarea class="ded-comment-ta"
-                                data-pi="${pi}" data-dk="${dk}" data-field="dedComment"
-                                placeholder="Comentário / premissas…">${esc(d.comment)}</textarea>
-                        </div>
-                    `).join('')}
-                </div>
-
-                <div id="player-results-${pi}">${p.gross != null && p.gross > 0 ? hResults(c, p) : '<div class="player-empty">Insira o valor de transferência</div>'}</div>
-            </div>
-        </div>
-    `;
-}
-
-// ── Results per player ──
-function hResults(c, p) {
-    const { grossLocal, grossBRL, netLocal, netBRL, totalDedLocal, totalDedBRL, dedBreak, taxC1, taxC2, savings, netFinalC1, netFinalC2 } = c;
-    const activeDeds = Object.entries(p.deds).filter(([k,d]) => d.on && dedBreak[k] > 0);
-    const isFX  = p.currency !== 'BRL';
-    const pfx   = p.currency === 'EUR' ? '€' : p.currency === 'USD' ? 'US$' : 'R$';
-
-    const fmtAmt = (local, brl) => isFX
-        ? `${pfx} ${N(local)} <span style="color:var(--ink-4);font-size:10px">(R$ ${N(brl)})</span>`
-        : `R$ ${N(brl)}`;
-
-    return `
-        <div class="results-block">
-            <div class="vsummary">
-                <div class="vrow">
-                    <span class="vl">Valor Bruto</span>
-                    <span class="vv v-gross">${fmtAmt(grossLocal, grossBRL)}</span>
-                </div>
-                ${activeDeds.map(([k,d]) => {
-                    const vL = dedBreak[k];
-                    const vB = isFX ? vL * ptaxRate(p.currency) : vL;
-                    return `
-                        <div class="vrow ded-line">
-                            <span class="vl">(−) ${esc(d.label)}</span>
-                            <span class="vv v-ded">${fmtAmt(vL, vB)}</span>
-                        </div>
-                    `;
-                }).join('')}
-                ${activeDeds.length ? `
-                    <div class="vrow">
-                        <span class="vl">Total Deduções</span>
-                        <span class="vv v-ded">${fmtAmt(totalDedLocal, totalDedBRL)}</span>
+                <div class="act-block">
+                    <div class="act-block-title">Ativo ativado</div>
+                    ${fxRows}
+                    <div class="act-total">
+                        <span class="al">Total ativado</span>
+                        <span class="av">R$ ${N(p.totalBRL)}</span>
                     </div>
-                ` : ''}
-                <hr class="vsep">
-                <div class="vrow">
-                    <span class="vl" style="font-weight:600;color:var(--ink-secondary)">Valor Líquido</span>
-                    <span class="vv v-net">${fmtAmt(netLocal, netBRL)}</span>
                 </div>
-            </div>
 
-            <div class="scard scard-c1">
-                <div class="sc-eyebrow sc-eyebrow-c1">Cenário 1 — Trib. sobre o Bruto</div>
-                <div class="sc-line">
-                    <span class="sl">Base de cálculo</span>
-                    <span class="sv">R$ ${N(grossBRL)}</span>
+                <div class="amort-block">
+                    <div class="amort-row">
+                        <span class="rl">Amort. diária</span>
+                        <span class="rv rv-amber">R$ ${N(c.dailyAmort)}/dia</span>
+                    </div>
+                    <div class="amort-row">
+                        <span class="rl">Já amortizado até ${fmtDate(TODAY_STR)}</span>
+                        <span class="rv rv-neg">(−) R$ ${N(c.amortToToday)}</span>
+                    </div>
+                    <div class="amort-row">
+                        <span class="rl">Amort. até ${fmtDate(S.saleDate)} (+${c.daysTodayToSale}d)</span>
+                        <span class="rv rv-neg">(−) R$ ${N(c.amortRemaining)}</span>
+                    </div>
+                    <hr class="amort-sep">
+                    <div class="amort-row">
+                        <span class="rl">Total amort. na venda (${N0(c.pct)}%)</span>
+                        <span class="rv rv-neg">(−) R$ ${N(c.totalAmortAtSale)}</span>
+                    </div>
                 </div>
-                <div class="sc-line">
-                    <span class="sl">Alíquota</span>
-                    <span class="sv">${P(S.aliq)}</span>
-                </div>
-                <div class="sc-sep"></div>
-                <div class="sc-line main">
-                    <span class="sl">Tributo</span>
-                    <span class="sv sv-c1">R$ ${N(taxC1)}</span>
-                </div>
-                <div class="sc-line">
-                    <span class="sl">Líquido após tributo</span>
-                    <span class="sv">R$ ${N(netFinalC1)}</span>
-                </div>
-            </div>
 
-            <div class="scard scard-c2">
-                <div class="sc-eyebrow sc-eyebrow-c2">Cenário 2 — Trib. sobre o Líquido</div>
-                <div class="sc-line">
-                    <span class="sl">Base de cálculo</span>
-                    <span class="sv">R$ ${N(netBRL)}</span>
+                <div class="baixa-card">
+                    <div class="baixa-eyebrow">Baixa do ativo intangível</div>
+                    <div class="baixa-row">
+                        <span class="bl">Ativado</span>
+                        <span class="bv">R$ ${N(p.totalBRL)}</span>
+                    </div>
+                    <div class="baixa-row">
+                        <span class="bl">Amort. acum.</span>
+                        <span class="bv">(−) R$ ${N(c.totalAmortAtSale)}</span>
+                    </div>
+                    <div class="baixa-sep"></div>
+                    <div class="baixa-main">
+                        <span class="bl">Valor residual</span>
+                        <span class="bv">R$ ${N(c.baixa)}</span>
+                    </div>
                 </div>
-                <div class="sc-line">
-                    <span class="sl">Alíquota</span>
-                    <span class="sv">${P(S.aliq)}</span>
-                </div>
-                <div class="sc-sep"></div>
-                <div class="sc-line main">
-                    <span class="sl">Tributo</span>
-                    <span class="sv sv-c2">R$ ${N(taxC2)}</span>
-                </div>
-                <div class="sc-line">
-                    <span class="sl">Líquido após trib. + ded.</span>
-                    <span class="sv">R$ ${N(netFinalC2)}</span>
-                </div>
-            </div>
 
-            <div class="scard scard-sav">
-                <div class="sc-eyebrow sc-eyebrow-sav">Economia Tributária</div>
-                <div class="sc-line">
-                    <span class="sl">C1 − C2</span>
-                    <span class="sv sv-sav">${savings>=0?'+':''}R$ ${N(savings)}</span>
-                </div>
-                <div class="sc-line">
-                    <span class="sl">Redução</span>
-                    <span class="sv" style="color:var(--gold-deep)">${taxC1 > 0 ? P(savings/taxC1*100) : '—'}</span>
+                <div class="daily-tag">
+                    ${N0(c.daysToToday)} dias amortizados · ${N0(c.daysToSale)} até a venda
                 </div>
             </div>
         </div>
     `;
 }
 
-// ── Totals band ──
-function hTotalsBand(active) {
-    const cs  = active.map(p => calcPlayer(p));
-    const g   = cs.reduce((s,c) => s+c.grossBRL,    0);
-    const ded = cs.reduce((s,c) => s+c.totalDedBRL,  0);
-    const net = cs.reduce((s,c) => s+c.netBRL,       0);
-    const t1  = cs.reduce((s,c) => s+c.taxC1,        0);
-    const t2  = cs.reduce((s,c) => s+c.taxC2,        0);
-    const sav = cs.reduce((s,c) => s+c.savings,      0);
+function hTotalsBand() {
+    const cs = PLAYERS.map(p => calcPlayer(p));
+    const totAtivado  = PLAYERS.reduce((s,p) => s + p.totalBRL,         0);
+    const totJaAmort  = cs.reduce((s,c) => s + c.amortToToday,    0);
+    const totRemAmort = cs.reduce((s,c) => s + c.amortRemaining,  0);
+    const totAmortSale= cs.reduce((s,c) => s + c.totalAmortAtSale,0);
+    const totBaixa    = cs.reduce((s,c) => s + c.baixa,           0);
+
     return `
         <div class="totals-band">
             <div class="tb-item">
-                <div class="tb-eyebrow">Total Bruto</div>
-                <div class="tb-value">R$ ${N(g)}</div>
-                <div class="tb-sub">${active.length} atleta${active.length>1?'s':''}</div>
+                <div class="tb-eyebrow">Total Ativado</div>
+                <div class="tb-value">R$ ${N(totAtivado)}</div>
+                <div class="tb-sub">${PLAYERS.length} atletas</div>
             </div>
             <div class="tb-item">
-                <div class="tb-eyebrow">Total Deduções</div>
-                <div class="tb-value tb-value-neg">R$ ${N(ded)}</div>
-                <div class="tb-sub">${g>0?P(ded/g*100):'—'} do bruto</div>
+                <div class="tb-eyebrow">Já Amortizado</div>
+                <div class="tb-value tb-value-neg">R$ ${N(totJaAmort)}</div>
+                <div class="tb-sub">até ${fmtDate(TODAY_STR)}</div>
             </div>
             <div class="tb-item">
-                <div class="tb-eyebrow">Total Líquido</div>
-                <div class="tb-value">R$ ${N(net)}</div>
-                <div class="tb-sub">${g>0?P(net/g*100):'—'} do bruto</div>
+                <div class="tb-eyebrow">A Amortizar</div>
+                <div class="tb-value tb-value-amber">R$ ${N(totRemAmort)}</div>
+                <div class="tb-sub">até ${fmtDate(S.saleDate)}</div>
             </div>
             <div class="tb-item">
-                <div class="tb-eyebrow">Tributos — C1 Bruto</div>
-                <div class="tb-value tb-value-neg">R$ ${N(t1)}</div>
-                <div class="tb-sub">Alíq. ${P(S.aliq)} s/ bruto</div>
+                <div class="tb-eyebrow">Total Amort. na Venda</div>
+                <div class="tb-value tb-value-neg">R$ ${N(totAmortSale)}</div>
+                <div class="tb-sub">acumulado</div>
             </div>
             <div class="tb-item">
-                <div class="tb-eyebrow">Tributos — C2 Líquido</div>
-                <div class="tb-value tb-value-pos">R$ ${N(t2)}</div>
-                <div class="tb-sub">Alíq. ${P(S.aliq)} s/ líquido</div>
-            </div>
-            <div class="tb-item">
-                <div class="tb-eyebrow">Economia Total</div>
-                <div class="tb-value tb-value-gold">R$ ${N(sav)}</div>
-                <div class="tb-sub">${t1>0?P(sav/t1*100):'—'} de redução</div>
+                <div class="tb-eyebrow">Baixa Total</div>
+                <div class="tb-value tb-value-gold">R$ ${N(totBaixa)}</div>
+                <div class="tb-sub">valor residual</div>
             </div>
         </div>
     `;
 }
 
-// ── Summary table ──
-function hSummary(active) {
-    const rows = active.map(p => {
+function hSummary() {
+    const rows = PLAYERS.map(p => {
         const c = calcPlayer(p);
-        const savSign = c.savings >= 0 ? '+' : '';
         return `
             <tr>
                 <td>${esc(p.name)}</td>
-                <td class="td-warn">R$ ${N(c.grossBRL)}</td>
-                <td class="td-neg">−R$ ${N(c.totalDedBRL)}</td>
-                <td>R$ ${N(c.netBRL)}</td>
-                <td class="td-neg">R$ ${N(c.taxC1)}</td>
-                <td class="td-neg">${P(S.aliq)}</td>
-                <td class="td-pos">R$ ${N(c.taxC2)}</td>
-                <td class="td-pos">${P(S.aliq)}</td>
-                <td class="td-gold">${savSign}R$ ${N(c.savings)}</td>
+                <td>${fmtDate(p.contractStart)}</td>
+                <td>${fmtDate(p.contractEnd)}</td>
+                <td class="td-warn">R$ ${N(p.totalBRL)}</td>
+                <td class="td-neg">R$ ${N(c.amortToToday)}</td>
+                <td class="td-amber">R$ ${N(c.amortRemaining)}</td>
+                <td class="td-neg">R$ ${N(c.totalAmortAtSale)}</td>
+                <td>${N0(c.pct)}%</td>
+                <td class="td-gold">R$ ${N(c.baixa)}</td>
             </tr>
         `;
     }).join('');
 
-    const cs  = active.map(p => calcPlayer(p));
-    const g   = cs.reduce((s,c) => s+c.grossBRL,    0);
-    const ded = cs.reduce((s,c) => s+c.totalDedBRL,  0);
-    const net = cs.reduce((s,c) => s+c.netBRL,       0);
-    const t1  = cs.reduce((s,c) => s+c.taxC1,        0);
-    const t2  = cs.reduce((s,c) => s+c.taxC2,        0);
-    const sav = cs.reduce((s,c) => s+c.savings,      0);
+    const cs = PLAYERS.map(p => calcPlayer(p));
+    const totAtivado  = PLAYERS.reduce((s,p) => s + p.totalBRL,          0);
+    const totJaAmort  = cs.reduce((s,c) => s + c.amortToToday,     0);
+    const totRemAmort = cs.reduce((s,c) => s + c.amortRemaining,   0);
+    const totAmortSale= cs.reduce((s,c) => s + c.totalAmortAtSale, 0);
+    const totBaixa    = cs.reduce((s,c) => s + c.baixa,            0);
+    const pctMedia    = totAtivado > 0 ? (totAmortSale / totAtivado * 100) : 0;
 
     return `
         <div class="summary-section">
-            <div class="section-eyebrow">Resumo Comparativo</div>
+            <div class="section-eyebrow">Resumo — Baixa na Data da Venda (${fmtDate(S.saleDate)})</div>
             <table class="summary-table">
                 <thead>
                     <tr>
                         <th style="text-align:left">Atleta</th>
-                        <th>Valor Bruto (R$)</th>
-                        <th>Deduções (R$)</th>
-                        <th>Valor Líquido (R$)</th>
-                        <th>Tributo C1</th>
-                        <th>Alíq. C1</th>
-                        <th>Tributo C2</th>
-                        <th>Alíq. C2</th>
-                        <th>Economia (R$)</th>
+                        <th>Início do Contrato</th>
+                        <th>Fim do Contrato</th>
+                        <th>Total Ativado (R$)</th>
+                        <th>Amort. já incorrida</th>
+                        <th>Amort. até venda</th>
+                        <th>Total Amort. Acum.</th>
+                        <th>% Amort.</th>
+                        <th>Baixa (Valor Residual)</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${rows}
                     <tr class="total-row">
                         <td>Total</td>
-                        <td class="td-warn">R$ ${N(g)}</td>
-                        <td class="td-neg">−R$ ${N(ded)}</td>
-                        <td>R$ ${N(net)}</td>
-                        <td class="td-neg">R$ ${N(t1)}</td>
-                        <td class="td-neg">${P(S.aliq)}</td>
-                        <td class="td-pos">R$ ${N(t2)}</td>
-                        <td class="td-pos">${P(S.aliq)}</td>
-                        <td class="td-gold">+R$ ${N(sav)}</td>
+                        <td>—</td>
+                        <td>—</td>
+                        <td class="td-warn">R$ ${N(totAtivado)}</td>
+                        <td class="td-neg">R$ ${N(totJaAmort)}</td>
+                        <td class="td-amber">R$ ${N(totRemAmort)}</td>
+                        <td class="td-neg">R$ ${N(totAmortSale)}</td>
+                        <td>${N0(pctMedia)}%</td>
+                        <td class="td-gold">R$ ${N(totBaixa)}</td>
                     </tr>
                 </tbody>
             </table>
@@ -1326,165 +723,24 @@ function hSummary(active) {
     `;
 }
 
-// ================================================================
-// EVENTS
-// ================================================================
+// ─── Events ──────────────────────────────────────────────────────
 function bindEvents() {
-    const slider = document.getElementById('aliq-slider');
-    const inp    = document.getElementById('aliq-inp');
-
-    if (slider) slider.addEventListener('input', e => {
-        S.aliq = parseFloat(e.target.value) || 0;
-        if (inp) inp.value = S.aliq;
-        updateSlider(slider);
-        renderResults(); saveState();
-    });
-    if (inp) inp.addEventListener('input', e => {
-        const raw = e.target.value;
-        S.aliq = raw === '' ? 0 : (parseFloat(raw) || 0);
-        if (slider) { slider.value = S.aliq; updateSlider(slider); }
-        renderResults(); saveState();
-    });
-
-    document.querySelectorAll('[data-field="name"]').forEach(el => {
-        el.addEventListener('input', e => { S.players[+e.target.dataset.pi].name = e.target.value; });
-        el.addEventListener('blur', () => { render(); saveState(); });
-    });
-
-    document.querySelectorAll('[data-field="gross"]').forEach(el => {
-        el.addEventListener('input', e => {
-            const raw = e.target.value;
-            S.players[+e.target.dataset.pi].gross = raw === '' ? null : parseFloat(raw);
-            renderResults(); saveState();
-        });
-    });
-
-    document.querySelectorAll('[data-field="playerCurrency"]').forEach(el => {
-        el.addEventListener('click', e => {
-            const pi     = +e.target.dataset.pi;
-            const newCur = e.target.dataset.v;
-            const p      = S.players[pi];
-            const oldCur = p.currency;
-            if (oldCur === newCur) return;
-
-            const rateOld = ptaxRate(oldCur);
-            const rateNew = ptaxRate(newCur);
-
-            // Convert gross value
-            if (p.gross != null) {
-                p.gross = p.gross * rateOld / rateNew;
+    const inp = document.getElementById('sale-date-inp');
+    if (inp) {
+        inp.addEventListener('change', e => {
+            if (e.target.value) {
+                S.saleDate = e.target.value;
+                render();
             }
-            // Convert fixed-mode deduction values
-            Object.values(p.deds).forEach(d => {
-                if (d.mode === 'fixed' && d.value != null) {
-                    d.value = d.value * rateOld / rateNew;
-                }
-            });
-
-            p.currency = newCur;
-            render(); saveState();
-        });
-    });
-
-    document.querySelectorAll('[data-field="dedOn"]').forEach(el => {
-        el.addEventListener('change', e => {
-            S.players[+e.target.dataset.pi].deds[e.target.dataset.dk].on = e.target.checked;
-            render(); saveState();
-        });
-    });
-
-    document.querySelectorAll('[data-field="dedMode"]').forEach(el => {
-        el.addEventListener('click', e => {
-            S.players[+e.target.dataset.pi].deds[e.target.dataset.dk].mode = e.target.dataset.v;
-            render(); saveState();
-        });
-    });
-
-    document.querySelectorAll('[data-field="dedRate"]').forEach(el => {
-        el.addEventListener('input', e => {
-            const raw = e.target.value;
-            S.players[+e.target.dataset.pi].deds[e.target.dataset.dk].rate = raw === '' ? null : parseFloat(raw);
-            renderResults(); saveState();
-        });
-    });
-
-    document.querySelectorAll('[data-field="dedValue"]').forEach(el => {
-        el.addEventListener('input', e => {
-            const raw = e.target.value;
-            S.players[+e.target.dataset.pi].deds[e.target.dataset.dk].value = raw === '' ? null : parseFloat(raw);
-            renderResults(); saveState();
-        });
-    });
-
-    document.querySelectorAll('[data-field="dedDot"]').forEach(el => {
-        el.addEventListener('click', e => {
-            const pi   = e.currentTarget.dataset.pi;
-            const dk   = e.currentTarget.dataset.dk;
-            const area = document.getElementById(`ded-note-${pi}-${dk}`);
-            if (area) {
-                area.classList.toggle('open');
-                if (area.classList.contains('open')) area.querySelector('textarea')?.focus();
-            }
-        });
-    });
-
-    document.querySelectorAll('[data-field="dedComment"]').forEach(el => {
-        el.addEventListener('input', e => {
-            const pi = +e.target.dataset.pi;
-            const dk = e.target.dataset.dk;
-            S.players[pi].deds[dk].comment = e.target.value;
-            const dot = document.querySelector(`[data-field="dedDot"][data-pi="${pi}"][data-dk="${dk}"]`);
-            if (dot) {
-                dot.classList.toggle('has-note', !!e.target.value);
-                dot.title = e.target.value ? e.target.value : 'Adicionar comentário';
-            }
-            saveState();
-        });
-    });
-
-    // Tooltip for dots that have a comment
-    const tooltip = document.getElementById('_tooltip');
-    if (tooltip) {
-        document.querySelectorAll('.ded-dot.has-note').forEach(dot => {
-            dot.addEventListener('mouseenter', () => {
-                const comment = S.players[+dot.dataset.pi]?.deds[dot.dataset.dk]?.comment;
-                if (!comment) return;
-                tooltip.textContent = comment;
-                tooltip.style.display = 'block';
-            });
-            dot.addEventListener('mousemove', e => {
-                tooltip.style.left = (e.clientX + 14) + 'px';
-                tooltip.style.top  = (e.clientY - 8)  + 'px';
-            });
-            dot.addEventListener('mouseleave', () => {
-                tooltip.style.display = 'none';
-            });
         });
     }
 }
 
-function updateSlider(slider) {
-    const pct = ((+slider.value - +slider.min) / (+slider.max - +slider.min) * 100).toFixed(1);
-    slider.style.setProperty('--pct', pct + '%');
-}
-
-// ================================================================
-// INIT
-// ================================================================
-async function init() {
-    initDB();
-    const tasks = [fetchPTAX()];
-    if (_db) {
-        setStatus('loading');
-        tasks.push(loadState());
-    } else {
-        setStatus('offline');
-    }
-    await Promise.all(tasks);
-    render();
-}
-
-init();
+// ─── Init ────────────────────────────────────────────────────────
+render();
 </script>
+
+<div id="app"></div>
+
 </body>
 </html>

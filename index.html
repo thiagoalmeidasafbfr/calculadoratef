@@ -485,6 +485,48 @@ function monthAmort(p,month) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// LANÇAMENTOS (extrato — uma linha por parcela mensal de cada item)
+// ═══════════════════════════════════════════════════════════════════
+// Gera o "banco de dados" de parcelas: para cada atleta, cada item com valor,
+// uma linha por mês de vigência do contrato. O valor mensal na moeda original
+// = valor / meses de contrato; o R$ usa a PTAX de fechamento daquele mês
+// (getRate cai para a última cotação disponível nos meses futuros).
+function buildLedger(players) {
+  const rows=[];
+  for (const p of players) {
+    if (!p.start||!p.end) continue;
+    const startD=pDate(p.start), endD=pDate(p.end);
+    if (endD<=startD) continue;
+    const contractMonths=monthsInc(startD,endD);
+    if (contractMonths<=0) continue;
+    for (const it of p.items) {
+      const amt=it.amount??0;
+      if (!amt) continue;
+      const monthlyCur=amt/contractMonths;
+      let cur=new Date(startD.getFullYear(),startD.getMonth(),1);
+      const endM=new Date(endD.getFullYear(),endD.getMonth(),1);
+      while (cur<=endM) {
+        const ym=cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0');
+        const {rate,src}=getRate(it.currency,ym);
+        rows.push({
+          type:it.label||'—',
+          player:p.name||'Sem nome',
+          date:new Date(cur),
+          month:cur.getMonth()+1,
+          year:cur.getFullYear(),
+          amountCur:monthlyCur,
+          currency:it.currency,
+          rate,src,
+          brl:monthlyCur*rate,
+        });
+        cur=new Date(cur.getFullYear(),cur.getMonth()+1,1);
+      }
+    }
+  }
+  return rows;
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // EXCEL EXPORT
 // ═══════════════════════════════════════════════════════════════════
 function exportToExcel() {
@@ -555,6 +597,21 @@ function exportToExcel() {
   }
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([detHeader,...detRows]),'Detalhe');
 
+  // Sheet 4: Lançamentos (extrato — uma linha por parcela mensal)
+  const ledger=buildLedger(active);
+  if (ledger.length) {
+    const ledHeader=['Tipo','Atleta','Data','Mês | Ano','Valor','Moeda','PTAX','R$'];
+    const ledRows=ledger.map(r=>[
+      r.type,r.player,
+      `${String(r.date.getDate()).padStart(2,'0')}/${String(r.month).padStart(2,'0')}/${r.year}`,
+      `${r.month} | ${r.year}`,
+      +r.amountCur.toFixed(2),r.currency,
+      +r.rate.toFixed(4),+r.brl.toFixed(2),
+    ]);
+    ledRows.push(['TOTAL','','','','','','',+ledger.reduce((s,r)=>s+r.brl,0).toFixed(2)]);
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([ledHeader,...ledRows]),'Lançamentos');
+  }
+
   XLSX.writeFile(wb,`BaixaIntangivel_${new Date().toISOString().substring(0,10)}.xlsx`);
 }
 
@@ -583,6 +640,7 @@ function refreshResults(pid) {
   refreshBand();
   refreshSummary();
   refreshMonthly();
+  refreshLedger();
 }
 
 function refreshItemRow(pid,iid) {
@@ -604,6 +662,10 @@ function refreshMonthly() {
   const el=document.getElementById('monthly-section');
   if(el) el.outerHTML=hMonthly();
 }
+function refreshLedger() {
+  const el=document.getElementById('ledger-section');
+  if(el) el.outerHTML=hLedger();
+}
 
 function buildApp() {
   return `
@@ -615,6 +677,7 @@ function buildApp() {
       ${hTotalsBand()}
       ${hSummary()}
       ${hMonthly()}
+      ${hLedger()}
     </div>
     <div class="footer">Glorioso Finance · Baixa de Ativo Intangível · Amortização linear mensal · PTAX histórico BACEN</div>`;
 }
@@ -970,6 +1033,60 @@ function hMonthly() {
       <div class="leg-item"><div class="leg-dot" style="background:rgba(190,140,74,.2);border:1px solid var(--gold-ring)"></div>Mês de saída</div>
       <div class="leg-item"><div class="leg-dot" style="background:var(--div)"></div>Após saída (sem custo)</div>
       <div class="leg-item"><div class="leg-dot" style="background:var(--pos-t);border:1px solid rgba(22,101,52,.2)"></div>Economia acumulada</div>
+    </div>
+  </div>`;
+}
+
+// ── Lançamentos (extrato em formato de banco de dados) ──────────────
+function hLedger() {
+  const active=S.players.filter(p=>calcPlayer(p)&&p.items.some(i=>i.amount));
+  if (active.length===0) return `<div id="ledger-section"></div>`;
+  const ledger=buildLedger(active);
+  if (!ledger.length) return `<div id="ledger-section"></div>`;
+
+  const totalBRL=ledger.reduce((s,r)=>s+r.brl,0);
+  const rows=ledger.map(r=>{
+    const dataStr=`${String(r.date.getDate()).padStart(2,'0')}/${String(r.month).padStart(2,'0')}/${r.year}`;
+    const fxTitle=r.currency!=='BRL'?`${r.rate.toFixed(4)} (${r.src})`:'';
+    return `<tr>
+      <td style="text-align:left">${esc(r.type)}</td>
+      <td class="td-dim" style="text-align:left;font-family:'Inter',sans-serif">${esc(r.player)}</td>
+      <td class="td-dim" style="text-align:left">${dataStr}</td>
+      <td class="td-dim" style="text-align:left">${r.month} | ${r.year}</td>
+      <td class="td-warn">${N(r.amountCur)}</td>
+      <td class="td-dim" style="text-align:center">${r.currency}</td>
+      <td class="td-warn" title="${fxTitle}">R$ ${N(r.brl)}</td>
+    </tr>`;
+  }).join('');
+
+  return `
+  <div id="ledger-section" class="section-card">
+    <div class="sec-eyebrow">Lançamentos · Extrato de Parcelas</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink-4);margin-bottom:10px;letter-spacing:.03em">
+      Uma linha por parcela mensal de cada item · ${ledger.length} lançamentos · R$ usa a PTAX de fechamento do mês (última cotação nos meses futuros)
+    </div>
+    <div class="monthly-scroll">
+      <table class="stbl" style="min-width:100%">
+        <thead><tr>
+          <th style="text-align:left">Tipo</th>
+          <th style="text-align:left">Atleta</th>
+          <th style="text-align:left">Data</th>
+          <th style="text-align:left">Mês | Ano</th>
+          <th>Valor</th>
+          <th style="text-align:center">Moeda</th>
+          <th>R$</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr class="tr-total">
+          <td>Total</td>
+          <td class="td-dim" style="text-align:left">—</td>
+          <td class="td-dim" style="text-align:left">—</td>
+          <td class="td-dim" style="text-align:left">—</td>
+          <td class="td-dim">—</td>
+          <td class="td-dim" style="text-align:center">—</td>
+          <td class="td-warn">R$ ${N(totalBRL)}</td>
+        </tr></tfoot>
+      </table>
     </div>
   </div>`;
 }

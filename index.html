@@ -199,6 +199,74 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 @media(max-width:520px){
   .item-row{grid-template-columns:1fr 84px 72px 1fr 22px}
 }
+
+/* ── NAV ──────────────────────────────────────────────── */
+.nav{display:flex;gap:4px;background:rgba(243,238,226,.06);border:1px solid rgba(243,238,226,.12);border-radius:var(--r-pill);padding:3px}
+.nav-btn{padding:7px 16px;border:none;background:transparent;color:var(--on-dark-d);font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;border-radius:var(--r-pill);transition:all .15s}
+.nav-btn:hover{color:var(--on-dark)}
+.nav-btn.on{background:var(--gold);color:var(--dark)}
+
+/* ── PAGE HEAD / BUTTONS ──────────────────────────────── */
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.page-title{font-family:'Fraunces',Georgia,serif;font-size:1.3rem;font-weight:700;color:var(--ink-1);letter-spacing:-.01em;margin-top:2px}
+.page-head-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn-primary{padding:9px 18px;border-radius:var(--r-pill);border:none;background:var(--gold);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:background .15s;box-shadow:var(--sh-l)}
+.btn-primary:hover{background:var(--gold-deep)}
+.btn-primary.lg{padding:12px 28px;font-size:10px}
+.btn-ghost{padding:9px 16px;border-radius:var(--r-pill);border:1.5px solid var(--gold-deep);background:transparent;color:var(--gold-deep);font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:all .15s}
+.btn-ghost:hover{background:var(--gold-tint);border-color:var(--gold)}
+.cadastro-foot{display:flex;justify-content:center;margin:8px 0 20px}
+
+/* ── DASHBOARD: BULLETS ───────────────────────────────── */
+.bullets{list-style:none;margin-top:8px;display:flex;flex-direction:column;gap:8px}
+.bullets li{position:relative;padding-left:18px;font-size:12.5px;color:var(--ink-2);line-height:1.55}
+.bullets li::before{content:'';position:absolute;left:2px;top:8px;width:6px;height:6px;border-radius:50%;background:var(--gold)}
+.bullets strong{color:var(--ink-1);font-weight:600}
+.b-pos{color:var(--pos)!important}.b-neg{color:var(--neg)!important}
+
+/* ── DASHBOARD: PLAYER SUMMARY CARD ───────────────────── */
+.sumcard{background:var(--cream-card);border:1px solid var(--div);border-radius:var(--r-md);box-shadow:var(--sh-h);padding:14px 16px;transition:box-shadow .18s}
+.sumcard:hover{box-shadow:var(--sh-l)}
+.sumcard-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.sumcard-name{font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:var(--ink-1);display:flex;align-items:center;gap:8px;min-width:0}
+.sumcard-actions{display:flex;gap:6px;flex-shrink:0}
+.mini-btn{border:1px solid var(--div-m);background:transparent;color:var(--gold-deep);font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;padding:4px 9px;border-radius:var(--r-pill);cursor:pointer;transition:all .12s}
+.mini-btn:hover{background:var(--gold-tint)}
+.mini-danger{color:var(--neg)}
+.mini-danger:hover{background:var(--neg-t)}
+.sumcard-dates{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink-4);letter-spacing:.04em;margin-bottom:12px}
+.sumcard-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.sumcard-grid>div{display:flex;flex-direction:column;gap:3px}
+.sc-l{font-family:'IBM Plex Mono',monospace;font-size:7.5px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-4)}
+.sc-v{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;color:var(--ink-2)}
+.sc-amber{color:var(--amber)}.sc-gold{color:var(--gold-deep)}.sc-pos{color:var(--pos)}.sc-neg{color:var(--neg)}
+
+/* ── SIMULATOR ────────────────────────────────────────── */
+.sim-controls{display:flex;gap:10px;margin:10px 0 14px;flex-wrap:wrap}
+.sim-input{background:var(--cream-canvas);border:1px solid var(--div-m);border-radius:var(--r-sm);padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-1);outline:none;cursor:pointer;transition:border-color .15s}
+.sim-input:focus{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold-ring)}
+.sim-empty{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-4);letter-spacing:.04em;padding:12px 0}
+.sim-grid{display:flex;flex-wrap:wrap;background:var(--dark);border-radius:var(--r-sm);overflow:hidden}
+.sim-box{flex:1;min-width:130px;padding:12px 14px;text-align:center;border-right:1px solid rgba(243,238,226,.08)}
+.sim-box:last-child{border-right:none}
+.sim-l{font-family:'IBM Plex Mono',monospace;font-size:7.5px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:var(--on-dark-m);display:block;margin-bottom:5px}
+.sim-v{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:500;color:var(--on-dark)}
+.sim-v.amber{color:#fbbf24}.sim-v.gold{color:var(--gold-soft)}.sim-v.pos{color:#86efac}.sim-v.neg{color:#f9a0a0}
+.sim-note{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--ink-4);letter-spacing:.04em;margin-top:10px}
+
+/* ── EMPTY STATE ──────────────────────────────────────── */
+.empty-state{text-align:center;padding:60px 20px;background:var(--cream-card);border:1px dashed var(--div-m);border-radius:var(--r-md)}
+.es-title{font-family:'Fraunces',Georgia,serif;font-size:1.2rem;font-weight:700;color:var(--ink-1);margin-bottom:6px}
+.es-sub{font-size:12px;color:var(--ink-4);margin-bottom:18px}
+
+/* ── TOAST ────────────────────────────────────────────── */
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:var(--dark);color:var(--on-dark);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;padding:12px 22px;border-radius:var(--r-pill);box-shadow:0 8px 28px -8px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:999}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast-ok{border:1px solid rgba(134,239,172,.3)}
+.toast-ok::before{content:'';display:inline-block}
+.toast-warn{border:1px solid rgba(248,113,113,.4);color:#fca5a5}
+
+@media(max-width:700px){.sumcard-grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -248,7 +316,11 @@ async function loadFromDB() {
   if (data?.state) {
     const d = data.state;
     if (d.S?.players?.length) { S = d.S; _pid = d._pid || _pid; _iid = d._iid || _iid; }
-    saveLocal();   // keep localStorage in sync
+    reconcileCounters();
+    saveSavedLocal();   // keep localStorage in sync
+    // se entramos no Cadastro só por não ter dados locais, e o banco trouxe
+    // atletas (e o rascunho está vazio), leva pro Dashboard
+    if (S.players.length && view==='cadastro' && DRAFT.players.every(isEmptyPlayer)) view='dashboard';
     renderAll();
   }
   setStatus('saved');
@@ -330,18 +402,49 @@ function getRate(currency, ym) {
 let _pid=0, _iid=0;
 function newItem(label='Transfer Fee',currency='BRL'){return {id:++_iid,label,amount:null,currency};}
 function newPlayer(){return {id:++_pid,name:'',start:'',end:'',exit:'',saleAmount:null,saleCurrency:'BRL',sellOnPct:null,sellOnMethod:'maisValia',saleIntermed:null,saleIntermedCurrency:'BRL',items:[newItem('Transfer Fee'),newItem('Intermediação'),newItem('Luva')]};}
-let S = {players:[]};
 
-function saveLocal(){
+// S      = atletas SALVOS (vão para o banco / aparecem no Dashboard e Consolidado)
+// DRAFT  = formulário de cadastro (transiente, só vai pro banco ao apertar Salvar)
+let S = {players:[]};
+let DRAFT = {players:[newPlayer()]};
+let view = 'dashboard';                 // 'dashboard' | 'cadastro' | 'consolidado'
+let SIM  = {playerId:null, exit:''};    // simulação de encerramento (não persiste)
+
+function isEmptyPlayer(p){
+  return !p.name && !p.start && !p.end && !p.exit
+    && p.saleAmount==null && p.saleIntermed==null && p.sellOnPct==null
+    && !p.items.some(i=>i.amount);
+}
+// mantém os contadores de id acima de qualquer id já existente em S/DRAFT
+function reconcileCounters(){
+  for(const set of [S,DRAFT]) for(const p of set.players||[]){
+    if(p.id>_pid)_pid=p.id;
+    for(const it of p.items||[]) if(it.id>_iid)_iid=it.id;
+  }
+}
+
+function saveSavedLocal(){
   try{localStorage.setItem('gbai_v3',JSON.stringify({S,_pid,_iid}));}catch(e){}
+}
+function persistSaved(){            // localStorage + banco (só atletas salvos)
+  saveSavedLocal();
   saveToDB();
 }
+function saveDraft(){               // rascunho fica só no navegador
+  try{localStorage.setItem('gbai_draft_v1',JSON.stringify({DRAFT}));}catch(e){}
+}
 function loadLocal(){
+  let hadSaved=false;
   try{
     const d=JSON.parse(localStorage.getItem('gbai_v3')||'null');
-    if(d?.S?.players?.length){S=d.S;_pid=d._pid||_pid;_iid=d._iid||_iid;return true;}
+    if(d?.S?.players?.length){S=d.S;_pid=d._pid||_pid;_iid=d._iid||_iid;hadSaved=true;}
   }catch(e){}
-  return false;
+  try{
+    const dr=JSON.parse(localStorage.getItem('gbai_draft_v1')||'null');
+    if(dr?.DRAFT?.players?.length){DRAFT=dr.DRAFT;}
+  }catch(e){}
+  reconcileCounters();
+  return hadSaved;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -634,17 +737,14 @@ function renderAll() {
 }
 
 function refreshResults(pid) {
-  const p=S.players.find(x=>x.id===pid);
+  // resultados só aparecem nos cards editáveis do Cadastro (DRAFT)
+  const p=DRAFT.players.find(x=>x.id===pid);
   const el=document.getElementById(`res-${pid}`);
   if(p&&el) el.innerHTML=hResults(p);
-  refreshBand();
-  refreshSummary();
-  refreshMonthly();
-  refreshLedger();
 }
 
 function refreshItemRow(pid,iid) {
-  const p=S.players.find(x=>x.id===pid);
+  const p=DRAFT.players.find(x=>x.id===pid);
   const it=p?.items.find(i=>i.id===iid);
   const row=document.getElementById(`irow-${iid}`);
   if(it&&row){const tmp=document.createElement('div');tmp.innerHTML=hItemRow(pid,it);row.replaceWith(tmp.firstElementChild);}
@@ -668,27 +768,26 @@ function refreshLedger() {
 }
 
 function buildApp() {
+  const page = view==='cadastro' ? hCadastro()
+             : view==='consolidado' ? hConsolidado()
+             : hDashboard();
   return `
     ${hHero()}
-    <div class="page-body">
-      <div class="sec-eyebrow">Atletas</div>
-      <div class="players-grid">${S.players.map(p=>hCard(p)).join('')}</div>
-      <button class="add-player-btn" id="btn-add-player">＋ Adicionar atleta</button>
-      ${hTotalsBand()}
-      ${hSummary()}
-      ${hMonthly()}
-      ${hLedger()}
-    </div>
+    <div class="page-body">${page}</div>
     <div class="footer">Glorioso Finance · Baixa de Ativo Intangível · Amortização linear mensal · PTAX histórico BACEN</div>`;
 }
 
 function hHero() {
+  const tab=(id,lbl)=>`<button class="nav-btn${view===id?' on':''}" data-nav="${id}">${lbl}</button>`;
   return `
   <div class="hero">
     <div>
       <div class="hero-eyebrow">Glorioso Finance · Departamento Financeiro</div>
       <h1 class="hero-title">Baixa de <em>Intangível</em></h1>
       <div class="hero-sub">Custo de aquisição · Amortização mensal · Ganho econômico na transferência</div>
+      <div class="nav" style="margin-top:14px">
+        ${tab('dashboard','Dashboard')}${tab('cadastro','Cadastro')}${tab('consolidado','Consolidado')}
+      </div>
     </div>
     <div class="hero-right">
       <span id="save-status" style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;color:rgba(243,238,226,.25)"></span>
@@ -700,6 +799,166 @@ function hHero() {
       <button class="hero-btn" onclick="window.print()">Imprimir</button>
     </div>
   </div>`;
+}
+
+// ── PÁGINAS ─────────────────────────────────────────────────────────
+function emptyState(title,sub){
+  return `<div class="empty-state"><div class="es-title">${title}</div><div class="es-sub">${sub}</div><button class="btn-primary" data-nav="cadastro">Ir para Cadastro</button></div>`;
+}
+
+function hCadastro() {
+  return `
+    <div class="page-head">
+      <div><div class="sec-eyebrow">Cadastro</div><div class="page-title">Lançamento de atletas</div></div>
+      <div class="page-head-actions">
+        <button class="btn-ghost" data-action="add-player">＋ Adicionar atleta</button>
+        <button class="btn-primary" data-action="save-cadastro">Salvar no banco</button>
+      </div>
+    </div>
+    <div class="players-grid">${DRAFT.players.map(p=>hCard(p)).join('')}</div>
+    <div class="cadastro-foot">
+      <button class="btn-primary lg" data-action="save-cadastro">✓ Salvar e enviar ao banco</button>
+    </div>`;
+}
+
+function hConsolidado() {
+  if (!S.players.length) return emptyState('Nenhum atleta salvo','Cadastre e salve atletas para ver o consolidado.');
+  return `
+    <div class="page-head"><div><div class="sec-eyebrow">Consolidado</div><div class="page-title">Visão consolidada</div></div></div>
+    ${hSummary()}
+    ${hLedger()}
+    ${hMonthly()}`;
+}
+
+function hDashboard() {
+  if (!S.players.length) return emptyState('Nenhum atleta salvo','Comece cadastrando um atleta para ver os indicadores.');
+  return `
+    <div class="page-head"><div><div class="sec-eyebrow">Dashboard</div><div class="page-title">Visão geral</div></div></div>
+    ${hTotalsBand()}
+    ${hBullets()}
+    <div class="sec-eyebrow" style="margin:20px 0 10px">Atletas na base</div>
+    <div class="players-grid">${S.players.map(p=>hPlayerSummary(p)).join('')}</div>
+    ${hSimulator()}`;
+}
+
+function hBullets() {
+  const calcs=S.players.map(p=>({p,c:calcPlayer(p)})).filter(x=>x.c);
+  if (!calcs.length) return '';
+  const ativos=calcs.filter(x=>x.c.exitMonths===null);
+  const saidos=calcs.filter(x=>x.c.exitMonths!==null);
+  const bullets=[];
+  bullets.push(`<strong>${calcs.length}</strong> atleta(s) na base · <strong>${ativos.length}</strong> ativo(s)${saidos.length?` · <strong>${saidos.length}</strong> com saída`:''}`);
+  const topMo=[...calcs].sort((a,b)=>b.c.monthlyTotal-a.c.monthlyTotal)[0];
+  if (topMo&&topMo.c.monthlyTotal>0) bullets.push(`Maior amortização mensal: <strong>${esc(topMo.p.name||'Sem nome')}</strong> — R$ ${N(topMo.c.monthlyTotal)}/mês`);
+  if (saidos.length){
+    const topResid=[...saidos].sort((a,b)=>b.c.totResid-a.c.totResid)[0];
+    bullets.push(`Maior baixa a reconhecer: <strong>${esc(topResid.p.name||'Sem nome')}</strong> — R$ ${N(topResid.c.totResid)}`);
+  }
+  const avoid=saidos.reduce((s,x)=>s+(x.c.futureAmortAvoided??0),0);
+  if (avoid>0) bullets.push(`Amortização evitada com as saídas: <strong class="b-pos">R$ ${N(avoid)}</strong> no P&L futuro`);
+  const gains=calcs.filter(x=>x.c.gain!=null);
+  if (gains.length){
+    const tot=gains.reduce((s,x)=>s+x.c.gain,0);
+    bullets.push(`Resultado econômico projetado nas vendas: <strong class="${tot>=0?'b-pos':'b-neg'}">${tot>=0?'+':''}R$ ${N(tot)}</strong>`);
+  }
+  return `<div class="section-card"><div class="sec-eyebrow">Destaques</div><ul class="bullets">${bullets.map(b=>`<li>${b}</li>`).join('')}</ul></div>`;
+}
+
+function hPlayerSummary(p) {
+  const c=calcPlayer(p);
+  const totalAct=p.items.reduce((s,it)=>{const{rate}=getRate(it.currency,ymStr(p.start));return s+(it.amount??0)*rate;},0);
+  const exited=c&&c.exitMonths!==null;
+  const status=exited
+    ? `<span class="chip-saída">saída ${fmtD(p.exit)}</span>`
+    : (c?`<span class="chip-saída chip-pos">ativo</span>`:`<span class="chip-saída chip-neg">incompleto</span>`);
+  return `
+  <div class="sumcard">
+    <div class="sumcard-head">
+      <div class="sumcard-name"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name||'Sem nome')}</span> ${status}</div>
+      <div class="sumcard-actions">
+        <button class="mini-btn" data-action="edit-player" data-pid="${p.id}">editar</button>
+        <button class="mini-btn mini-danger" data-action="remove-saved" data-pid="${p.id}">remover</button>
+      </div>
+    </div>
+    <div class="sumcard-dates">${fmtD(p.start)||'—'} → ${fmtD(p.end)||'—'}${c?` · ${c.contractMonths} meses`:''}</div>
+    <div class="sumcard-grid">
+      <div><span class="sc-l">Total ativado</span><span class="sc-v">R$ ${N(totalAct)}</span></div>
+      <div><span class="sc-l">Amort. mensal</span><span class="sc-v sc-amber">R$ ${N(c?c.monthlyTotal:0)}</span></div>
+      <div><span class="sc-l">Baixa residual</span><span class="sc-v sc-gold">${exited?`R$ ${N(c.totResid)}`:'—'}</span></div>
+      <div><span class="sc-l">Lucro / Prejuízo</span><span class="sc-v ${c&&c.gain!=null?(c.gain>=0?'sc-pos':'sc-neg'):''}">${c&&c.gain!=null?`${c.gain>=0?'+':''}R$ ${N(c.gain)}`:'—'}</span></div>
+    </div>
+  </div>`;
+}
+
+function hSimulator() {
+  const players=S.players.filter(p=>calcPlayer(p));
+  if (!players.length) return '';
+  return `
+  <div class="section-card" style="margin-top:16px">
+    <div class="sec-eyebrow">Simulação de encerramento</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink-4);letter-spacing:.03em">
+      Teste uma data hipotética de saída — não altera os dados salvos
+    </div>
+    <div class="sim-controls">
+      <select id="sim-player" class="sim-input">
+        <option value="">— escolha o atleta —</option>
+        ${players.map(p=>`<option value="${p.id}"${SIM.playerId===p.id?' selected':''}>${esc(p.name||'Sem nome')}</option>`).join('')}
+      </select>
+      <input type="date" id="sim-exit" class="sim-input" value="${SIM.exit}">
+    </div>
+    <div id="sim-result">${hSimResult()}</div>
+  </div>`;
+}
+
+function hSimResult() {
+  const sel=SIM.playerId!=null?S.players.find(p=>p.id===SIM.playerId):null;
+  if (!sel||!SIM.exit) return `<div class="sim-empty">Selecione um atleta e uma data hipotética de saída para ver o cenário.</div>`;
+  const clone=JSON.parse(JSON.stringify(sel)); clone.exit=SIM.exit;
+  const c=calcPlayer(clone);
+  if (!c||c.exitMonths===null) return `<div class="sim-empty">Data fora da vigência do contrato (${fmtD(sel.start)} → ${fmtD(sel.end)}).</div>`;
+  const gainBox = c.gain!=null
+    ? `<div class="sim-box"><span class="sim-l">Lucro / Prejuízo</span><span class="sim-v ${c.gain>=0?'pos':'neg'}">${c.gain>=0?'+':''}R$ ${N(c.gain)}</span></div>`
+    : '';
+  return `
+  <div class="sim-grid">
+    <div class="sim-box"><span class="sim-l">Meses amortizados</span><span class="sim-v">${c.exitMonths}/${c.contractMonths}</span></div>
+    <div class="sim-box"><span class="sim-l">Amort. acumulada</span><span class="sim-v amber">R$ ${N(c.totAmort)}</span></div>
+    <div class="sim-box"><span class="sim-l">Baixa (residual)</span><span class="sim-v gold">R$ ${N(c.totResid)}</span></div>
+    <div class="sim-box"><span class="sim-l">Amort. evitada</span><span class="sim-v pos">R$ ${N(c.futureAmortAvoided??0)}</span></div>
+    ${gainBox}
+  </div>
+  <div class="sim-note">Saída hipotética em ${fmtD(SIM.exit)} · ${c.monthsRemaining} meses restantes ${c.gain!=null?'· lucro usa receita/sell-on cadastrados':'· cadastre receita de venda no atleta para projetar lucro'}</div>`;
+}
+
+function toast(msg,kind='ok') {
+  let el=document.getElementById('toast');
+  if(!el){el=document.createElement('div');el.id='toast';document.body.appendChild(el);}
+  el.className='toast '+(kind==='warn'?'toast-warn':'toast-ok');
+  el.textContent=msg;
+  el.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t=setTimeout(()=>el.classList.remove('show'),2600);
+}
+
+function saveCadastro() {
+  const toSave=DRAFT.players.filter(p=>!isEmptyPlayer(p));
+  if (!toSave.length){ toast('Preencha ao menos um atleta antes de salvar.','warn'); return; }
+  for (const d of toSave){
+    const clone=JSON.parse(JSON.stringify(d));
+    const editId=clone._editId; delete clone._editId;
+    if (editId!=null){
+      const idx=S.players.findIndex(p=>p.id===editId);
+      if (idx>=0) S.players[idx]=clone; else S.players.push(clone);
+    } else {
+      S.players.push(clone);
+    }
+  }
+  persistSaved();
+  DRAFT.players=[newPlayer()];
+  saveDraft();
+  view='dashboard';
+  renderAll();
+  toast(`${toSave.length} atleta(s) salvo(s) no banco ✓`);
 }
 
 function hCard(p) {
@@ -1115,29 +1374,54 @@ function hTotalsBand() {
 // EVENTS
 // ═══════════════════════════════════════════════════════════════════
 function bindEvents() {
-  document.getElementById('btn-add-player')?.addEventListener('click',()=>{S.players.push(newPlayer());saveLocal();renderAll();});
+  if(bindEvents._done) return;   // delegação: registrar listeners uma única vez
+  bindEvents._done=true;
+
+  // Navegação entre páginas
+  document.addEventListener('click', e => {
+    const nav=e.target.closest('[data-nav]');
+    if(nav){ view=nav.dataset.nav; renderAll(); }
+  });
 
   document.addEventListener('click', e => {
     const t=e.target.closest('[data-action]');
     if(!t) return;
-    const {action,pid,iid}={action:t.dataset.action,pid:+t.dataset.pid,iid:+t.dataset.iid};
+    const {action,pid,iid}={action:t.dataset.action,pid:t.dataset.pid?+t.dataset.pid:null,iid:t.dataset.iid?+t.dataset.iid:null};
 
+    // ── ações globais ──
+    if(action==='save-cadastro'){ saveCadastro(); return; }
+    if(action==='add-player'){ DRAFT.players.push(newPlayer()); saveDraft(); renderAll(); return; }
+    if(action==='edit-player'){
+      const sp=S.players.find(p=>p.id===pid); if(!sp) return;
+      DRAFT.players=DRAFT.players.filter(d=>!isEmptyPlayer(d) && d._editId!==sp.id);
+      const clone=JSON.parse(JSON.stringify(sp)); clone._editId=sp.id;
+      DRAFT.players.push(clone); saveDraft(); view='cadastro'; renderAll();
+      toast(`Editando ${sp.name||'atleta'} — altere e salve`); return;
+    }
+    if(action==='remove-saved'){
+      S.players=S.players.filter(p=>p.id!==pid); persistSaved(); renderAll();
+      toast('Atleta removido do banco'); return;
+    }
+
+    // ── ações do Cadastro (operam sobre DRAFT) ──
     if(action==='remove-player'){
-      if(S.players.length===1){S.players=[newPlayer()];saveLocal();renderAll();return;}
-      S.players=S.players.filter(p=>p.id!==pid);
-      saveLocal();renderAll();
+      DRAFT.players=DRAFT.players.filter(p=>p.id!==pid);
+      if(!DRAFT.players.length) DRAFT.players=[newPlayer()];
+      saveDraft();renderAll(); return;
     }
     if(action==='add-item'){
-      const p=S.players.find(x=>x.id===pid);
-      if(p){p.items.push(newItem(''));saveLocal();renderAll();}
+      const p=DRAFT.players.find(x=>x.id===pid);
+      if(p){p.items.push(newItem(''));saveDraft();renderAll();}
+      return;
     }
     if(action==='remove-item'){
-      const p=S.players.find(x=>x.id===pid);
+      const p=DRAFT.players.find(x=>x.id===pid);
       if(p){
         p.items=p.items.filter(i=>i.id!==iid);
         if(!p.items.length) p.items.push(newItem(''));
-        saveLocal();renderAll();
+        saveDraft();renderAll();
       }
+      return;
     }
   }, true);
 
@@ -1146,34 +1430,34 @@ function bindEvents() {
     const t=e.target.closest('[data-field="itemCur"],[data-field="saleCur"],[data-field="sellOnMethod"],[data-field="saleIntermedCur"]');
     if(!t) return;
     const pid=+t.dataset.pid, iid=t.dataset.iid?+t.dataset.iid:null;
-    const p=S.players.find(x=>x.id===pid);
+    const p=DRAFT.players.find(x=>x.id===pid);
     if(!p) return;
 
     if(t.dataset.field==='itemCur'&&iid) {
       const it=p.items.find(i=>i.id===iid);
       if(!it) return;
       it.currency=t.dataset.v;
-      saveLocal();
+      saveDraft();
       refreshItemRow(pid,iid);
       refreshResults(pid);
     }
     if(t.dataset.field==='saleCur') {
       p.saleCurrency=t.dataset.v;
-      saveLocal();
+      saveDraft();
       document.querySelectorAll(`[data-field="saleCur"][data-pid="${pid}"]`).forEach(b=>b.classList.toggle('on',b.dataset.v===p.saleCurrency));
       document.getElementById(`sale-brl-${pid}`).innerHTML=hSaleBRL(p);
       refreshResults(pid);
     }
     if(t.dataset.field==='sellOnMethod') {
       p.sellOnMethod=t.dataset.v;
-      saveLocal();
+      saveDraft();
       document.querySelectorAll(`[data-field="sellOnMethod"][data-pid="${pid}"]`).forEach(b=>b.classList.toggle('on',b.dataset.v===p.sellOnMethod));
       document.getElementById(`sell-on-brl-${pid}`).innerHTML=hSellOnBRL(p);
       refreshResults(pid);
     }
     if(t.dataset.field==='saleIntermedCur') {
       p.saleIntermedCurrency=t.dataset.v;
-      saveLocal();
+      saveDraft();
       document.querySelectorAll(`[data-field="saleIntermedCur"][data-pid="${pid}"]`).forEach(b=>b.classList.toggle('on',b.dataset.v===(p.saleIntermedCurrency||'BRL')));
       document.getElementById(`intermed-brl-${pid}`).innerHTML=hIntermedBRL(p);
       refreshResults(pid);
@@ -1185,7 +1469,7 @@ function bindEvents() {
     const field=t.dataset.field;
     if(!field) return;
     const pid=+t.dataset.pid, iid=t.dataset.iid?+t.dataset.iid:null;
-    const p=S.players.find(x=>x.id===pid);
+    const p=DRAFT.players.find(x=>x.id===pid);
     if(!p) return;
 
     if(iid) {
@@ -1199,7 +1483,7 @@ function bindEvents() {
       if(field==='sellOnPct')    p.sellOnPct=t.value===''?null:parseFloat(t.value);
       if(field==='saleIntermed') p.saleIntermed=t.value===''?null:parseFloat(t.value);
     }
-    saveLocal();
+    saveDraft();
 
     if(field==='amount'&&iid) {
       // update BRL display in row without full re-render
@@ -1235,13 +1519,16 @@ function bindEvents() {
 
   document.addEventListener('change', e => {
     const t=e.target;
+    // Simulador de encerramento (Dashboard)
+    if(t.id==='sim-player'){ SIM.playerId=t.value?+t.value:null; const r=document.getElementById('sim-result'); if(r)r.innerHTML=hSimResult(); return; }
+    if(t.id==='sim-exit'){ SIM.exit=t.value; const r=document.getElementById('sim-result'); if(r)r.innerHTML=hSimResult(); return; }
     const field=t.dataset.field;
     if(!['start','end','exit'].includes(field)) return;
     const pid=+t.dataset.pid;
-    const p=S.players.find(x=>x.id===pid);
+    const p=DRAFT.players.find(x=>x.id===pid);
     if(!p) return;
     p[field]=t.value;
-    saveLocal();
+    saveDraft();
     if(field==='start') {
       // rates change, rebuild all item rows
       const container=document.getElementById(`items-${pid}`);
@@ -1263,8 +1550,9 @@ function bindEvents() {
 async function init() {
   initDB();
 
-  // Show something immediately from localStorage while DB loads
-  if (!loadLocal()) S.players = [newPlayer()];
+  // Carrega salvos + rascunho do localStorage enquanto o banco responde
+  const hadSaved = loadLocal();
+  view = hadSaved ? 'dashboard' : 'cadastro';
   renderAll();
 
   const tasks = [fetchLivePTAX()];

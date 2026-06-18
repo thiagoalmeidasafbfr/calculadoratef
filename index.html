@@ -46,6 +46,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream-page);color
 /* ── PLAYER GRID ──────────────────────────────────────── */
 .players-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px}
 .players-grid.cad{grid-template-columns:1fr}
+.players-grid.dash{grid-template-columns:repeat(auto-fill,minmax(248px,1fr))}
 .add-player-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r-pill);border:1.5px dashed var(--gold-deep);background:transparent;color:var(--gold-deep);font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:all .15s;margin-bottom:20px}
 .add-player-btn:hover{background:var(--gold-tint);border-color:var(--gold)}
 
@@ -969,6 +970,7 @@ function buildApp() {
              : view==='consolidado' ? hConsolidado()
              : view==='resultado' ? hResultado()
              : view==='cotacoes' ? hCotacoes()
+             : view==='impacto' ? hImpacto()
              : hDashboard();
   return `
     ${hHero()}
@@ -985,7 +987,7 @@ function hHero() {
       <h1 class="hero-title">Baixa de <em>Intangível</em></h1>
       <div class="hero-sub">Custo de aquisição · Amortização mensal · Ganho econômico na transferência</div>
       <div class="nav" style="margin-top:14px">
-        ${tab('dashboard','Dashboard')}${tab('cadastro','Cadastro')}${tab('consolidado','Consolidado')}${tab('resultado','Resultado')}${tab('cotacoes','Cotações')}
+        ${tab('dashboard','Dashboard')}${tab('cadastro','Cadastro')}${tab('consolidado','Consolidado')}${tab('resultado','Resultado')}${tab('impacto','Impacto')}${tab('cotacoes','Cotações')}
       </div>
     </div>
     <div class="hero-right">
@@ -1037,7 +1039,7 @@ function hDashboard() {
     ${hTotalsBand()}
     ${hBullets()}
     <div class="sec-eyebrow" style="margin:20px 0 10px">Atletas na base</div>
-    <div class="players-grid">${S.players.map(p=>hPlayerSummary(p)).join('')}</div>
+    <div class="players-grid dash">${S.players.map(p=>hPlayerSummary(p)).join('')}</div>
     ${hSimulator()}`;
 }
 
@@ -1327,6 +1329,90 @@ function hCotacoes() {
     <div class="section-card">
       ${controls}
       ${body}
+    </div>`;
+}
+
+// Economia mensal nos meses seguintes a cada venda (custo evitado)
+function buildImpacto(players) {
+  const info=[];
+  for (const p of players){
+    const c=calcPlayer(p);
+    if(!c || c.exitMonths===null) continue;
+    const exitD=pDate(p.exit), endD=pDate(p.end);
+    const exitM=new Date(exitD.getFullYear(),exitD.getMonth(),1);
+    const endM=new Date(endD.getFullYear(),endD.getMonth(),1);
+    const firstM=new Date(exitM.getFullYear(),exitM.getMonth()+1,1);
+    if(firstM>endM) continue;   // saída no fim do contrato → sem meses subsequentes
+    info.push({p,firstM,endM});
+  }
+  if(!info.length) return {months:[]};
+  let minM=null,maxM=null;
+  for(const {firstM,endM} of info){ if(!minM||firstM<minM)minM=firstM; if(!maxM||endM>maxM)maxM=endM; }
+  const months=[];
+  let cur=new Date(minM), guard=0;
+  while(cur<=maxM && guard<240){
+    const ym=cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0');
+    let amort=0, payroll=0;
+    for(const {p,firstM,endM} of info){
+      if(cur<firstM||cur>endM) continue;
+      amort += monthlyAmortBRL(p,ym);
+      const encF=1+0.08+(p.inssPct??0)/100+(p.irpfPct??0)/100;
+      const Sal=p.salary??0, Img=p.imageRights??0;
+      let pr=Sal*encF+Img;
+      if(cur.getMonth()===11) pr+=(7/3)*Sal*encF;   // 13º + férias
+      payroll+=pr;
+    }
+    months.push({date:new Date(cur),amort,payroll,total:amort+payroll});
+    cur=new Date(cur.getFullYear(),cur.getMonth()+1,1); guard++;
+  }
+  return {months};
+}
+
+function hImpacto() {
+  const players=S.players.filter(p=>calcPlayer(p));
+  const data=buildImpacto(players);
+  const headHtml=`<div class="page-head"><div><div class="sec-eyebrow">Impacto pós-venda</div><div class="page-title">Economia mensal após as saídas</div></div></div>`;
+  if(!data.months.length){
+    return headHtml+emptyState('Sem vendas projetadas','Cadastre atletas com data de saída (e salário/encargos) para ver a economia mensal a partir do mês seguinte à venda.');
+  }
+  const tAmort=data.months.reduce((s,m)=>s+m.amort,0);
+  const tFolha=data.months.reduce((s,m)=>s+m.payroll,0);
+  const tTot=tAmort+tFolha;
+  let prevYear=null, acc=0;
+  const rows=data.months.map(m=>{
+    const yr=m.date.getFullYear();
+    let div='';
+    if(yr!==prevYear){prevYear=yr;div=`<tr class="tr-divider"><td colspan="5">${yr}</td></tr>`;}
+    acc+=m.total;
+    const mo=`${MONTHS_PT[m.date.getMonth()]}/${String(yr).slice(2)}`;
+    const dec=m.date.getMonth()===11?` <span class="chip-saída">13º+fér</span>`:'';
+    return div+`<tr>
+      <td>${mo}</td>
+      <td class="td-pos">R$ ${N(m.amort)}</td>
+      <td class="td-pos">R$ ${N(m.payroll)}${dec}</td>
+      <td class="td-pos" style="font-weight:600">R$ ${N(m.total)}</td>
+      <td class="td-dim">R$ ${N(acc)}</td>
+    </tr>`;
+  }).join('');
+  return `
+    ${headHtml}
+    <div class="totals-band">
+      <div class="tb-item"><div class="tb-eyebrow">Amortização evitada</div><div class="tb-value tb-pos">R$ ${N(tAmort)}</div><div class="tb-sub">baixa de intangível futura</div></div>
+      <div class="tb-item"><div class="tb-eyebrow">Folha evitada</div><div class="tb-value tb-pos">R$ ${N(tFolha)}</div><div class="tb-sub">salário+encargos+13º/férias+imagem</div></div>
+      <div class="tb-item"><div class="tb-eyebrow">Economia total</div><div class="tb-value tb-pos">R$ ${N(tTot)}</div><div class="tb-sub">impacto positivo no resultado</div></div>
+    </div>
+    <div class="section-card">
+      <div class="sec-eyebrow">Visão mensal · meses subsequentes às vendas</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink-4);margin-bottom:10px;letter-spacing:.03em">
+        A partir do mês seguinte a cada venda, estes custos deixam de onerar o resultado da companhia — cada R$ economizado é ganho no P&amp;L do mês.
+      </div>
+      <div class="monthly-scroll">
+        <table class="monthly-tbl">
+          <thead><tr><th>Mês</th><th>Amort. evitada</th><th>Folha evitada</th><th class="th-total">Economia</th><th class="th-total">Acumulado</th></tr></thead>
+          <tbody>${rows}</tbody>
+          <tfoot><tr class="mtx-head"><td>Total</td><td class="td-pos">R$ ${N(tAmort)}</td><td class="td-pos">R$ ${N(tFolha)}</td><td class="td-pos">R$ ${N(tTot)}</td><td class="td-dim">—</td></tr></tfoot>
+        </table>
+      </div>
     </div>`;
 }
 

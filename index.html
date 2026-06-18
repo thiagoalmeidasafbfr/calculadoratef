@@ -407,7 +407,7 @@ function getRate(currency, ym) {
 // ═══════════════════════════════════════════════════════════════════
 let _pid=0, _iid=0;
 function newItem(label='Transfer Fee',currency='BRL'){return {id:++_iid,label,amount:null,currency};}
-function newPlayer(){return {id:++_pid,name:'',start:'',end:'',exit:'',saleAmount:null,saleCurrency:'BRL',sellOnPct:null,sellOnMethod:'maisValia',saleIntermed:null,saleIntermedCurrency:'BRL',saleTaxes:null,items:[newItem('Transfer Fee'),newItem('Intermediação'),newItem('Luva')]};}
+function newPlayer(){return {id:++_pid,name:'',start:'',end:'',exit:'',saleAmount:null,saleCurrency:'BRL',sellOnPct:null,sellOnMethod:'maisValia',saleIntermed:null,saleIntermedCurrency:'BRL',saleIntermedMode:'valor',saleIntermedPct:null,saleIntermedMethod:'maisValia',saleTaxes:null,items:[newItem('Transfer Fee'),newItem('Intermediação'),newItem('Luva')]};}
 
 // S      = atletas SALVOS (vão para o banco / aparecem no Dashboard e Consolidado)
 // DRAFT  = formulário de cadastro (transiente, só vai pro banco ao apertar Salvar)
@@ -418,7 +418,7 @@ let SIM  = {playerId:null, exit:''};    // simulação de encerramento (não per
 
 function isEmptyPlayer(p){
   return !p.name && !p.start && !p.end && !p.exit
-    && p.saleAmount==null && p.saleIntermed==null && p.sellOnPct==null
+    && p.saleAmount==null && p.saleIntermed==null && p.saleIntermedPct==null && p.sellOnPct==null && p.saleTaxes==null
     && !p.items.some(i=>i.amount);
 }
 // mantém os contadores de id acima de qualquer id já existente em S/DRAFT
@@ -567,7 +567,10 @@ function calcPlayer(p) {
     const sellOnBase=(p.sellOnMethod==='bruto')?saleBRL:maisValia;
     sellOnFee=p.sellOnPct?sellOnBase*(p.sellOnPct/100):0;
 
-    if (p.saleIntermed) {
+    if ((p.saleIntermedMode||'valor')==='pct') {
+      const base=(p.saleIntermedMethod==='bruto')?saleBRL:maisValia;
+      saleIntermedBRL=p.saleIntermedPct?base*(p.saleIntermedPct/100):0;
+    } else if (p.saleIntermed) {
       const {rate:ir}=getRate(p.saleIntermedCurrency||'BRL',ymStr(p.exit));
       saleIntermedBRL=p.saleIntermed*ir;
     }
@@ -1152,6 +1155,21 @@ function hCard(p) {
       </div>
       <div class="sale-row">
         <span class="sale-lbl">Intermed. venda</span>
+        <div class="cur-toggle" style="width:80px">
+          <button class="cur-btn${(p.saleIntermedMode||'valor')==='valor'?' on':''}" data-pid="${p.id}" data-field="saleIntermedMode" data-v="valor">Valor</button>
+          <button class="cur-btn${(p.saleIntermedMode||'valor')==='pct'?' on':''}" data-pid="${p.id}" data-field="saleIntermedMode" data-v="pct">%</button>
+        </div>
+        ${(p.saleIntermedMode||'valor')==='pct'?`
+        <div class="amt-wrap" style="width:80px">
+          <input class="amt-inp" type="number" min="0" max="100" step="0.5"
+            data-pid="${p.id}" data-field="saleIntermedPct"
+            value="${p.saleIntermedPct??''}" placeholder="0">
+          <span style="padding:0 7px 0 2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-4);flex-shrink:0">%</span>
+        </div>
+        <div class="cur-toggle" style="width:116px">
+          <button class="cur-btn${(p.saleIntermedMethod||'maisValia')==='maisValia'?' on':''}" data-pid="${p.id}" data-field="saleIntermedMethod" data-v="maisValia">+ valia</button>
+          <button class="cur-btn${(p.saleIntermedMethod||'maisValia')==='bruto'?' on':''}" data-pid="${p.id}" data-field="saleIntermedMethod" data-v="bruto">Bruto</button>
+        </div>`:`
         <div class="amt-wrap" style="width:140px">
           <input class="amt-inp" type="number" min="0" step="50000"
             data-pid="${p.id}" data-field="saleIntermed"
@@ -1161,7 +1179,7 @@ function hCard(p) {
           <button class="cur-btn${(p.saleIntermedCurrency||'BRL')==='BRL'?' on':''}" data-pid="${p.id}" data-field="saleIntermedCur" data-v="BRL">R$</button>
           <button class="cur-btn${(p.saleIntermedCurrency||'BRL')==='EUR'?' on':''}" data-pid="${p.id}" data-field="saleIntermedCur" data-v="EUR">EUR</button>
           <button class="cur-btn${(p.saleIntermedCurrency||'BRL')==='USD'?' on':''}" data-pid="${p.id}" data-field="saleIntermedCur" data-v="USD">USD</button>
-        </div>
+        </div>`}
         <span id="intermed-brl-${p.id}" class="sale-brl-tag">${hIntermedBRL(p)}</span>
       </div>
       <div class="sale-row">
@@ -1221,7 +1239,15 @@ function hSellOnBRL(p) {
 }
 
 function hIntermedBRL(p) {
-  if (!p.saleIntermed||!p.exit) return '';
+  if (!p.exit) return '';
+  if ((p.saleIntermedMode||'valor')==='pct') {
+    if (!p.saleIntermedPct) return '';
+    const c=calcPlayer(p);
+    if (!c||!c.saleBRL) return '';
+    const method=(p.saleIntermedMethod||'maisValia')==='bruto'?`${p.saleIntermedPct}% bruto`:`${p.saleIntermedPct}% +valia`;
+    return `= R$ ${N(c.saleIntermedBRL)} <span style="font-size:9px;opacity:.65">(${method})</span>`;
+  }
+  if (!p.saleIntermed) return '';
   const cur=p.saleIntermedCurrency||'BRL';
   if (cur==='BRL') return '';
   const {rate}=getRate(cur,ymStr(p.exit));
@@ -1562,11 +1588,25 @@ function bindEvents() {
 
   document.addEventListener('click', e => {
     // Currency and method toggles
-    const t=e.target.closest('[data-field="itemCur"],[data-field="saleCur"],[data-field="sellOnMethod"],[data-field="saleIntermedCur"]');
+    const t=e.target.closest('[data-field="itemCur"],[data-field="saleCur"],[data-field="sellOnMethod"],[data-field="saleIntermedCur"],[data-field="saleIntermedMode"],[data-field="saleIntermedMethod"]');
     if(!t) return;
     const pid=+t.dataset.pid, iid=t.dataset.iid?+t.dataset.iid:null;
     const p=DRAFT.players.find(x=>x.id===pid);
     if(!p) return;
+
+    if(t.dataset.field==='saleIntermedMode') {
+      p.saleIntermedMode=t.dataset.v;   // troca o layout dos controles → re-render
+      saveDraft();
+      renderAll();
+      return;
+    }
+    if(t.dataset.field==='saleIntermedMethod') {
+      p.saleIntermedMethod=t.dataset.v;
+      saveDraft();
+      document.querySelectorAll(`[data-field="saleIntermedMethod"][data-pid="${pid}"]`).forEach(b=>b.classList.toggle('on',b.dataset.v===p.saleIntermedMethod));
+      document.getElementById(`intermed-brl-${pid}`).innerHTML=hIntermedBRL(p);
+      refreshResults(pid);
+    }
 
     if(t.dataset.field==='itemCur'&&iid) {
       const it=p.items.find(i=>i.id===iid);
@@ -1617,6 +1657,7 @@ function bindEvents() {
       if(field==='saleAmount')   p.saleAmount=t.value===''?null:parseFloat(t.value);
       if(field==='sellOnPct')    p.sellOnPct=t.value===''?null:parseFloat(t.value);
       if(field==='saleIntermed') p.saleIntermed=t.value===''?null:parseFloat(t.value);
+      if(field==='saleIntermedPct') p.saleIntermedPct=t.value===''?null:parseFloat(t.value);
       if(field==='saleTaxes')    p.saleTaxes=t.value===''?null:parseFloat(t.value);
     }
     saveDraft();
@@ -1646,7 +1687,7 @@ function bindEvents() {
       const soEl=document.getElementById(`sell-on-brl-${pid}`);
       if(soEl) soEl.innerHTML=hSellOnBRL(p);
     }
-    if(field==='saleIntermed') {
+    if(field==='saleIntermed'||field==='saleIntermedPct') {
       const imEl=document.getElementById(`intermed-brl-${pid}`);
       if(imEl) imEl.innerHTML=hIntermedBRL(p);
     }

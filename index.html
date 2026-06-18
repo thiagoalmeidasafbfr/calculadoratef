@@ -516,8 +516,9 @@ function newPlayer(){return {id:++_pid,name:'',start:'',end:'',exit:'',saleAmoun
 // DRAFT  = formulário de cadastro (transiente, só vai pro banco ao apertar Salvar)
 let S = {players:[]};
 let DRAFT = {players:[newPlayer()]};
-let view = 'dashboard';                 // 'dashboard' | 'cadastro' | 'consolidado'
+let view = 'dashboard';                 // 'dashboard' | 'cadastro' | 'consolidado' | 'resultado' | 'cotacoes'
 let SIM  = {playerId:null, exit:''};    // simulação de encerramento (não persiste)
+let COT  = {cur:'EUR', start:'', end:''}; // filtro da página de cotações
 
 function isEmptyPlayer(p){
   return !p.name && !p.start && !p.end && !p.exit
@@ -855,6 +856,7 @@ function exportToExcel() {
 // ═══════════════════════════════════════════════════════════════════
 const N  = v=>new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(v??0);
 const N0 = v=>new Intl.NumberFormat('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0}).format(v??0);
+const N4 = v=>new Intl.NumberFormat('pt-BR',{minimumFractionDigits:4,maximumFractionDigits:4}).format(v??0);
 const esc= s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const fmtD=s=>{if(!s||!s.includes('-'))return s||'';const[y,m,d]=s.split('-');return `${d}/${m}/${y}`;};
 const sym =c=>c==='EUR'?'€':c==='USD'?'US$':'R$';
@@ -944,6 +946,7 @@ function buildApp() {
   const page = view==='cadastro' ? hCadastro()
              : view==='consolidado' ? hConsolidado()
              : view==='resultado' ? hResultado()
+             : view==='cotacoes' ? hCotacoes()
              : hDashboard();
   return `
     ${hHero()}
@@ -960,7 +963,7 @@ function hHero() {
       <h1 class="hero-title">Baixa de <em>Intangível</em></h1>
       <div class="hero-sub">Custo de aquisição · Amortização mensal · Ganho econômico na transferência</div>
       <div class="nav" style="margin-top:14px">
-        ${tab('dashboard','Dashboard')}${tab('cadastro','Cadastro')}${tab('consolidado','Consolidado')}${tab('resultado','Resultado')}
+        ${tab('dashboard','Dashboard')}${tab('cadastro','Cadastro')}${tab('consolidado','Consolidado')}${tab('resultado','Resultado')}${tab('cotacoes','Cotações')}
       </div>
     </div>
     <div class="hero-right">
@@ -1237,6 +1240,62 @@ function hResultado() {
       <div style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--ink-4);letter-spacing:.04em">
         * Totais em moeda estrangeira (ME) só somam quando todos os atletas usam a mesma moeda; caso contrário use a linha em BRL. ME = moeda estrangeira · Custo (BRL) ao câmbio da aquisição · Baixa de Intangível = valor residual na saída.
       </div>
+    </div>`;
+}
+
+function hCotacoes() {
+  const today=_todayISO();
+  const defStart=COT.start||_addDaysISO(today,-120);
+  const defEnd=COT.end||today;
+  const controls=`
+    <div class="sim-controls">
+      <select id="cot-cur" class="sim-input">
+        <option value="EUR"${COT.cur==='EUR'?' selected':''}>EUR</option>
+        <option value="USD"${COT.cur==='USD'?' selected':''}>USD</option>
+      </select>
+      <input type="date" id="cot-start" class="sim-input" value="${defStart}">
+      <input type="date" id="cot-end" class="sim-input" value="${defEnd}">
+      <button class="btn-primary" data-action="cot-fetch">Buscar PTAX</button>
+    </div>`;
+  const curs=Object.keys(FX_DAYS).filter(c=>FX_DAYS[c]&&FX_DAYS[c].length).sort();
+  let body;
+  if (!curs.length) {
+    body=`<div class="rs-empty">Nenhuma cotação carregada ainda. Escolha a moeda e o período e clique em <strong>Buscar PTAX</strong> — ou cadastre atletas em moeda estrangeira (as cotações carregam automaticamente).</div>`;
+  } else {
+    const map={}, monthEnd={}, dateSet=new Set();
+    for (const c of curs){
+      map[c]={}; monthEnd[c]=new Set();
+      const lastOfYm={};
+      for (const x of FX_DAYS[c]){ map[c][x.d]=x.rate; dateSet.add(x.d); lastOfYm[x.d.slice(0,7)]=x.d; }
+      Object.values(lastOfYm).forEach(d=>monthEnd[c].add(d));
+    }
+    const dates=[...dateSet].sort().reverse();   // mais recentes primeiro
+    const head=`<tr><th style="text-align:left">Data</th>${curs.map(c=>`<th>${c}</th>`).join('')}</tr>`;
+    const rows=dates.map(d=>{
+      const cells=curs.map(c=>{
+        const v=map[c][d];
+        if(v==null) return `<td class="td-dim">—</td>`;
+        const fech=monthEnd[c].has(d)?` <span class="chip-saída" title="fechamento do mês — usado na amortização">fech.</span>`:'';
+        return `<td class="td-warn">${N4(v)}${fech}</td>`;
+      }).join('');
+      return `<tr><td style="text-align:left">${fmtD(d)}</td>${cells}</tr>`;
+    }).join('');
+    body=`
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink-4);margin-bottom:10px;letter-spacing:.03em">
+        PTAX de venda (BACEN) · ${dates.length} dias · <span class="chip-saída">fech.</span> = fechamento do mês (usado na amortização) · demais dias usados no registro pela data exata
+      </div>
+      <div class="monthly-scroll">
+        <table class="stbl" style="min-width:100%">
+          <thead>${head}</thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }
+  return `
+    <div class="page-head"><div><div class="sec-eyebrow">Cotações</div><div class="page-title">PTAX diária · BACEN</div></div></div>
+    <div class="section-card">
+      ${controls}
+      ${body}
     </div>`;
 }
 
@@ -1718,6 +1777,18 @@ function bindEvents() {
     const {action,pid,iid}={action:t.dataset.action,pid:t.dataset.pid?+t.dataset.pid:null,iid:t.dataset.iid?+t.dataset.iid:null};
 
     // ── ações globais ──
+    if(action==='cot-fetch'){
+      const cur=document.getElementById('cot-cur')?.value||'EUR';
+      const start=document.getElementById('cot-start')?.value||'';
+      const end=document.getElementById('cot-end')?.value||'';
+      if(!start||!end){ toast('Informe o período','warn'); return; }
+      COT={cur,start,end};
+      loadBacenSeries(cur,start,end).then(()=>{
+        renderAll();
+        if(!(FX_DAYS[cur]&&FX_DAYS[cur].length)) toast('Sem dados do BACEN para o período (verifique a rede)','warn');
+      });
+      return;
+    }
     if(action==='save-cadastro'){ saveCadastro(); return; }
     if(action==='add-player'){ DRAFT.players.push(newPlayer()); saveDraft(); renderAll(); return; }
     if(action==='edit-player'){

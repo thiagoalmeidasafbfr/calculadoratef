@@ -46,7 +46,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream-page);color
 /* ── PLAYER GRID ──────────────────────────────────────── */
 .players-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px}
 .players-grid.cad{grid-template-columns:1fr}
-.players-grid.dash{grid-template-columns:repeat(auto-fill,minmax(248px,1fr))}
+.players-grid.dash{grid-template-columns:repeat(auto-fill,minmax(min(460px,100%),1fr))}
 .add-player-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r-pill);border:1.5px dashed var(--gold-deep);background:transparent;color:var(--gold-deep);font-family:'Inter',sans-serif;font-size:9px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:all .15s;margin-bottom:20px}
 .add-player-btn:hover{background:var(--gold-tint);border-color:var(--gold)}
 
@@ -157,10 +157,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream-page);color
 /* ── MONTHLY VIEW ─────────────────────────────────────── */
 .monthly-tbl{border-collapse:collapse;font-size:11px;min-width:100%}
 .monthly-tbl th{position:sticky;top:0;z-index:1;padding:7px 10px;text-align:right;font-family:'Inter',sans-serif;font-size:7px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:var(--gold-deep);background:var(--tbl-head);border-bottom:2px solid var(--div-m);white-space:nowrap}
-.monthly-tbl th:first-child{text-align:left;min-width:72px;position:sticky;left:0;z-index:2}
+.monthly-tbl th:first-child{text-align:left;min-width:120px;font-size:8.5px;color:var(--ink-2);position:sticky;left:0;z-index:2}
 .monthly-tbl th.th-total{background:var(--cream-inset)}
 .monthly-tbl td{padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;border-bottom:1px solid var(--div);white-space:nowrap;color:var(--ink-2)}
-.monthly-tbl td:first-child{text-align:left;font-family:'Inter',sans-serif;font-size:9px;font-weight:500;color:var(--ink-4);letter-spacing:.04em;background:var(--cream-canvas);position:sticky;left:0;border-right:1px solid var(--div)}
+.monthly-tbl td:first-child{text-align:left;font-family:'Inter',sans-serif;font-size:11.5px;font-weight:600;color:var(--ink-1);letter-spacing:0;background:var(--cream-canvas);position:sticky;left:0;border-right:1px solid var(--div)}
 .monthly-tbl .td-active{color:var(--amber)}
 .monthly-tbl .td-exit{background:rgba(190,140,74,.1);color:var(--gold-deep);font-weight:500}
 .monthly-tbl .td-exited{color:var(--div-m)}
@@ -232,20 +232,20 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .b-pos{color:var(--pos)!important}.b-neg{color:var(--neg)!important}
 
 /* ── DASHBOARD: PLAYER SUMMARY CARD ───────────────────── */
-.sumcard{background:var(--cream-card);border:1px solid var(--div);border-radius:var(--r-md);box-shadow:var(--sh-h);padding:14px 16px;transition:box-shadow .18s}
+.sumcard{background:var(--cream-card);border:1px solid var(--div);border-radius:var(--r-md);box-shadow:var(--sh-h);padding:18px 20px;transition:box-shadow .18s}
 .sumcard:hover{box-shadow:var(--sh-l)}
-.sumcard-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
-.sumcard-name{font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:var(--ink-1);display:flex;align-items:center;gap:8px;min-width:0}
+.sumcard-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.sumcard-name{font-family:'Inter',sans-serif;font-size:16px;font-weight:600;color:var(--ink-1);display:flex;align-items:center;gap:8px;flex:1;min-width:0}
 .sumcard-actions{display:flex;gap:6px;flex-shrink:0}
 .mini-btn{border:1px solid var(--div-m);background:transparent;color:var(--gold-deep);font-family:'Inter',sans-serif;font-size:8px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;padding:4px 9px;border-radius:var(--r-pill);cursor:pointer;transition:all .12s}
 .mini-btn:hover{background:var(--gold-tint)}
 .mini-danger{color:var(--neg)}
 .mini-danger:hover{background:var(--neg-t)}
 .sumcard-dates{font-family:'Inter',sans-serif;font-size:9px;color:var(--ink-4);letter-spacing:.04em;margin-bottom:12px}
-.sumcard-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.sumcard-grid>div{display:flex;flex-direction:column;gap:3px}
-.sc-l{font-family:'Inter',sans-serif;font-size:7.5px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-4)}
-.sc-v{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;color:var(--ink-2)}
+.sumcard-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 16px}
+.sumcard-grid>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.sc-l{font-family:'Inter',sans-serif;font-size:8px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-4)}
+.sc-v{font-family:'JetBrains Mono',monospace;font-size:14.5px;font-weight:500;color:var(--ink-2);white-space:nowrap}
 .sc-amber{color:var(--amber)}.sc-gold{color:var(--gold-deep)}.sc-pos{color:var(--pos)}.sc-neg{color:var(--neg)}
 
 /* ── SIMULATOR ────────────────────────────────────────── */
@@ -1078,7 +1078,7 @@ function hPlayerSummary(p) {
   return `
   <div class="sumcard">
     <div class="sumcard-head">
-      <div class="sumcard-name"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name||'Sem nome')}</span> ${status}</div>
+      <div class="sumcard-name"><span>${esc(p.name||'Sem nome')}</span> ${status}</div>
       <div class="sumcard-actions">
         <button class="mini-btn" data-action="edit-player" data-pid="${p.id}">editar</button>
         <button class="mini-btn mini-danger" data-action="remove-saved" data-pid="${p.id}">remover</button>

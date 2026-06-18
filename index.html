@@ -510,7 +510,7 @@ function safeRerenderAfterFx(){
 // ═══════════════════════════════════════════════════════════════════
 let _pid=0, _iid=0;
 function newItem(label='Transfer Fee',currency='BRL'){return {id:++_iid,label,amount:null,currency};}
-function newPlayer(){return {id:++_pid,name:'',start:'',end:'',exit:'',saleAmount:null,saleCurrency:'BRL',sellOnPct:null,sellOnMethod:'maisValia',saleIntermed:null,saleIntermedCurrency:'BRL',saleIntermedMode:'valor',saleIntermedPct:null,saleIntermedMethod:'maisValia',saleTaxes:null,saleTaxesCurrency:'BRL',saleTaxesMode:'valor',saleTaxesPct:null,saleTaxesMethod:'maisValia',items:[newItem('Transfer Fee'),newItem('Intermediação'),newItem('Luva')]};}
+function newPlayer(){return {id:++_pid,name:'',start:'',end:'',exit:'',saleAmount:null,saleCurrency:'BRL',sellOnPct:null,sellOnMethod:'maisValia',saleIntermed:null,saleIntermedCurrency:'BRL',saleIntermedMode:'valor',saleIntermedPct:null,saleIntermedMethod:'maisValia',saleTaxes:null,saleTaxesCurrency:'BRL',saleTaxesMode:'valor',saleTaxesPct:null,saleTaxesMethod:'maisValia',salary:null,imageRights:null,items:[newItem('Transfer Fee'),newItem('Intermediação'),newItem('Luva')]};}
 
 // S      = atletas SALVOS (vão para o banco / aparecem no Dashboard e Consolidado)
 // DRAFT  = formulário de cadastro (transiente, só vai pro banco ao apertar Salvar)
@@ -522,7 +522,7 @@ let COT  = {cur:'EUR', start:'', end:''}; // filtro da página de cotações
 
 function isEmptyPlayer(p){
   return !p.name && !p.start && !p.end && !p.exit
-    && p.saleAmount==null && p.saleIntermed==null && p.saleIntermedPct==null && p.sellOnPct==null && p.saleTaxes==null && p.saleTaxesPct==null
+    && p.saleAmount==null && p.saleIntermed==null && p.saleIntermedPct==null && p.sellOnPct==null && p.saleTaxes==null && p.saleTaxesPct==null && p.salary==null && p.imageRights==null
     && !p.items.some(i=>i.amount);
 }
 // mantém os contadores de id acima de qualquer id já existente em S/DRAFT
@@ -648,6 +648,13 @@ function calcPlayer(p) {
     futureAmortAvoided=nextM<=endM?amortRange(p,nextM,endM):0;
   }
 
+  // Economia de folha (salário + direito de imagem) pelos meses restantes após a saída
+  const monthlyPayroll=(p.salary??0)+(p.imageRights??0);
+  let payrollSaved=null;
+  if (exitMonths!==null && monthsRemaining!==null) payrollSaved=monthlyPayroll*monthsRemaining;
+  // Economia total projetada na venda = amortização evitada + folha evitada
+  const totalEconomy=(exitMonths!==null)?((futureAmortAvoided??0)+(payrollSaved??0)):null;
+
   // Per-item detail at start-month rate (for display/export)
   const items=p.items.map(it=>{
     const amt=it.amount??0;
@@ -688,7 +695,7 @@ function calcPlayer(p) {
     gain=saleBRL-sellOnFee-saleIntermedBRL-saleTaxesBRL-totResid;
   }
 
-  return {contractMonths,exitMonths,monthsRemaining,monthlyTotal,futureAmortAvoided,items,totAct,acqBRL,totAmort,totResid,saleBRL,saleRate,saleSrc,gain,sellOnFee,maisValia,saleIntermedBRL,saleTaxesBRL,pctAmort:totAct>0?totAmort/totAct*100:0};
+  return {contractMonths,exitMonths,monthsRemaining,monthlyTotal,futureAmortAvoided,monthlyPayroll,payrollSaved,totalEconomy,items,totAct,acqBRL,totAmort,totResid,saleBRL,saleRate,saleSrc,gain,sellOnFee,maisValia,saleIntermedBRL,saleTaxesBRL,pctAmort:totAct>0?totAmort/totAct*100:0};
 }
 
 // monthly amort for a player in a given month (Date object, first of month)
@@ -1034,6 +1041,8 @@ function hBullets() {
   }
   const avoid=saidos.reduce((s,x)=>s+(x.c.futureAmortAvoided??0),0);
   if (avoid>0) bullets.push(`Amortização evitada com as saídas: <strong class="b-pos">R$ ${N(avoid)}</strong> no P&L futuro`);
+  const folha=saidos.reduce((s,x)=>s+(x.c.payrollSaved??0),0);
+  if (folha>0) bullets.push(`Folha evitada com as saídas (salário + imagem): <strong class="b-pos">R$ ${N(folha)}</strong>`);
   const gains=calcs.filter(x=>x.c.gain!=null);
   if (gains.length){
     const tot=gains.reduce((s,x)=>s+x.c.gain,0);
@@ -1097,15 +1106,22 @@ function hSimResult() {
   const gainBox = c.gain!=null
     ? `<div class="sim-box"><span class="sim-l">Lucro / Prejuízo</span><span class="sim-v ${c.gain>=0?'pos':'neg'}">${c.gain>=0?'+':''}R$ ${N(c.gain)}</span></div>`
     : '';
+  const payrollBox = c.monthlyPayroll>0
+    ? `<div class="sim-box"><span class="sim-l">Folha evitada</span><span class="sim-v pos">R$ ${N(c.payrollSaved??0)}</span></div>`
+    : '';
+  const ecoBox = c.totalEconomy>0
+    ? `<div class="sim-box"><span class="sim-l">Economia total</span><span class="sim-v pos">R$ ${N(c.totalEconomy)}</span></div>`
+    : '';
   return `
   <div class="sim-grid">
     <div class="sim-box"><span class="sim-l">Meses amortizados</span><span class="sim-v">${c.exitMonths}/${c.contractMonths}</span></div>
-    <div class="sim-box"><span class="sim-l">Amort. acumulada</span><span class="sim-v amber">R$ ${N(c.totAmort)}</span></div>
     <div class="sim-box"><span class="sim-l">Baixa (residual)</span><span class="sim-v gold">R$ ${N(c.totResid)}</span></div>
     <div class="sim-box"><span class="sim-l">Amort. evitada</span><span class="sim-v pos">R$ ${N(c.futureAmortAvoided??0)}</span></div>
+    ${payrollBox}
+    ${ecoBox}
     ${gainBox}
   </div>
-  <div class="sim-note">Saída hipotética em ${fmtD(SIM.exit)} · ${c.monthsRemaining} meses restantes ${c.gain!=null?'· lucro usa receita/sell-on cadastrados':'· cadastre receita de venda no atleta para projetar lucro'}</div>`;
+  <div class="sim-note">Saída hipotética em ${fmtD(SIM.exit)} · ${c.monthsRemaining} meses restantes${c.monthlyPayroll>0?` · folha R$ ${N(c.monthlyPayroll)}/mês (sal.+imagem)`:''} ${c.gain!=null?'· lucro usa receita/sell-on cadastrados':''}</div>`;
 }
 
 function toast(msg,kind='ok') {
@@ -1370,6 +1386,25 @@ function hCard(p) {
       ${hPctValueRow(p,{label:'Impostos e taxas',tag:'taxes',mode:p.saleTaxesMode||'valor',modeField:'saleTaxesMode',pct:p.saleTaxesPct,pctField:'saleTaxesPct',method:p.saleTaxesMethod||'maisValia',methodField:'saleTaxesMethod',val:p.saleTaxes,valField:'saleTaxes',cur:p.saleTaxesCurrency||'BRL',curField:'saleTaxesCur',brl:hTaxesBRL(p)})}
     </div>
 
+    <div class="pcard-sale" style="border-top:1px dashed var(--div-m)">
+      <div class="sale-row">
+        <span class="sale-lbl">Salário (mês)</span>
+        <div class="amt-wrap sale-amt">
+          <input class="amt-inp" type="text" inputmode="decimal" data-money="1"
+            data-pid="${p.id}" data-field="salary" value="${moneyToInput(p.salary)}" placeholder="0">
+        </div>
+        <span class="sale-brl-tag" style="font-size:10px;color:var(--ink-4)">R$ · folha mensal</span>
+      </div>
+      <div class="sale-row">
+        <span class="sale-lbl">Direito de imagem (mês)</span>
+        <div class="amt-wrap sale-amt">
+          <input class="amt-inp" type="text" inputmode="decimal" data-money="1"
+            data-pid="${p.id}" data-field="imageRights" value="${moneyToInput(p.imageRights)}" placeholder="0">
+        </div>
+        <span id="payroll-eco-${p.id}" class="sale-brl-tag">${hPayrollEco(p)}</span>
+      </div>
+    </div>
+
     <div class="pcard-results">
       <div id="res-${p.id}">${hResults(p)}</div>
     </div>
@@ -1404,6 +1439,15 @@ function hSaleBRL(p) {
   if (!p.saleAmount||!p.exit) return '';
   const {rate}=getDayRate(p.saleCurrency,p.exit);
   return p.saleCurrency!=='BRL'?`= R$ ${N(p.saleAmount*rate)}`:'';
+}
+
+function hPayrollEco(p) {
+  const monthly=(p.salary??0)+(p.imageRights??0);
+  if (!monthly) return '';
+  if (!p.exit) return `<span style="font-size:10px;color:var(--ink-4)">R$ · informe a saída p/ economia</span>`;
+  const c=calcPlayer(p);
+  if (!c||c.payrollSaved==null) return '';
+  return `economia = R$ ${N(c.payrollSaved)} <span style="font-size:9px;opacity:.65">(${c.monthsRemaining} meses × R$ ${N(monthly)}/mês)</span>`;
 }
 
 function hSellOnBRL(p) {
@@ -1519,8 +1563,8 @@ function hResults(p) {
     <div class="eq-cell"><span class="eq-lbl">Baixa</span><span class="eq-val" style="color:#fbbf24">R$ ${N(c.totResid)}</span></div>
     <span class="eq-op">=</span>
     <div class="eq-cell"><span class="eq-lbl">Lucro / Prejuízo</span><span class="eq-val ${c.gain>=0?'eq-pos':'eq-neg'}">${c.gain>=0?'+':''}R$ ${N(c.gain)}</span></div>
-  </div>
-  ${c.futureAmortAvoided!==null&&c.futureAmortAvoided>0?`<div style="padding:7px 12px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--ink-4);letter-spacing:.04em;background:var(--cream-canvas);border-top:1px solid var(--div)">Amort. evitada: <strong style="color:var(--pos)">R$ ${N(c.futureAmortAvoided)}</strong> · ${c.monthsRemaining} meses × R$ ${N(c.monthlyTotal)}/mês</div>`:''}`:``}`;
+  </div>`:''}
+  ${exitOk&&c.totalEconomy>0?`<div style="padding:8px 12px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--ink-4);letter-spacing:.04em;background:var(--cream-canvas);border-top:1px solid var(--div)">Economia ao vender (${c.monthsRemaining} meses restantes): ${c.futureAmortAvoided>0?`amort. evitada <strong>R$ ${N(c.futureAmortAvoided)}</strong>`:''}${c.payrollSaved>0?`${c.futureAmortAvoided>0?' · ':''}folha evitada <strong>R$ ${N(c.payrollSaved)}</strong> <span style="opacity:.6">(${N0(c.monthsRemaining)}× R$ ${N(c.monthlyPayroll)} sal.+imagem)</span>`:''} · total <strong style="color:var(--pos)">R$ ${N(c.totalEconomy)}</strong></div>`:''}`;
 }
 
 // ── Summary table ──────────────────────────────────────────────────
@@ -1923,6 +1967,8 @@ function bindEvents() {
       if(field==='saleIntermedPct') p.saleIntermedPct=num;
       if(field==='saleTaxes')       p.saleTaxes=num;
       if(field==='saleTaxesPct')    p.saleTaxesPct=num;
+      if(field==='salary')          p.salary=num;
+      if(field==='imageRights')     p.imageRights=num;
     }
     saveDraft();
 
@@ -1952,6 +1998,7 @@ function bindEvents() {
     if(field==='sellOnPct'){ const so=document.getElementById(`sell-on-brl-${pid}`); if(so) so.innerHTML=hSellOnBRL(p); }
     if(field==='saleIntermed'||field==='saleIntermedPct'){ const im=document.getElementById(`intermed-brl-${pid}`); if(im) im.innerHTML=hIntermedBRL(p); }
     if(field==='saleTaxes'||field==='saleTaxesPct'){ const tx=document.getElementById(`taxes-brl-${pid}`); if(tx) tx.innerHTML=hTaxesBRL(p); }
+    if(field==='salary'||field==='imageRights'){ const pe=document.getElementById(`payroll-eco-${pid}`); if(pe) pe.innerHTML=hPayrollEco(p); }
     refreshResults(pid);
   });
 
@@ -1980,6 +2027,8 @@ function bindEvents() {
     if(imEl) imEl.innerHTML=hIntermedBRL(p);
     const txEl=document.getElementById(`taxes-brl-${pid}`);
     if(txEl) txEl.innerHTML=hTaxesBRL(p);
+    const peEl=document.getElementById(`payroll-eco-${pid}`);
+    if(peEl) peEl.innerHTML=hPayrollEco(p);
     refreshResults(pid);
     schedulePrefetch();   // novas datas → buscar PTAX do dia/meses
   });

@@ -334,6 +334,7 @@ async function loadFromDB() {
     // atletas (e o rascunho está vazio), leva pro Dashboard
     if (S.players.length && view==='cadastro' && DRAFT.players.every(isEmptyPlayer)) view='dashboard';
     renderAll();
+    schedulePrefetch();
   }
   setStatus('saved');
 }
@@ -397,15 +398,111 @@ function updatePTAXChip() {
   el.innerHTML = `<span>EUR</span><strong>${fE}</strong><span style="opacity:.3">|</span><span>USD</span><strong>${fU}</strong>${LIVE_FX.date?`<span style="font-size:8px">${fmtD(LIVE_FX.date)}</span>`:''}<button class="ptax-refresh" onclick="fetchLivePTAX()">↻</button>`;
 }
 
+// ── BACEN PTAX (cotação oficial) ────────────────────────────────────
+// FX_BACEN: fechamento mensal real (amortização) · FX_DAYS: série diária (registro)
+const FX_BACEN = {};         // 'YYYY-MM' -> {EUR,USD,...}  (última cotação do mês)
+const FX_DAYS  = {};         // 'EUR' -> [{d:'YYYY-MM-DD',rate}] asc
+const _fxLoaded = {};        // 'EUR' -> {start,end} já buscados
+let _fxBusy = 0;
+const BACEN_BASE='https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata';
+function _bcDate(iso){const[y,m,d]=iso.split('-');return `${m}-${d}-${y}`;}
+function _todayISO(){return new Date().toISOString().slice(0,10);}
+function _addDaysISO(iso,n){const d=new Date(iso+'T00:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
+
+function updateFxStatus(){
+  const el=document.getElementById('fx-status');
+  if(el) el.textContent=_fxBusy>0?'PTAX BACEN…':'';
+}
+
+// busca a série diária de PTAX (venda) de uma moeda e popula os caches
+async function loadBacenSeries(cur,startISO,endISO){
+  if(cur==='BRL') return false;
+  if(endISO>_todayISO()) endISO=_todayISO();
+  if(startISO>endISO) return false;
+  const cov=_fxLoaded[cur];
+  if(cov && startISO>=cov.start && endISO<=cov.end) return false;
+  const s=cov?(startISO<cov.start?startISO:cov.start):startISO;
+  const e=cov?(endISO>cov.end?endISO:cov.end):endISO;
+  const url=`${BACEN_BASE}/CotacaoMoedaPeriodo(moeda=@moeda,dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)`
+    +`?@moeda='${cur}'&@dataInicial='${_bcDate(s)}'&@dataFinalCotacao='${_bcDate(e)}'`
+    +`&$top=100000&$format=json&$select=cotacaoVenda,dataHoraCotacao`;
+  _fxBusy++; updateFxStatus();
+  let changed=false;
+  try{
+    const r=await fetch(url); const j=await r.json();
+    const byDay={};
+    for(const x of (j.value||[])){ if(x.cotacaoVenda>0) byDay[x.dataHoraCotacao.slice(0,10)]=x.cotacaoVenda; }
+    const arr=Object.keys(byDay).sort().map(d=>({d,rate:byDay[d]}));
+    if(arr.length){
+      FX_DAYS[cur]=arr;
+      const byMonth={};
+      for(const {d,rate} of arr) byMonth[d.slice(0,7)]=rate;   // asc → última do mês
+      for(const ym in byMonth){ (FX_BACEN[ym]=FX_BACEN[ym]||{})[cur]=byMonth[ym]; }
+      _fxLoaded[cur]={start:s,end:e};
+      changed=true;
+    }
+  }catch(err){ console.warn('BACEN err',cur,err); }
+  _fxBusy--; updateFxStatus();
+  return changed;
+}
+
+// cotação de FECHAMENTO MENSAL (amortização): BACEN > tabela local > live
 function getRate(currency, ym) {
   if (currency==='BRL') return {rate:1,src:'BRL'};
-  if (ym && FX_HIST[ym]) return {rate:FX_HIST[ym][currency],src:`PTAX ${ym}`};
+  if (ym && FX_BACEN[ym]?.[currency]) return {rate:FX_BACEN[ym][currency],src:`BACEN ${ym}`};
+  if (ym){
+    const bk=Object.keys(FX_BACEN).filter(k=>FX_BACEN[k][currency]).sort();
+    for(const k of [...bk].reverse()){ if(k<=ym) return {rate:FX_BACEN[k][currency],src:`BACEN ${k}*`}; }
+  }
+  if (ym && FX_HIST[ym]) return {rate:FX_HIST[ym][currency],src:`tabela ${ym}`};
   if (ym) {
     const keys = Object.keys(FX_HIST).sort();
-    for (const k of [...keys].reverse()) { if (k<=ym) return {rate:FX_HIST[k][currency],src:`PTAX ${k}*`}; }
+    for (const k of [...keys].reverse()) { if (k<=ym) return {rate:FX_HIST[k][currency],src:`tabela ${k}*`}; }
   }
-  if (LIVE_FX[currency]) return {rate:LIVE_FX[currency],src:'PTAX live'};
+  if (LIVE_FX[currency]) return {rate:LIVE_FX[currency],src:'live'};
   return {rate:1,src:'?'};
+}
+
+// cotação do DIA EXATO (registro do custo/venda): última PTAX em/antes da data
+function getDayRate(currency, isoDate) {
+  if (currency==='BRL') return {rate:1,src:'BRL'};
+  const arr=FX_DAYS[currency];
+  if (isoDate && arr && arr.length){
+    let hit=null;
+    for(const x of arr){ if(x.d<=isoDate) hit=x; else break; }
+    if(hit) return {rate:hit.rate,src:`BACEN ${hit.d}`};
+  }
+  return getRate(currency, ymStr(isoDate||''));   // fallback até a série carregar
+}
+
+// agenda a busca das cotações necessárias e re-renderiza quando chegam
+let _fxPrefetchTimer=null;
+function schedulePrefetch(){ clearTimeout(_fxPrefetchTimer); _fxPrefetchTimer=setTimeout(prefetchRates,250); }
+async function prefetchRates(){
+  const players=[...S.players,...DRAFT.players];
+  const curs=new Set(); let minISO=null,maxISO=null;
+  const note=iso=>{ if(!iso)return; if(!minISO||iso<minISO)minISO=iso; if(!maxISO||iso>maxISO)maxISO=iso; };
+  for(const p of players){
+    if(!p.start) continue;
+    for(const it of p.items) if(it.amount && it.currency!=='BRL') curs.add(it.currency);
+    if(p.saleAmount && p.saleCurrency!=='BRL') curs.add(p.saleCurrency);
+    if((p.saleIntermedMode||'valor')==='valor' && p.saleIntermed && (p.saleIntermedCurrency||'BRL')!=='BRL') curs.add(p.saleIntermedCurrency);
+    if((p.saleTaxesMode||'valor')==='valor' && p.saleTaxes && (p.saleTaxesCurrency||'BRL')!=='BRL') curs.add(p.saleTaxesCurrency);
+    note(p.start); note(p.end); note(p.exit);
+  }
+  if(!curs.size||!minISO) return;
+  const startISO=_addDaysISO(minISO,-12);
+  let endISO=maxISO||_todayISO(); if(endISO>_todayISO()) endISO=_todayISO();
+  const res=await Promise.all([...curs].map(c=>loadBacenSeries(c,startISO,endISO)));
+  if(res.some(Boolean)) safeRerenderAfterFx();
+}
+// re-render sem roubar foco de um input em edição
+function safeRerenderAfterFx(){
+  const ae=document.activeElement;
+  if(ae && ae.closest && ae.closest('#app') && /^(INPUT|SELECT)$/.test(ae.tagName) && ae.type!=='date'){
+    setTimeout(safeRerenderAfterFx,800); return;
+  }
+  renderAll();
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -553,7 +650,7 @@ function calcPlayer(p) {
   // Per-item detail at start-month rate (for display/export)
   const items=p.items.map(it=>{
     const amt=it.amount??0;
-    const {rate,src}=getRate(it.currency,startYM);
+    const {rate,src}=getDayRate(it.currency,p.start);
     const totalBRL=amt*rate;
     const monthlyBRL=contractMonths>0?totalBRL/contractMonths:0;
     const amortBRL=exitMonths!==null?monthlyBRL*exitMonths:0;
@@ -565,7 +662,7 @@ function calcPlayer(p) {
 
   let saleBRL=0,saleRate=1,saleSrc='',gain=null,sellOnFee=0,maisValia=0,saleIntermedBRL=0,saleTaxesBRL=0;
   if (p.saleAmount&&exitD){
-    const {rate,src}=getRate(p.saleCurrency,ymStr(p.exit));
+    const {rate,src}=getDayRate(p.saleCurrency,p.exit);
     saleRate=rate; saleSrc=src;
     saleBRL=p.saleAmount*saleRate;
 
@@ -577,14 +674,14 @@ function calcPlayer(p) {
       const base=(p.saleIntermedMethod==='bruto')?saleBRL:maisValia;
       saleIntermedBRL=p.saleIntermedPct?base*(p.saleIntermedPct/100):0;
     } else if (p.saleIntermed) {
-      const {rate:ir}=getRate(p.saleIntermedCurrency||'BRL',ymStr(p.exit));
+      const {rate:ir}=getDayRate(p.saleIntermedCurrency||'BRL',p.exit);
       saleIntermedBRL=p.saleIntermed*ir;
     }
     if ((p.saleTaxesMode||'valor')==='pct') {
       const base=(p.saleTaxesMethod==='bruto')?saleBRL:maisValia;
       saleTaxesBRL=p.saleTaxesPct?base*(p.saleTaxesPct/100):0;
     } else if (p.saleTaxes) {
-      const {rate:tr}=getRate(p.saleTaxesCurrency||'BRL',ymStr(p.exit));
+      const {rate:tr}=getDayRate(p.saleTaxesCurrency||'BRL',p.exit);
       saleTaxesBRL=p.saleTaxes*tr;
     }
     gain=saleBRL-sellOnFee-saleIntermedBRL-saleTaxesBRL-totResid;
@@ -868,6 +965,7 @@ function hHero() {
     </div>
     <div class="hero-right">
       <span id="save-status" style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;color:rgba(243,238,226,.25)"></span>
+      <span id="fx-status" style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;color:var(--gold-soft)"></span>
       <div id="ptax-chip" class="ptax-chip">
         <span>EUR</span><strong>—</strong><span style="opacity:.3">|</span><span>USD</span><strong>—</strong>
         <button class="ptax-refresh" onclick="fetchLivePTAX()">↻</button>
@@ -943,7 +1041,7 @@ function hBullets() {
 
 function hPlayerSummary(p) {
   const c=calcPlayer(p);
-  const totalAct=p.items.reduce((s,it)=>{const{rate}=getRate(it.currency,ymStr(p.start));return s+(it.amount??0)*rate;},0);
+  const totalAct=p.items.reduce((s,it)=>{const{rate}=getDayRate(it.currency,p.start);return s+(it.amount??0)*rate;},0);
   const exited=c&&c.exitMonths!==null;
   const status=exited
     ? `<span class="chip-saída">saída ${fmtD(p.exit)}</span>`
@@ -1035,6 +1133,7 @@ function saveCadastro() {
   saveDraft();
   view='dashboard';
   renderAll();
+  schedulePrefetch();
   toast(`${toSave.length} atleta(s) salvo(s) no banco ✓`);
 }
 
@@ -1143,7 +1242,7 @@ function hResultado() {
 
 function hCard(p) {
   const c=calcPlayer(p);
-  const totalAct=p.items.reduce((s,it)=>{const{rate}=getRate(it.currency,ymStr(p.start));return s+(it.amount??0)*rate;},0);
+  const totalAct=p.items.reduce((s,it)=>{const{rate}=getDayRate(it.currency,p.start);return s+(it.amount??0)*rate;},0);
   return `
   <div class="pcard" id="card-${p.id}">
     <div class="pcard-head">
@@ -1220,8 +1319,7 @@ function hCard(p) {
 
 function hItemRow(pid,it) {
   const p=findAny(pid);
-  const startYM=ymStr(p?.start||'');
-  const {rate,src}=getRate(it.currency,startYM);
+  const {rate,src}=getDayRate(it.currency,p?.start||'');
   const brl=(it.amount??0)*rate;
   return `
   <div class="item-row" id="irow-${it.id}">
@@ -1245,7 +1343,7 @@ function hItemRow(pid,it) {
 
 function hSaleBRL(p) {
   if (!p.saleAmount||!p.exit) return '';
-  const {rate}=getRate(p.saleCurrency,ymStr(p.exit));
+  const {rate}=getDayRate(p.saleCurrency,p.exit);
   return p.saleCurrency!=='BRL'?`= R$ ${N(p.saleAmount*rate)}`:'';
 }
 
@@ -1269,7 +1367,7 @@ function hIntermedBRL(p) {
   if (!p.saleIntermed) return '';
   const cur=p.saleIntermedCurrency||'BRL';
   if (cur==='BRL') return '';
-  const {rate}=getRate(cur,ymStr(p.exit));
+  const {rate}=getDayRate(cur,p.exit);
   return `= R$ ${N(p.saleIntermed*rate)}`;
 }
 
@@ -1285,7 +1383,7 @@ function hTaxesBRL(p) {
   if (!p.saleTaxes) return '';
   const cur=p.saleTaxesCurrency||'BRL';
   if (cur==='BRL') return '';
-  const {rate}=getRate(cur,ymStr(p.exit));
+  const {rate}=getDayRate(cur,p.exit);
   return `= R$ ${N(p.saleTaxes*rate)}`;
 }
 
@@ -1326,7 +1424,7 @@ function hPctValueRow(p,c) {
 
 function hResults(p) {
   const c=calcPlayer(p);
-  const totalAct=p.items.reduce((s,it)=>{const{rate}=getRate(it.currency,ymStr(p.start));return s+(it.amount??0)*rate;},0);
+  const totalAct=p.items.reduce((s,it)=>{const{rate}=getDayRate(it.currency,p.start);return s+(it.amount??0)*rate;},0);
   if (!c || totalAct===0) {
     return `<div class="rs-empty">Preencha vigência e valores para ver os resultados</div>`;
   }
@@ -1626,7 +1724,7 @@ function bindEvents() {
       const sp=S.players.find(p=>p.id===pid); if(!sp) return;
       DRAFT.players=DRAFT.players.filter(d=>!isEmptyPlayer(d) && d._editId!==sp.id);
       const clone=JSON.parse(JSON.stringify(sp)); clone._editId=sp.id;
-      DRAFT.players.push(clone); saveDraft(); view='cadastro'; renderAll();
+      DRAFT.players.push(clone); saveDraft(); view='cadastro'; renderAll(); schedulePrefetch();
       toast(`Editando ${sp.name||'atleta'} — altere e salve`); return;
     }
     if(action==='remove-saved'){
@@ -1663,6 +1761,7 @@ function bindEvents() {
     const pid=+t.dataset.pid, iid=t.dataset.iid?+t.dataset.iid:null;
     const p=DRAFT.players.find(x=>x.id===pid);
     if(!p) return;
+    if(/Cur$/.test(t.dataset.field)) schedulePrefetch();   // mudou moeda → buscar PTAX
 
     if(t.dataset.field==='saleIntermedMode') {
       p.saleIntermedMode=t.dataset.v;   // troca o layout dos controles → re-render
@@ -1760,13 +1859,13 @@ function bindEvents() {
       // update BRL display in row without full re-render
       const it=p.items.find(i=>i.id===iid);
       if(it){
-        const {rate}=getRate(it.currency,ymStr(p.start));
+        const {rate}=getDayRate(it.currency,p.start);
         const brl=(it.amount??0)*rate;
         const row=document.getElementById(`irow-${iid}`);
         const brlSpan=row?.querySelector('.brl-val');
         if(brlSpan) brlSpan.textContent=`R$ ${N(brl)}`;
         // update items total
-        const totalAct=p.items.reduce((s,i)=>{const{rate:r}=getRate(i.currency,ymStr(p.start));return s+(i.amount??0)*r;},0);
+        const totalAct=p.items.reduce((s,i)=>{const{rate:r}=getDayRate(i.currency,p.start);return s+(i.amount??0)*r;},0);
         const totEl=document.querySelector(`#card-${pid} .items-total-val`);
         if(totEl) totEl.textContent=`R$ ${N(totalAct)}`;
       }
@@ -1811,6 +1910,7 @@ function bindEvents() {
     const txEl=document.getElementById(`taxes-brl-${pid}`);
     if(txEl) txEl.innerHTML=hTaxesBRL(p);
     refreshResults(pid);
+    schedulePrefetch();   // novas datas → buscar PTAX do dia/meses
   });
 }
 
@@ -1833,6 +1933,7 @@ async function init() {
     setStatus('offline');
   }
   await Promise.all(tasks);
+  schedulePrefetch();   // busca PTAX BACEN dos atletas já carregados
 }
 init();
 </script>

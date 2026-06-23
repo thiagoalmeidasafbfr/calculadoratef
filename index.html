@@ -325,6 +325,14 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .monthly-tbl tr.mtx-bold td:first-child{background:var(--cream-inset)}
 .monthly-tbl tr.mtx-head td{background:var(--tbl-head);border-top:2px solid var(--div-m);border-bottom:2px solid var(--div-m)}
 .monthly-tbl tr.mtx-head td:first-child{background:var(--tbl-head)}
+/* Filtro de corte do consolidado */
+.cut-filter{margin-bottom:14px}
+.cut-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.cut-lbl{font-family:'Inter',sans-serif;font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-4)}
+.cut-toggle{flex-shrink:0}
+.cut-toggle .cur-btn{padding:7px 14px;font-size:9.5px}
+.cut-hint{font-family:'Inter',sans-serif;font-size:11px;color:var(--ink-4);flex:1;min-width:240px;line-height:1.45}
+.cut-hint strong{color:var(--ink-2)}
 /* Demonstrativo de resultado: nomes dos atletas maiores e em preto, sem scroll vertical */
 .matrix-scroll{max-height:none}
 .matrix-tbl th{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:none;color:var(--ink-1);padding:10px 10px}
@@ -568,6 +576,7 @@ let DRAFT = null;       // null fora da edição; {players:[player], editId:numb
 let view = 'dashboard'; // 'dashboard' | 'edit' | 'consolidado' | 'resultado' | 'cotacoes' | 'impacto'
 let SIM  = {playerId:null, exit:''};    // simulação de encerramento (não persiste)
 let COT  = {cur:'EUR', start:'', end:''}; // filtro da página de cotações
+let CUT  = {date:''};                   // corte de data do consolidado ('' = totalidade)
 
 // Quais deduções podem entrar na base de cada uma (ordem definida pelo usuário)
 const SALE_DEDUCTION_LABELS = {solidariedade:'Solidariedade',sellOn:'Sell-on fee',intermed:'Intermediação',taxes:'Impostos e taxas',acquisition:'Custo de aquisição'};
@@ -886,6 +895,74 @@ function calcPlayer(p) {
   return {contractMonths,exitMonths,monthsRemaining,monthlyTotal,futureAmortAvoided,monthlyPayroll,payrollSaved,payrollSalary,payrollImage,totalEconomy,items,totAct,acqBRL,totAmort,totResid,saleBRL,saleRate,saleSrc,gain,solidariedadeBRL,sellOnFee,maisValia,saleIntermedBRL,saleTaxesBRL,saleExtras:extras,saleExtrasBRL,pctAmort:totAct>0?totAmort/totAct*100:0};
 }
 
+// Versão do calcPlayer com corte de data (DRE até dia X). Quando cutoffISO é
+// vazio, retorna o cálculo na totalidade (igual a calcPlayer).
+function calcPlayerCutoff(p, cutoffISO){
+  const base = calcPlayer(p);
+  if (!base || !cutoffISO) return base;
+  const cutoffD = pDate(cutoffISO);
+  if (isNaN(cutoffD)) return base;
+  const startD = pDate(p.start);
+  const endD   = pDate(p.end);
+  const startM = new Date(startD.getFullYear(), startD.getMonth(), 1);
+  const endM   = new Date(endD.getFullYear(), endD.getMonth(), 1);
+  const cutM   = new Date(cutoffD.getFullYear(), cutoffD.getMonth(), 1);
+  const exitD  = p.exit ? pDate(p.exit) : null;
+  const exitM  = (exitD && !isNaN(exitD)) ? new Date(exitD.getFullYear(), exitD.getMonth(), 1) : null;
+
+  // Corte antes do início do contrato → nada aconteceu ainda
+  if (cutM < startM) {
+    return {...base,
+      totAmort:0, totResid:0,
+      saleBRL:0, solidariedadeBRL:0, sellOnFee:0, saleIntermedBRL:0, saleTaxesBRL:0,
+      saleExtras:[], saleExtrasBRL:0, gain:null,
+      futureAmortAvoided:null, payrollSaved:null, payrollSalary:0, payrollImage:0,
+      totalEconomy:null, exitMonths:null, monthsRemaining:null};
+  }
+
+  const exitedByCutoff = !!(exitM && exitM <= cutM);
+
+  // Amortização acumulada até min(saída,corte) ou min(fim,corte) se ainda não saiu
+  const amortCap = exitedByCutoff ? exitM : (cutM < endM ? cutM : endM);
+  const totAmort = amortRange(p, startM, amortCap);
+  const totResid = exitedByCutoff ? Math.max(0, base.totAct - totAmort) : 0;
+
+  // Venda/lucro só entram se a saída ocorreu até o corte
+  const saleBRL          = exitedByCutoff ? base.saleBRL          : 0;
+  const solidariedadeBRL = exitedByCutoff ? base.solidariedadeBRL : 0;
+  const sellOnFee        = exitedByCutoff ? base.sellOnFee        : 0;
+  const saleIntermedBRL  = exitedByCutoff ? base.saleIntermedBRL  : 0;
+  const saleTaxesBRL     = exitedByCutoff ? base.saleTaxesBRL     : 0;
+  const saleExtras       = exitedByCutoff ? base.saleExtras       : [];
+  const saleExtrasBRL    = exitedByCutoff ? base.saleExtrasBRL    : 0;
+  const gain             = exitedByCutoff ? base.gain             : null;
+
+  // Amortização evitada / folha evitada: meses de (saída+1) até min(fim, corte)
+  let futureAmortAvoided=null, payrollSaved=null, payrollSalary=0, payrollImage=0;
+  if (exitedByCutoff){
+    const nextM = new Date(exitM.getFullYear(), exitM.getMonth()+1, 1);
+    const cap   = cutM < endM ? cutM : endM;
+    futureAmortAvoided = nextM <= cap ? amortRange(p, nextM, cap) : 0;
+    const Sal = p.salary??0, Img = p.imageRights??0;
+    let cur = new Date(nextM);
+    while (cur <= cap){
+      payrollSalary += Sal;
+      if (cur.getMonth() === 11) payrollSalary += Sal;   // 13º só no salário
+      payrollImage  += Img;
+      cur = new Date(cur.getFullYear(), cur.getMonth()+1, 1);
+    }
+    payrollSaved = payrollSalary + payrollImage;
+  }
+  const totalEconomy   = exitedByCutoff ? ((futureAmortAvoided??0)+(payrollSaved??0)) : null;
+  const exitMonths     = exitedByCutoff ? base.exitMonths     : null;
+  const monthsRemaining= exitedByCutoff ? base.monthsRemaining: null;
+
+  return {...base, totAmort, totResid, saleBRL, solidariedadeBRL, sellOnFee,
+    saleIntermedBRL, saleTaxesBRL, saleExtras, saleExtrasBRL, gain,
+    futureAmortAvoided, payrollSaved, payrollSalary, payrollImage, totalEconomy,
+    exitMonths, monthsRemaining};
+}
+
 // monthly amort for a player in a given month (Date object, first of month)
 function monthAmort(p,month) {
   if (!p.start||!p.end) return {amort:0,status:'inactive'};
@@ -1187,8 +1264,20 @@ function emptyState(title,sub){
 
 function hConsolidado() {
   if (!S.players.length) return emptyState('Nenhum atleta salvo','Cadastre e salve atletas para ver o consolidado.');
+  const cutOn = !!CUT.date;
   return `
     <div class="page-head"><div><div class="sec-eyebrow">Consolidado</div><div class="page-title">Visão consolidada</div><div class="page-desc">Resumo por atleta, extrato de parcelas mensais e a evolução da amortização mês a mês.</div></div></div>
+    <div class="section-card cut-filter">
+      <div class="cut-row">
+        <div class="cut-lbl">Visão</div>
+        <div class="cur-toggle cut-toggle">
+          <button class="cur-btn${!cutOn?' on':''}" data-action="cut-set" data-mode="all">Totalidade</button>
+          <button class="cur-btn${cutOn?' on':''}" data-action="cut-set" data-mode="date">Até a data</button>
+        </div>
+        <input id="cut-date" type="date" class="d-inp" value="${CUT.date||''}" ${!cutOn?'disabled':''}>
+        <div class="cut-hint">${cutOn?`Considera apenas o que ocorre até <strong>${fmtD(CUT.date)||CUT.date}</strong>. Saídas posteriores ao corte ficam fora de Receita / Lucro / Baixa, e amort./folha evitadas são somadas só até essa data — útil para a DRE do exercício.`:`Mostrando todos os valores na sua totalidade (até o fim do contrato).`}</div>
+      </div>
+    </div>
     ${hSummary()}
     ${hLedger()}
     ${hMonthly()}`;
@@ -1959,9 +2048,10 @@ function hSummary() {
   if (active.length===0) return `<div id="summary-section"></div>`;
 
   const rows=active.map(p=>{
-    const c=calcPlayer(p);
+    const c=calcPlayerCutoff(p, CUT.date);
     const chipGain=c.gain!==null?(c.gain>=0?`<span class="chip-saída chip-pos">ganho</span>`:`<span class="chip-saída chip-neg">perda</span>`):'';
-    const exitLabel=c.exitMonths!==null?`${c.exitMonths}/${c.contractMonths} meses <span class="chip-saída">${fmtD(p.exit)}</span>`:`— <span class="chip-saída" style="opacity:.4">sem data</span>`;
+    const cutNote = CUT.date && p.exit && pDate(p.exit) > pDate(CUT.date) ? `<span class="chip-saída" style="opacity:.55" title="Saída após a data de corte">após corte</span>` : '';
+    const exitLabel=c.exitMonths!==null?`${c.exitMonths}/${c.contractMonths} meses <span class="chip-saída">${fmtD(p.exit)}</span>`:(p.exit?`— ${cutNote}`:`— <span class="chip-saída" style="opacity:.4">sem data</span>`);
     const custosVenda=(c.solidariedadeBRL||0)+(c.sellOnFee||0)+(c.saleIntermedBRL||0)+(c.saleTaxesBRL||0)+(c.saleExtrasBRL||0);
     return `<tr>
       <td>${esc(p.name||'Sem nome')}</td>
@@ -1969,7 +2059,7 @@ function hSummary() {
       <td class="td-warn">R$ ${N(c.totAct)}</td>
       <td class="td-amber">R$ ${N(c.monthlyTotal)}<span style="font-size:8px;color:var(--ink-4)">/mês</span></td>
       <td>${exitLabel}</td>
-      <td class="td-dim">${c.exitMonths!==null?`R$ ${N(c.totAmort)}`:'—'}</td>
+      <td class="td-dim">${(c.totAmort||0)>0?`R$ ${N(c.totAmort)}`:'—'}</td>
       <td class="td-gold">${c.exitMonths!==null?`R$ ${N(c.totResid)}`:'—'}</td>
       <td>${c.saleBRL>0?`R$ ${N(c.saleBRL)}`:'—'}</td>
       <td class="td-neg">${custosVenda>0?`R$ ${N(custosVenda)}`:'—'}</td>
@@ -1979,11 +2069,11 @@ function hSummary() {
     </tr>`;
   }).join('');
 
-  const calcs=active.map(p=>calcPlayer(p));
+  const calcs=active.map(p=>calcPlayerCutoff(p, CUT.date));
   const tt={
     act:  calcs.reduce((s,c)=>s+c.totAct,0),
     mo:   calcs.reduce((s,c)=>s+c.monthlyTotal,0),
-    amort:calcs.filter(c=>c.exitMonths!==null).reduce((s,c)=>s+c.totAmort,0),
+    amort:calcs.reduce((s,c)=>s+(c.totAmort||0),0),
     res:  calcs.filter(c=>c.exitMonths!==null).reduce((s,c)=>s+c.totResid,0),
     sale: calcs.filter(c=>c.saleBRL>0).reduce((s,c)=>s+c.saleBRL,0),
     custos:calcs.filter(c=>c.gain!==null).reduce((s,c)=>s+(c.solidariedadeBRL||0)+(c.sellOnFee||0)+(c.saleIntermedBRL||0)+(c.saleTaxesBRL||0)+(c.saleExtrasBRL||0),0),
@@ -2340,6 +2430,17 @@ function bindEvents() {
     const {action,pid,iid}={action:t.dataset.action,pid:t.dataset.pid?+t.dataset.pid:null,iid:t.dataset.iid?+t.dataset.iid:null};
 
     // ── ações globais ──
+    if(action==='cut-set'){
+      const mode=t.dataset.mode;
+      if(mode==='all'){ CUT.date=''; }
+      else if(mode==='date'){
+        if(!CUT.date){
+          const d=new Date(); CUT.date=`${d.getFullYear()}-12-31`;
+        }
+      }
+      renderAll();
+      return;
+    }
     if(action==='cot-fetch'){
       const cur=document.getElementById('cot-cur')?.value||'EUR';
       const start=document.getElementById('cot-start')?.value||'';
@@ -2615,6 +2716,7 @@ function bindEvents() {
     // Simulador de encerramento (Dashboard)
     if(t.id==='sim-player'){ SIM.playerId=t.value?+t.value:null; const r=document.getElementById('sim-result'); if(r)r.innerHTML=hSimResult(); return; }
     if(t.id==='sim-exit'){ SIM.exit=t.value; const r=document.getElementById('sim-result'); if(r)r.innerHTML=hSimResult(); return; }
+    if(t.id==='cut-date'){ CUT.date=t.value||''; renderAll(); return; }
     const field=t.dataset.field;
     if(!['start','end','exit'].includes(field)) return;
     const pid=+t.dataset.pid;

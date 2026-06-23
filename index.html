@@ -2157,7 +2157,13 @@ function bindEvents() {
       p.saleCurrency=t.dataset.v;
       saveDraft();
       document.querySelectorAll(`[data-field="saleCur"][data-pid="${pid}"]`).forEach(b=>b.classList.toggle('on',b.dataset.v===p.saleCurrency));
-      document.getElementById(`sale-brl-${pid}`).innerHTML=hSaleBRL(p);
+      // moeda da receita muda saleBRL → recalcula todos os tags dependentes
+      const tags={
+        'sale-brl-':hSaleBRL,'solid-brl-':hSolidariedadeBRL,'sell-on-brl-':hSellOnBRL,
+        'intermed-brl-':hIntermedBRL,'taxes-brl-':hTaxesBRL,
+      };
+      for(const [pref,fn] of Object.entries(tags)){ const el=document.getElementById(pref+pid); if(el) el.innerHTML=fn(p); }
+      for(const ex of (p.saleExtras||[])){ const el=document.getElementById(`extra-brl-${ex.id}`); if(el) el.innerHTML=hSaleExtraBRL(p,ex); }
       refreshResults(pid);
     }
     if(t.dataset.field==='sellOnMethod') {

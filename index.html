@@ -556,9 +556,11 @@ function newItem(label='Transfer Fee',currency='BRL'){return {id:++_iid,label,am
 function newSaleExtra(label=''){return {id:++_eid,label,mode:'pct',val:null,currency:'BRL',pct:null,method:'maisValia'};}
 function newPlayer(){return {id:++_pid,name:'',start:'',end:'',exit:'',saleAmount:null,saleCurrency:'BRL',solidariedadePct:null,sellOnPct:null,sellOnMethod:'maisValia',saleIntermed:null,saleIntermedCurrency:'BRL',saleIntermedMode:'valor',saleIntermedPct:null,saleIntermedMethod:'maisValia',saleTaxes:null,saleTaxesCurrency:'BRL',saleTaxesMode:'valor',saleTaxesPct:null,saleTaxesMethod:'maisValia',salary:null,imageRights:null,inssPct:null,irpfPct:null,items:[newItem('Transfer Fee'),newItem('Intermediação'),newItem('Luva')],saleExtras:[]};}
 
-// S = atletas (única fonte da verdade — toda edição auto-salva)
+// S     = atletas salvos (persistem em localStorage + Supabase)
+// DRAFT = atleta sendo editado/adicionado (apenas 1; volátil em memória)
 let S = {players:[]};
-let view = 'dashboard';                 // 'dashboard' | 'consolidado' | 'resultado' | 'cotacoes' | 'impacto'
+let DRAFT = null;       // null fora da edição; {players:[player], editId:number|null} durante edição
+let view = 'dashboard'; // 'dashboard' | 'edit' | 'consolidado' | 'resultado' | 'cotacoes' | 'impacto'
 let SIM  = {playerId:null, exit:''};    // simulação de encerramento (não persiste)
 let COT  = {cur:'EUR', start:'', end:''}; // filtro da página de cotações
 
@@ -658,8 +660,9 @@ function persistSaved(){            // localStorage + banco
   saveSavedLocal();
   saveToDB();
 }
-// alias de compat: toda alteração agora persiste direto
-function saveDraft(){ persistSaved(); }
+// DRAFT é volátil — alterações no atleta sendo editado vivem só em memória
+// até "Salvar". Mantemos a função como noop para preservar os callsites.
+function saveDraft(){}
 function loadLocal(){
   let hadSaved=false;
   try{
@@ -1091,7 +1094,10 @@ function maskMoneyInput(el){
   while(pos<disp.length && seen<digitsBefore){ if(/\d/.test(disp[pos])) seen++; pos++; }
   if(el.setSelectionRange) try{ el.setSelectionRange(pos,pos); }catch(e){}
 }
-function findAny(pid){ return S.players.find(x=>x.id===pid); }
+function findAny(pid){
+  if (DRAFT?.players){ const p=DRAFT.players.find(x=>x.id===pid); if (p) return p; }
+  return S.players.find(x=>x.id===pid);
+}
 
 // ═══════════════════════════════════════════════════════════════════
 // RENDER
@@ -1102,13 +1108,13 @@ function renderAll() {
 }
 
 function refreshResults(pid) {
-  const p=S.players.find(x=>x.id===pid);
+  const p=findAny(pid);
   const el=document.getElementById(`res-${pid}`);
   if(p&&el) el.innerHTML=hResults(p);
 }
 
 function refreshItemRow(pid,iid) {
-  const p=S.players.find(x=>x.id===pid);
+  const p=findAny(pid);
   const it=p?.items.find(i=>i.id===iid);
   const row=document.getElementById(`irow-${iid}`);
   if(it&&row){const tmp=document.createElement('div');tmp.innerHTML=hItemRow(pid,it);row.replaceWith(tmp.firstElementChild);}
@@ -1132,7 +1138,8 @@ function refreshLedger() {
 }
 
 function buildApp() {
-  const page = view==='consolidado' ? hConsolidado()
+  const page = view==='edit' ? hEdit()
+             : view==='consolidado' ? hConsolidado()
              : view==='resultado' ? hResultado()
              : view==='cotacoes' ? hCotacoes()
              : view==='impacto' ? hImpacto()
@@ -1184,28 +1191,74 @@ function hConsolidado() {
 
 function hDashboard() {
   const hasPlayers = S.players.length>0;
-  const indicators = hasPlayers ? `
-    ${hTotalsBand()}
-    ${hBullets()}` : '';
-  const playerCards = hasPlayers
-    ? `<div class="players-grid cad">${S.players.map((p,i)=>hCard(p,i)).join('')}</div>`
-    : `<div class="empty-state" style="margin:24px 0"><div class="es-title">Nenhum atleta cadastrado</div><div class="es-sub">Clique em "Adicionar atleta" para começar.</div></div>`;
-  return `
+  const head = `
     <div class="page-head">
       <div>
         <div class="sec-eyebrow">Dashboard</div>
-        <div class="page-title">Atletas</div>
-        <div class="page-desc">Edite cada atleta diretamente abaixo — contrato, aquisição, saída e folha. Toda alteração é salva automaticamente.</div>
+        <div class="page-title">Visão geral</div>
+        <div class="page-desc">Indicadores da base de atletas: total ativado, amortização mensal, baixas e o resultado econômico projetado das vendas.</div>
       </div>
       <div class="page-head-actions">
         <button class="btn-primary" data-action="add-player">＋ Adicionar atleta</button>
       </div>
-    </div>
-    ${indicators}
-    ${hasPlayers?`<div class="sec-eyebrow" style="margin:20px 0 10px">Atletas na base</div>`:''}
-    ${playerCards}
-    ${hasPlayers?`<div class="cadastro-foot"><button class="btn-primary lg" data-action="add-player">＋ Adicionar atleta</button></div>`:''}
+    </div>`;
+  if (!hasPlayers) return `${head}<div class="empty-state" style="margin:24px 0"><div class="es-title">Nenhum atleta cadastrado</div><div class="es-sub">Clique em "Adicionar atleta" para começar.</div></div>`;
+  return `
+    ${head}
+    ${hTotalsBand()}
+    ${hBullets()}
+    <div class="sec-eyebrow" style="margin:20px 0 10px">Atletas na base</div>
+    <div class="players-grid dash">${S.players.map(p=>hPlayerSummary(p)).join('')}</div>
     ${hSimulator()}`;
+}
+
+function hPlayerSummary(p) {
+  const c=calcPlayer(p);
+  const totalAct=p.items.reduce((s,it)=>{const{rate}=getDayRate(it.currency,p.start);return s+(it.amount??0)*rate;},0);
+  const exited=c&&c.exitMonths!==null;
+  const status=exited
+    ? `<span class="chip-saída">saída ${fmtD(p.exit)}</span>`
+    : (c?`<span class="chip-saída chip-pos">ativo</span>`:`<span class="chip-saída chip-neg">incompleto</span>`);
+  return `
+  <div class="sumcard">
+    <div class="sumcard-head">
+      <div class="sumcard-name"><span>${esc(p.name||'Sem nome')}</span> ${status}</div>
+      <div class="sumcard-actions">
+        <button class="mini-btn" data-action="edit-player" data-pid="${p.id}">editar</button>
+        <button class="mini-btn mini-danger" data-action="remove-player" data-pid="${p.id}">remover</button>
+      </div>
+    </div>
+    <div class="sumcard-dates">${fmtD(p.start)||'—'} → ${fmtD(p.end)||'—'}${c?` · ${c.contractMonths} meses`:''}</div>
+    <div class="sumcard-grid">
+      <div><span class="sc-l">Total ativado</span><span class="sc-v">R$ ${N(totalAct)}</span></div>
+      <div><span class="sc-l">Amort. mensal</span><span class="sc-v sc-amber">R$ ${N(c?c.monthlyTotal:0)}</span></div>
+      <div><span class="sc-l">Baixa residual</span><span class="sc-v sc-gold">${exited?`R$ ${N(c.totResid)}`:'—'}</span></div>
+      <div><span class="sc-l">Lucro / Prejuízo</span><span class="sc-v ${c&&c.gain!=null?(c.gain>=0?'sc-pos':'sc-neg'):''}">${c&&c.gain!=null?`${c.gain>=0?'+':''}R$ ${N(c.gain)}`:'—'}</span></div>
+    </div>
+  </div>`;
+}
+
+function hEdit() {
+  if (!DRAFT?.players?.length) return emptyState('Nada para editar','Use o botão Adicionar atleta no Dashboard.');
+  const p = DRAFT.players[0];
+  const isNew = DRAFT.editId == null;
+  return `
+    <div class="page-head">
+      <div>
+        <div class="sec-eyebrow">${isNew?'Novo atleta':'Editar atleta'}</div>
+        <div class="page-title">${isNew?'Lançamento de atleta':esc(p.name||'Sem nome')}</div>
+        <div class="page-desc">Preencha cada bloco na ordem — contrato, aquisição, saída e folha. As alterações só são gravadas ao clicar em Salvar.</div>
+      </div>
+      <div class="page-head-actions">
+        <button class="btn-ghost" data-action="cancel-edit">Cancelar</button>
+        <button class="btn-primary" data-action="save-edit">Salvar</button>
+      </div>
+    </div>
+    <div class="players-grid cad">${hCard(p,0)}</div>
+    <div class="cadastro-foot">
+      <button class="btn-ghost" data-action="cancel-edit" style="margin-right:8px">Cancelar</button>
+      <button class="btn-primary lg" data-action="save-edit">Salvar atleta</button>
+    </div>`;
 }
 
 function hBullets() {
@@ -2141,10 +2194,14 @@ function bindEvents() {
   if(bindEvents._done) return;   // delegação: registrar listeners uma única vez
   bindEvents._done=true;
 
-  // Navegação entre páginas
+  // Navegação entre páginas — descarta o atleta em edição se sair sem salvar
   document.addEventListener('click', e => {
     const nav=e.target.closest('[data-nav]');
-    if(nav){ view=nav.dataset.nav; renderAll(); }
+    if(nav){
+      if (DRAFT && view==='edit' && nav.dataset.nav!=='edit') DRAFT=null;
+      view=nav.dataset.nav;
+      renderAll();
+    }
   });
 
   // Drag-and-drop para reordenar deduções
@@ -2188,7 +2245,7 @@ function bindEvents() {
     const r=wrap.getBoundingClientRect();
     const before=e.clientY < r.top + r.height/2;
     const targetKey=wrap.dataset.dedKey;
-    const p=S.players.find(x=>x.id===_drag.pid);
+    const p=findAny(_drag.pid);
     if(p && targetKey!==_drag.key){
       const ord=getSaleOrder(p);
       const from=ord.indexOf(_drag.key);
@@ -2226,7 +2283,7 @@ function bindEvents() {
     const preset=e.target.closest('[data-action="base-preset"]');
     if(preset){
       const pid=+preset.dataset.pid, tag=preset.dataset.tag, kind=preset.dataset.preset;
-      const p=S.players.find(x=>x.id===pid);
+      const p=findAny(pid);
       if(p){
         const opts=new Set(availableBases(p,tag).map(o=>o.key));
         let arr=[];
@@ -2254,7 +2311,7 @@ function bindEvents() {
     const t=e.target;
     if(!t.dataset.inclTag) return;
     const pid=+t.dataset.pid, tag=t.dataset.inclTag, key=t.dataset.inclKey;
-    const p=S.players.find(x=>x.id===pid);
+    const p=findAny(pid);
     if(!p) return;
     const arr=getSaleIncl(p,tag).slice();
     const has=arr.includes(key);
@@ -2291,32 +2348,66 @@ function bindEvents() {
       return;
     }
     if(action==='add-player'){
-      // não empilha fichas em branco: se já existe uma vazia, leva até ela
-      let target=S.players.find(isEmptyPlayer);
-      const isNew=!target;
-      if(isNew){ target=newPlayer(); S.players.push(target); persistSaved(); }
-      view='dashboard';
+      DRAFT = { players:[newPlayer()], editId:null };
+      view = 'edit';
       renderAll();
-      const card=document.getElementById(`card-${target.id}`);
+      const card = document.getElementById(`card-${DRAFT.players[0].id}`);
       if(card){
-        card.scrollIntoView({behavior:'smooth',block:'center'});
+        card.scrollIntoView({behavior:'smooth',block:'start'});
         const nm=card.querySelector('.pcard-name');
         if(nm) nm.focus({preventScroll:true});
       }
-      if(!isNew) toast('Você já tem uma ficha em branco — preencha-a antes de adicionar outra.','warn');
+      return;
+    }
+    if(action==='edit-player'){
+      const sp = S.players.find(p=>p.id===pid);
+      if (!sp) return;
+      const clone = JSON.parse(JSON.stringify(sp));
+      DRAFT = { players:[clone], editId:sp.id };
+      view = 'edit';
+      renderAll();
+      schedulePrefetch();
+      return;
+    }
+    if(action==='save-edit'){
+      if (!DRAFT?.players?.length) { view='dashboard'; renderAll(); return; }
+      const draftP = DRAFT.players[0];
+      if (isEmptyPlayer(draftP)) { toast('Preencha ao menos um campo antes de salvar.','warn'); return; }
+      const clone = JSON.parse(JSON.stringify(draftP));
+      if (DRAFT.editId != null) {
+        const idx = S.players.findIndex(p=>p.id===DRAFT.editId);
+        if (idx>=0) S.players[idx]=clone; else S.players.push(clone);
+      } else {
+        S.players.push(clone);
+      }
+      persistSaved();
+      DRAFT = null;
+      view = 'dashboard';
+      renderAll();
+      schedulePrefetch();
+      toast(`${clone.name||'Atleta'} salvo ✓`);
+      return;
+    }
+    if(action==='cancel-edit'){
+      DRAFT = null;
+      view = 'dashboard';
+      renderAll();
       return;
     }
     if(action==='remove-player'){
-      S.players=S.players.filter(p=>p.id!==pid);
-      persistSaved(); renderAll(); return;
+      S.players = S.players.filter(p=>p.id!==pid);
+      persistSaved();
+      renderAll();
+      toast('Atleta removido');
+      return;
     }
     if(action==='add-item'){
-      const p=S.players.find(x=>x.id===pid);
+      const p=findAny(pid);
       if(p){p.items.push(newItem(''));saveDraft();renderAll();}
       return;
     }
     if(action==='remove-item'){
-      const p=S.players.find(x=>x.id===pid);
+      const p=findAny(pid);
       if(p){
         p.items=p.items.filter(i=>i.id!==iid);
         if(!p.items.length) p.items.push(newItem(''));
@@ -2325,12 +2416,12 @@ function bindEvents() {
       return;
     }
     if(action==='add-sale-extra'){
-      const p=S.players.find(x=>x.id===pid);
+      const p=findAny(pid);
       if(p){ p.saleExtras=p.saleExtras||[]; p.saleExtras.push(newSaleExtra()); saveDraft(); renderAll(); }
       return;
     }
     if(action==='remove-sale-extra'){
-      const p=S.players.find(x=>x.id===pid);
+      const p=findAny(pid);
       const eid=t.dataset.eid?+t.dataset.eid:null;
       if(p&&eid){ p.saleExtras=(p.saleExtras||[]).filter(x=>x.id!==eid); saveDraft(); renderAll(); }
       return;
@@ -2343,7 +2434,7 @@ function bindEvents() {
     if(!t) return;
     const pid=+t.dataset.pid, iid=t.dataset.iid?+t.dataset.iid:null;
     const eid=t.dataset.eid?+t.dataset.eid:null;
-    const p=S.players.find(x=>x.id===pid);
+    const p=findAny(pid);
     if(!p) return;
     const ex=eid?(p.saleExtras||[]).find(x=>x.id===eid):null;
     if(t.dataset.field==='saleExtraMode'&&ex){ ex.mode=t.dataset.v; saveDraft(); renderAll(); return; }
@@ -2441,7 +2532,7 @@ function bindEvents() {
     if(!field) return;
     const pid=+t.dataset.pid, iid=t.dataset.iid?+t.dataset.iid:null;
     const eid=t.dataset.eid?+t.dataset.eid:null;
-    const p=S.players.find(x=>x.id===pid);
+    const p=findAny(pid);
     if(!p) return;
 
     if(t.dataset.money) maskMoneyInput(t);   // aplica milhar/decimal preservando cursor
@@ -2522,7 +2613,7 @@ function bindEvents() {
     const field=t.dataset.field;
     if(!['start','end','exit'].includes(field)) return;
     const pid=+t.dataset.pid;
-    const p=S.players.find(x=>x.id===pid);
+    const p=findAny(pid);
     if(!p) return;
     p[field]=t.value;
     saveDraft();

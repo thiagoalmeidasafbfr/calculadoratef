@@ -115,6 +115,15 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream-page);color
 
 /* sale & deductions — one aligned grid for every row */
 .sale-block{display:flex;flex-direction:column;gap:7px}
+.dedu-wrap{display:flex;align-items:center;gap:6px}
+.dedu-wrap.is-dragging{opacity:.4}
+.dedu-wrap.drop-target-before{box-shadow:0 -2px 0 0 var(--gold-ring) inset;border-top:2px solid var(--gold-ring);margin-top:-2px}
+.dedu-wrap.drop-target-after{border-bottom:2px solid var(--gold-ring);margin-bottom:-2px}
+.dedu-wrap .sale-row{flex:1;min-width:0}
+.drag-handle{flex:0 0 18px;width:18px;height:22px;display:flex;align-items:center;justify-content:center;color:var(--ink-4);cursor:grab;font-size:13px;line-height:1;user-select:none;border-radius:var(--r-sm)}
+.drag-handle:hover{color:var(--ink-2);background:var(--gold-tint)}
+.drag-handle:active{cursor:grabbing}
+.dedu-spacer{flex:0 0 18px;width:18px}
 .sale-row{display:grid;grid-template-columns:128px minmax(110px,1.1fr) 74px minmax(92px,116px) minmax(60px,1fr);gap:8px;align-items:center}
 .sale-lbl{font-family:'Inter',sans-serif;font-size:10.5px;font-weight:500;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sale-amt,.sale-tg-mode,.sale-tg-sec{width:auto;min-width:0}
@@ -553,11 +562,40 @@ let view = 'dashboard';                 // 'dashboard' | 'cadastro' | 'consolida
 let SIM  = {playerId:null, exit:''};    // simulação de encerramento (não persiste)
 let COT  = {cur:'EUR', start:'', end:''}; // filtro da página de cotações
 
-// Quais deduções podem entrar na base de cada uma (ordem fixa evita ciclos)
-const SALE_DEDUCTIONS_ORDER = ['solidariedade','sellOn','intermed','taxes'];
-const SALE_DEDUCTION_LABELS = {solidariedade:'Solidariedade',sellOn:'Sell-on fee',intermed:'Intermediação',taxes:'Impostos e taxas',acquisition:'Custo de aquisição (mais-valia)'};
+// Quais deduções podem entrar na base de cada uma (ordem definida pelo usuário)
+const SALE_DEDUCTION_LABELS = {solidariedade:'Solidariedade',sellOn:'Sell-on fee',intermed:'Intermediação',taxes:'Impostos e taxas',acquisition:'Custo de aquisição'};
+const FIXED_DEDUCTIONS = ['solidariedade','sellOn','intermed','taxes'];
+const SALE_INCL_FIELD = {solidariedade:'solidariedadeIncl',sellOn:'sellOnIncl',intermed:'saleIntermedIncl',taxes:'saleTaxesIncl'};
+
+function dedLabel(p, key){
+  if (key==='acquisition') return SALE_DEDUCTION_LABELS.acquisition;
+  if (key.startsWith('extra:')){
+    const ex=(p.saleExtras||[]).find(x=>x.id===+key.slice(6));
+    return ex?.label || 'Dedução';
+  }
+  return SALE_DEDUCTION_LABELS[key] || key;
+}
+
+// Ordem das deduções na seção de venda (reordenável). Inicializa lazy.
+function getSaleOrder(p){
+  if (!Array.isArray(p.saleDeductionOrder)) p.saleDeductionOrder=[];
+  const ord = p.saleDeductionOrder;
+  const seen = new Set(ord);
+  for (const k of FIXED_DEDUCTIONS) if (!seen.has(k)) { ord.push(k); seen.add(k); }
+  const validExtras = new Set((p.saleExtras||[]).map(x=>'extra:'+x.id));
+  for (const ex of (p.saleExtras||[])){
+    const k='extra:'+ex.id;
+    if (!seen.has(k)) { ord.push(k); seen.add(k); }
+  }
+  // Remove referências a extras que não existem mais
+  for (let i=ord.length-1;i>=0;i--){
+    const k=ord[i];
+    if (k.startsWith('extra:') && !validExtras.has(k)) ord.splice(i,1);
+  }
+  return ord;
+}
+
 function getSaleIncl(p, tag){
-  // tag: 'sellOn' | 'intermed' | 'taxes' | 'extra:ID'
   if (tag.startsWith('extra:')){
     const eid=+tag.slice(6);
     const ex=(p.saleExtras||[]).find(x=>x.id===eid);
@@ -566,9 +604,11 @@ function getSaleIncl(p, tag){
     ex.incl = ex.method==='bruto' ? ['solidariedade'] : ['solidariedade','acquisition'];
     return ex.incl;
   }
-  const field = {sellOn:'sellOnIncl',intermed:'saleIntermedIncl',taxes:'saleTaxesIncl'}[tag];
+  const field = SALE_INCL_FIELD[tag];
   if (!field) return [];
   if (Array.isArray(p[field])) return p[field];
+  // Padrões: solidariedade incide sobre receita bruta; demais herdam do método legado
+  if (tag==='solidariedade'){ p[field]=[]; return p[field]; }
   const legacy = {sellOn:'sellOnMethod',intermed:'saleIntermedMethod',taxes:'saleTaxesMethod'}[tag];
   p[field] = p[legacy]==='bruto' ? ['solidariedade'] : ['solidariedade','acquisition'];
   return p[field];
@@ -580,26 +620,18 @@ function setSaleIncl(p, tag, arr){
     if (ex) ex.incl = arr;
     return;
   }
-  const field = {sellOn:'sellOnIncl',intermed:'saleIntermedIncl',taxes:'saleTaxesIncl'}[tag];
+  const field = SALE_INCL_FIELD[tag];
   if (field) p[field] = arr;
 }
-// Itens disponíveis para a base de uma dedução: tudo que aparece antes dela
+// Itens disponíveis para a base de uma dedução: tudo que aparece antes dela na ordem atual
 function availableBases(p, tag){
-  const list=[{key:'solidariedade',label:SALE_DEDUCTION_LABELS.solidariedade}];
-  const fixedOrder=['sellOn','intermed','taxes'];
-  for (const t of fixedOrder){
-    if (tag===t) break;
-    list.push({key:t,label:SALE_DEDUCTION_LABELS[t]});
+  const order = getSaleOrder(p);
+  const list = [];
+  for (const k of order){
+    if (k===tag) break;
+    list.push({key:k, label: dedLabel(p,k)});
   }
-  // extras anteriores (se tag é extra:X, lista os que vêm antes; se for um dos fixos, só inclui extras quando tag === 'taxes' ou outro fixo? não — extras vêm depois de taxes)
-  if (tag.startsWith('extra:')){
-    const eid=+tag.slice(6);
-    for (const ex of (p.saleExtras||[])){
-      if (ex.id===eid) break;
-      list.push({key:`extra:${ex.id}`,label:ex.label||'Dedução'});
-    }
-  }
-  list.push({key:'acquisition',label:SALE_DEDUCTION_LABELS.acquisition});
+  list.push({key:'acquisition', label: SALE_DEDUCTION_LABELS.acquisition});
   return list;
 }
 
@@ -777,59 +809,65 @@ function calcPlayer(p) {
     saleRate=rate; saleSrc=src;
     saleBRL=p.saleAmount*saleRate;
 
-    // Solidariedade — sempre sobre a receita bruta
-    solidariedadeBRL=p.solidariedadePct?saleBRL*(p.solidariedadePct/100):0;
-
-    // Base configurável por dedução: começa em saleBRL e subtrai cada item marcado
-    const computed={solidariedade:solidariedadeBRL,sellOn:0,intermed:0,taxes:0,acquisition:totAct};
-    const extraMap={};
+    // Base configurável por dedução: começa em saleBRL e subtrai cada item marcado.
+    // Apenas itens já computados (anteriores na ordem) são subtraíveis.
+    const computed={acquisition:totAct};
     const computeBase=(incl)=>{
       let base=saleBRL;
       for (const k of (incl||[])){
-        if (k.startsWith('extra:')) base -= (extraMap[+k.slice(6)]||0);
-        else if (computed[k]!=null) base -= computed[k];
+        if (computed[k]!=null) base -= computed[k];
       }
       return Math.max(0,base);
     };
 
-    const sellOnBase=computeBase(getSaleIncl(p,'sellOn'));
-    sellOnFee=p.sellOnPct?sellOnBase*(p.sellOnPct/100):0;
-    computed.sellOn=sellOnFee;
+    const order = getSaleOrder(p);
+    for (const tag of order){
+      if (tag==='solidariedade'){
+        const base=computeBase(getSaleIncl(p,'solidariedade'));
+        solidariedadeBRL=p.solidariedadePct?base*(p.solidariedadePct/100):0;
+        computed.solidariedade=solidariedadeBRL;
+      } else if (tag==='sellOn'){
+        const base=computeBase(getSaleIncl(p,'sellOn'));
+        sellOnFee=p.sellOnPct?base*(p.sellOnPct/100):0;
+        computed.sellOn=sellOnFee;
+      } else if (tag==='intermed'){
+        if ((p.saleIntermedMode||'valor')==='pct'){
+          const base=computeBase(getSaleIncl(p,'intermed'));
+          saleIntermedBRL=p.saleIntermedPct?base*(p.saleIntermedPct/100):0;
+        } else if (p.saleIntermed){
+          const {rate:ir}=getDayRate(p.saleIntermedCurrency||'BRL',p.exit);
+          saleIntermedBRL=p.saleIntermed*ir;
+        }
+        computed.intermed=saleIntermedBRL;
+      } else if (tag==='taxes'){
+        if ((p.saleTaxesMode||'valor')==='pct'){
+          const base=computeBase(getSaleIncl(p,'taxes'));
+          saleTaxesBRL=p.saleTaxesPct?base*(p.saleTaxesPct/100):0;
+        } else if (p.saleTaxes){
+          const {rate:tr}=getDayRate(p.saleTaxesCurrency||'BRL',p.exit);
+          saleTaxesBRL=p.saleTaxes*tr;
+        }
+        computed.taxes=saleTaxesBRL;
+      } else if (tag.startsWith('extra:')){
+        const eid=+tag.slice(6);
+        const ex=(p.saleExtras||[]).find(x=>x.id===eid);
+        if (!ex) continue;
+        let brl=0;
+        if ((ex.mode||'valor')==='pct'){
+          const base=computeBase(getSaleIncl(p,tag));
+          brl=ex.pct?base*(ex.pct/100):0;
+        } else if (ex.val){
+          const {rate:er}=getDayRate(ex.currency||'BRL',p.exit);
+          brl=ex.val*er;
+        }
+        computed[tag]=brl;
+        extras.push({id:eid,label:ex.label||'Dedução',brl});
+        saleExtrasBRL+=brl;
+      }
+    }
 
     // exposto p/ exibições legadas que mostravam "mais-valia"
     maisValia=Math.max(0,saleBRL-solidariedadeBRL-totAct);
-
-    if ((p.saleIntermedMode||'valor')==='pct') {
-      const base=computeBase(getSaleIncl(p,'intermed'));
-      saleIntermedBRL=p.saleIntermedPct?base*(p.saleIntermedPct/100):0;
-    } else if (p.saleIntermed) {
-      const {rate:ir}=getDayRate(p.saleIntermedCurrency||'BRL',p.exit);
-      saleIntermedBRL=p.saleIntermed*ir;
-    }
-    computed.intermed=saleIntermedBRL;
-
-    if ((p.saleTaxesMode||'valor')==='pct') {
-      const base=computeBase(getSaleIncl(p,'taxes'));
-      saleTaxesBRL=p.saleTaxesPct?base*(p.saleTaxesPct/100):0;
-    } else if (p.saleTaxes) {
-      const {rate:tr}=getDayRate(p.saleTaxesCurrency||'BRL',p.exit);
-      saleTaxesBRL=p.saleTaxes*tr;
-    }
-    computed.taxes=saleTaxesBRL;
-
-    for (const ex of (p.saleExtras||[])) {
-      let brl=0;
-      if ((ex.mode||'valor')==='pct') {
-        const base=computeBase(getSaleIncl(p,'extra:'+ex.id));
-        brl=ex.pct?base*(ex.pct/100):0;
-      } else if (ex.val) {
-        const {rate:er}=getDayRate(ex.currency||'BRL',p.exit);
-        brl=ex.val*er;
-      }
-      extraMap[ex.id]=brl;
-      extras.push({id:ex.id,label:ex.label||'Dedução',brl});
-      saleExtrasBRL+=brl;
-    }
     gain=saleBRL-solidariedadeBRL-sellOnFee-saleIntermedBRL-saleTaxesBRL-saleExtrasBRL-totResid;
   }
 
@@ -1589,35 +1627,22 @@ function hCard(p,idx=0) {
       </div>
       ${!p.exit?`<div class="psec-hint">Informe a data de saída para calcular a baixa do intangível e o resultado da transferência.</div>`:''}
       <div class="sale-block"${!p.exit?' style="margin-top:11px"':''}>
-        <div class="sale-row">
-          <span class="sale-lbl">Receita da venda</span>
-          <div class="amt-wrap sale-amt"><input class="amt-inp" type="text" inputmode="decimal" data-money="1" data-pid="${p.id}" data-field="saleAmount" value="${moneyToInput(p.saleAmount)}" placeholder="0"></div>
-          <div class="sale-tg-mode" style="visibility:hidden"></div>
-          <div class="cur-toggle sale-tg-sec">
-            <button class="cur-btn${p.saleCurrency==='BRL'?' on':''}" data-pid="${p.id}" data-field="saleCur" data-v="BRL">R$</button>
-            <button class="cur-btn${p.saleCurrency==='EUR'?' on':''}" data-pid="${p.id}" data-field="saleCur" data-v="EUR">EUR</button>
-            <button class="cur-btn${p.saleCurrency==='USD'?' on':''}" data-pid="${p.id}" data-field="saleCur" data-v="USD">USD</button>
+        <div class="dedu-wrap">
+          <span class="dedu-spacer"></span>
+          <div class="sale-row">
+            <span class="sale-lbl">Receita da venda</span>
+            <div class="amt-wrap sale-amt"><input class="amt-inp" type="text" inputmode="decimal" data-money="1" data-pid="${p.id}" data-field="saleAmount" value="${moneyToInput(p.saleAmount)}" placeholder="0"></div>
+            <div class="sale-tg-mode" style="visibility:hidden"></div>
+            <div class="cur-toggle sale-tg-sec">
+              <button class="cur-btn${p.saleCurrency==='BRL'?' on':''}" data-pid="${p.id}" data-field="saleCur" data-v="BRL">R$</button>
+              <button class="cur-btn${p.saleCurrency==='EUR'?' on':''}" data-pid="${p.id}" data-field="saleCur" data-v="EUR">EUR</button>
+              <button class="cur-btn${p.saleCurrency==='USD'?' on':''}" data-pid="${p.id}" data-field="saleCur" data-v="USD">USD</button>
+            </div>
+            <span id="sale-brl-${p.id}" class="sale-brl-tag">${hSaleBRL(p)}</span>
           </div>
-          <span id="sale-brl-${p.id}" class="sale-brl-tag">${hSaleBRL(p)}</span>
         </div>
-        <div class="dedu-sub">Deduções sobre a venda</div>
-        <div class="sale-row">
-          <span class="sale-lbl">Mecanismo de Solidariedade</span>
-          <div class="amt-wrap sale-amt"><input class="amt-inp" type="number" min="0" max="100" step="0.5" data-pid="${p.id}" data-field="solidariedadePct" value="${p.solidariedadePct??''}" placeholder="0"><span class="pct-suffix">%</span></div>
-          <div class="sale-tg-mode" style="visibility:hidden"></div>
-          <div class="cur-toggle sale-tg-sec" style="visibility:hidden"></div>
-          <span id="solid-brl-${p.id}" class="sale-brl-tag">${hSolidariedadeBRL(p)}</span>
-        </div>
-        <div class="sale-row">
-          <span class="sale-lbl">Sell-on fee</span>
-          <div class="amt-wrap sale-amt"><input class="amt-inp" type="number" min="0" max="100" step="0.5" data-pid="${p.id}" data-field="sellOnPct" value="${p.sellOnPct??''}" placeholder="0"><span class="pct-suffix">%</span></div>
-          <div class="sale-tg-mode" style="visibility:hidden"></div>
-          ${hBaseCfg(p,'sellOn')}
-          <span id="sell-on-brl-${p.id}" class="sale-brl-tag">${hSellOnBRL(p)}</span>
-        </div>
-        ${hPctValueRow(p,{label:'Intermediação',tag:'intermed',mode:p.saleIntermedMode||'valor',modeField:'saleIntermedMode',pct:p.saleIntermedPct,pctField:'saleIntermedPct',method:p.saleIntermedMethod||'maisValia',methodField:'saleIntermedMethod',val:p.saleIntermed,valField:'saleIntermed',cur:p.saleIntermedCurrency||'BRL',curField:'saleIntermedCur',brl:hIntermedBRL(p)})}
-        ${hPctValueRow(p,{label:'Impostos e taxas',tag:'taxes',mode:p.saleTaxesMode||'valor',modeField:'saleTaxesMode',pct:p.saleTaxesPct,pctField:'saleTaxesPct',method:p.saleTaxesMethod||'maisValia',methodField:'saleTaxesMethod',val:p.saleTaxes,valField:'saleTaxes',cur:p.saleTaxesCurrency||'BRL',curField:'saleTaxesCur',brl:hTaxesBRL(p)})}
-        <div id="extras-${p.id}">${(p.saleExtras||[]).map(ex=>hSaleExtraRow(p,ex)).join('')}</div>
+        <div class="dedu-sub">Deduções sobre a venda <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink-4);margin-left:6px">· arraste ⋮⋮ para reordenar</span></div>
+        <div id="deds-${p.id}">${getSaleOrder(p).map(k=>hDeductionRow(p,k)).join('')}</div>
         <div style="margin-top:9px"><button class="add-item-btn" data-pid="${p.id}" data-action="add-sale-extra">＋ adicionar dedução</button></div>
       </div>
     </div>
@@ -1764,13 +1789,55 @@ function hSaleExtraBRL(p,ex) {
   return `− R$ ${N(row.brl)}`;
 }
 
+// Linha de Solidariedade (% sobre base configurável)
+function hSolidRow(p) {
+  return `
+  <div class="sale-row">
+    <span class="sale-lbl">Mecanismo de Solidariedade</span>
+    <div class="amt-wrap sale-amt"><input class="amt-inp" type="number" min="0" max="100" step="0.5" data-pid="${p.id}" data-field="solidariedadePct" value="${p.solidariedadePct??''}" placeholder="0"><span class="pct-suffix">%</span></div>
+    <div class="sale-tg-mode" style="visibility:hidden"></div>
+    ${hBaseCfg(p,'solidariedade')}
+    <span id="solid-brl-${p.id}" class="sale-brl-tag">${hSolidariedadeBRL(p)}</span>
+  </div>`;
+}
+
+// Linha de Sell-on (% sobre base configurável)
+function hSellOnRow(p) {
+  return `
+  <div class="sale-row">
+    <span class="sale-lbl">Sell-on fee</span>
+    <div class="amt-wrap sale-amt"><input class="amt-inp" type="number" min="0" max="100" step="0.5" data-pid="${p.id}" data-field="sellOnPct" value="${p.sellOnPct??''}" placeholder="0"><span class="pct-suffix">%</span></div>
+    <div class="sale-tg-mode" style="visibility:hidden"></div>
+    ${hBaseCfg(p,'sellOn')}
+    <span id="sell-on-brl-${p.id}" class="sale-brl-tag">${hSellOnBRL(p)}</span>
+  </div>`;
+}
+
+// Dispatcher: empacota qualquer linha de dedução com handle de drag-and-drop
+function hDeductionRow(p, key) {
+  let inner='';
+  if (key==='solidariedade') inner=hSolidRow(p);
+  else if (key==='sellOn')   inner=hSellOnRow(p);
+  else if (key==='intermed') inner=hPctValueRow(p,{label:'Intermediação',tag:'intermed',mode:p.saleIntermedMode||'valor',modeField:'saleIntermedMode',pct:p.saleIntermedPct,pctField:'saleIntermedPct',method:p.saleIntermedMethod||'maisValia',methodField:'saleIntermedMethod',val:p.saleIntermed,valField:'saleIntermed',cur:p.saleIntermedCurrency||'BRL',curField:'saleIntermedCur',brl:hIntermedBRL(p)});
+  else if (key==='taxes')    inner=hPctValueRow(p,{label:'Impostos e taxas',tag:'taxes',mode:p.saleTaxesMode||'valor',modeField:'saleTaxesMode',pct:p.saleTaxesPct,pctField:'saleTaxesPct',method:p.saleTaxesMethod||'maisValia',methodField:'saleTaxesMethod',val:p.saleTaxes,valField:'saleTaxes',cur:p.saleTaxesCurrency||'BRL',curField:'saleTaxesCur',brl:hTaxesBRL(p)});
+  else if (key.startsWith('extra:')){
+    const ex=(p.saleExtras||[]).find(x=>x.id===+key.slice(6));
+    if (!ex) return '';
+    inner=hSaleExtraRow(p,ex);
+  }
+  return `
+  <div class="dedu-wrap" data-pid="${p.id}" data-ded-key="${esc(key)}">
+    <span class="drag-handle" title="Arraste para reordenar">⋮⋮</span>
+    ${inner}
+  </div>`;
+}
+
 // Botão + popover para configurar quais valores são subtraídos da base
 function baseSummary(incl) {
-  const set=new Set(incl||[]);
-  if (set.size===0) return 'Sobre receita';
-  if (set.size===1 && set.has('solidariedade')) return 'Bruto';
-  if (set.size===2 && set.has('solidariedade') && set.has('acquisition')) return '+ valia';
-  return `Base (${set.size})`;
+  const arr=(incl||[]);
+  if (arr.length===0) return 'Sobre receita';
+  if (arr.length===1) return `Receita − ${arr.length} item`;
+  return `Receita − ${arr.length} itens`;
 }
 function hBaseCfg(p, tag) {
   const incl = getSaleIncl(p, tag);
@@ -2112,6 +2179,70 @@ function bindEvents() {
   document.addEventListener('click', e => {
     const nav=e.target.closest('[data-nav]');
     if(nav){ view=nav.dataset.nav; renderAll(); }
+  });
+
+  // Drag-and-drop para reordenar deduções
+  const _drag = {pid:null, key:null, srcEl:null};
+  document.addEventListener('mousedown', e => {
+    const h=e.target.closest('.drag-handle');
+    if(!h) return;
+    const wrap=h.closest('.dedu-wrap');
+    if(wrap){ wrap.setAttribute('draggable','true'); }
+  });
+  document.addEventListener('mouseup', e => {
+    document.querySelectorAll('.dedu-wrap[draggable="true"]').forEach(w=>{ if(!w.classList.contains('is-dragging')) w.removeAttribute('draggable'); });
+  });
+  document.addEventListener('dragstart', e => {
+    const wrap=e.target.closest?.('.dedu-wrap[draggable="true"]');
+    if(!wrap||!wrap.dataset.dedKey) return;
+    _drag.pid=+wrap.dataset.pid; _drag.key=wrap.dataset.dedKey; _drag.srcEl=wrap;
+    wrap.classList.add('is-dragging');
+    try{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',_drag.key); }catch(_){ }
+  });
+  document.addEventListener('dragover', e => {
+    if(!_drag.key) return;
+    const wrap=e.target.closest?.('.dedu-wrap[data-ded-key]');
+    if(!wrap||+wrap.dataset.pid!==_drag.pid) return;
+    e.preventDefault();
+    document.querySelectorAll('.dedu-wrap.drop-target-before,.dedu-wrap.drop-target-after').forEach(el=>el.classList.remove('drop-target-before','drop-target-after'));
+    if(wrap===_drag.srcEl) return;
+    const r=wrap.getBoundingClientRect();
+    const before=e.clientY < r.top + r.height/2;
+    wrap.classList.add(before?'drop-target-before':'drop-target-after');
+  });
+  document.addEventListener('dragleave', e => {
+    const wrap=e.target.closest?.('.dedu-wrap');
+    if(wrap) wrap.classList.remove('drop-target-before','drop-target-after');
+  });
+  document.addEventListener('drop', e => {
+    if(!_drag.key) return;
+    const wrap=e.target.closest?.('.dedu-wrap[data-ded-key]');
+    if(!wrap||+wrap.dataset.pid!==_drag.pid) return;
+    e.preventDefault();
+    const r=wrap.getBoundingClientRect();
+    const before=e.clientY < r.top + r.height/2;
+    const targetKey=wrap.dataset.dedKey;
+    const p=DRAFT.players.find(x=>x.id===_drag.pid);
+    if(p && targetKey!==_drag.key){
+      const ord=getSaleOrder(p);
+      const from=ord.indexOf(_drag.key);
+      let to=ord.indexOf(targetKey);
+      if(from>-1 && to>-1){
+        ord.splice(from,1);
+        to=ord.indexOf(targetKey);
+        if(!before) to++;
+        ord.splice(to,0,_drag.key);
+        p.saleDeductionOrder=ord;
+        saveDraft();
+        renderAll();
+      }
+    }
+  });
+  document.addEventListener('dragend', e => {
+    document.querySelectorAll('.dedu-wrap.is-dragging').forEach(w=>w.classList.remove('is-dragging'));
+    document.querySelectorAll('.dedu-wrap.drop-target-before,.dedu-wrap.drop-target-after').forEach(el=>el.classList.remove('drop-target-before','drop-target-after'));
+    document.querySelectorAll('.dedu-wrap[draggable="true"]').forEach(w=>w.removeAttribute('draggable'));
+    _drag.pid=null; _drag.key=null; _drag.srcEl=null;
   });
 
   // Popover "Base ▾": toggle + click-outside

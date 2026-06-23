@@ -652,9 +652,13 @@ function calcPlayer(p) {
 
   let exitMonths=null, exitD=null, exitM=null;
   if (p.exit){
-    exitD=pDate(p.exit);
-    exitMonths=Math.max(0,Math.min(contractMonths,monthsInc(startD,exitD)));
-    exitM=new Date(exitD.getFullYear(),exitD.getMonth(),1);
+    const ed=pDate(p.exit);
+    // ignora datas parciais/fora do contrato (ex.: ano ainda incompleto durante digitação)
+    if (!isNaN(ed) && ed>=startD && ed<=endD) {
+      exitD=ed;
+      exitMonths=Math.max(0,Math.min(contractMonths,monthsInc(startD,exitD)));
+      exitM=new Date(exitD.getFullYear(),exitD.getMonth(),1);
+    }
   }
 
   // Totals using actual monthly PTAX rates

@@ -45,7 +45,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream-page);color
 
 /* ── PLAYER GRID ──────────────────────────────────────── */
 .players-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px}
-.players-grid.cad{grid-template-columns:1fr}
+.players-grid.cad{grid-template-columns:1fr;max-width:840px;margin-left:auto;margin-right:auto}
 .players-grid.dash{grid-template-columns:repeat(auto-fill,minmax(min(460px,100%),1fr))}
 .add-player-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r-pill);border:1.5px dashed var(--gold-deep);background:transparent;color:var(--gold-deep);font-family:'Inter',sans-serif;font-size:9px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:all .15s;margin-bottom:20px}
 .add-player-btn:hover{background:var(--gold-tint);border-color:var(--gold)}
@@ -55,7 +55,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream-page);color
 .pcard:hover{box-shadow:var(--sh-l)}
 
 /* head */
-.pcard-head{background:var(--dark);padding:13px 16px;display:flex;align-items:center;gap:12px}
+.pcard-head{background:var(--dark);padding:11px 16px;display:flex;align-items:center;gap:12px}
 .pcard-idx{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;color:var(--gold-soft);opacity:.6;flex-shrink:0;min-width:20px}
 .pcard-name{flex:1;min-width:0;background:rgba(243,238,226,.07);border:1px solid rgba(243,238,226,.14);border-radius:var(--r-sm);padding:8px 12px;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;color:var(--on-dark);outline:none;transition:border-color .15s,background .15s}
 .pcard-name:focus{border-color:var(--gold);background:rgba(243,238,226,.11)}
@@ -64,8 +64,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream-page);color
 .pcard-remove:hover{background:rgba(185,28,28,.22);color:#f87171}
 
 /* section scaffold — one rhythm for every block of the form */
-.psec{padding:15px 16px;border-top:1px solid var(--div)}
-.psec-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;min-height:26px}
+.psec{padding:12px 16px;border-top:1px solid var(--div)}
+.psec-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;min-height:24px}
 .psec-title{display:flex;align-items:baseline;gap:8px;min-width:0}
 .psec-num{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;color:var(--gold);letter-spacing:.05em}
 .psec-lbl{font-family:'Inter',sans-serif;font-size:9px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2)}
@@ -92,7 +92,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream-page);color
 /* items */
 .add-item-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 11px;border:1px solid var(--div-m);border-radius:var(--r-pill);background:transparent;color:var(--gold-deep);font-family:'Inter',sans-serif;font-size:8.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .12s}
 .add-item-btn:hover{background:var(--gold-tint);border-color:var(--gold)}
-.item-row{display:grid;grid-template-columns:minmax(140px,1fr) 150px 104px minmax(104px,150px) 26px;gap:8px;align-items:center;margin-bottom:7px}
+.item-row{display:grid;grid-template-columns:minmax(140px,1fr) 150px 104px minmax(104px,150px) 26px;gap:8px;align-items:center;margin-bottom:6px}
 .lbl-inp{background:var(--cream-canvas);border:1px solid var(--div);border-radius:var(--r-sm);padding:7px 10px;font-family:'Inter',sans-serif;font-size:12px;font-weight:500;color:var(--ink-1);outline:none;width:100%;min-width:0;transition:border-color .15s}
 .lbl-inp:focus{border-color:var(--gold)}
 .amt-wrap{display:flex;align-items:center;background:var(--cream-canvas);border:1px solid var(--div);border-radius:var(--r-sm);overflow:hidden;transition:border-color .15s,box-shadow .15s}
@@ -107,7 +107,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream-page);color
 .items-total-val{font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--warn)}
 
 /* sale & deductions — one aligned grid for every row */
-.sale-block{display:flex;flex-direction:column;gap:9px}
+.sale-block{display:flex;flex-direction:column;gap:7px}
 .sale-row{display:grid;grid-template-columns:128px minmax(110px,1.1fr) 74px minmax(92px,116px) minmax(60px,1fr);gap:8px;align-items:center}
 .sale-lbl{font-family:'Inter',sans-serif;font-size:10.5px;font-weight:500;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sale-amt,.sale-tg-mode,.sale-tg-sec{width:auto;min-width:0}
@@ -116,7 +116,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream-page);color
 .dedu-sub{font-family:'Inter',sans-serif;font-size:8px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-4);margin:5px 0 0}
 
 /* folha (collapsible) */
-.folha-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+.folha-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
 .f-field{display:flex;flex-direction:column;gap:6px;min-width:0}
 .f-lbl{font-family:'Inter',sans-serif;font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-4)}
 
@@ -133,7 +133,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream-page);color
 /* result strip — the payoff, set apart from the inputs */
 .pcard-results{border-top:1px solid var(--div-m);background:var(--cream-canvas)}
 .results-strip{display:flex}
-.rs-box{flex:1;padding:12px 12px;text-align:center;border-right:1px solid var(--div)}
+.rs-box{flex:1;padding:10px 12px;text-align:center;border-right:1px solid var(--div)}
 .rs-box:last-child{border-right:none}
 .rs-lbl{font-family:'Inter',sans-serif;font-size:7.5px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-4);display:block;margin-bottom:4px}
 .rs-val{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:var(--ink-2);white-space:nowrap}
@@ -1380,17 +1380,18 @@ function buildImpacto(players) {
   let cur=new Date(minM), guard=0;
   while(cur<=maxM && guard<240){
     const ym=cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0');
-    let amort=0, payroll=0;
+    let amort=0, payroll=0, salary=0;
     for(const {p,firstM,endM} of info){
       if(cur<firstM||cur>endM) continue;
       amort += monthlyAmortBRL(p,ym);
       const encF=1+0.08+(p.inssPct??0)/100+(p.irpfPct??0)/100;
       const Sal=p.salary??0, Img=p.imageRights??0;
-      let pr=Sal*encF+Img;
-      if(cur.getMonth()===11) pr+=(7/3)*Sal*encF;   // 13º + férias
-      payroll+=pr;
+      let salPart=Sal*encF;
+      if(cur.getMonth()===11) salPart+=(7/3)*Sal*encF;   // 13º + férias
+      salary+=salPart;
+      payroll+=salPart+Img;
     }
-    months.push({date:new Date(cur),amort,payroll,total:amort+payroll});
+    months.push({date:new Date(cur),amort,payroll,salary,total:amort+payroll});
     cur=new Date(cur.getFullYear(),cur.getMonth()+1,1); guard++;
   }
   return {months};
@@ -1405,6 +1406,7 @@ function hImpacto() {
   }
   const tAmort=data.months.reduce((s,m)=>s+m.amort,0);
   const tFolha=data.months.reduce((s,m)=>s+m.payroll,0);
+  const tSalary=data.months.reduce((s,m)=>s+(m.salary||0),0);
   const tTot=tAmort+tFolha;
   let prevYear=null, acc=0;
   const rows=data.months.map(m=>{
@@ -1426,7 +1428,8 @@ function hImpacto() {
     ${headHtml}
     <div class="totals-band">
       <div class="tb-item"><div class="tb-eyebrow">Amortização evitada</div><div class="tb-value tb-pos">R$ ${N(tAmort)}</div><div class="tb-sub">baixa de intangível futura</div></div>
-      <div class="tb-item"><div class="tb-eyebrow">Folha evitada</div><div class="tb-value tb-pos">R$ ${N(tFolha)}</div><div class="tb-sub">salário+encargos+13º/férias+imagem</div></div>
+      <div class="tb-item"><div class="tb-eyebrow">Economia com salários</div><div class="tb-value tb-pos">R$ ${N(tSalary)}</div><div class="tb-sub">salário + encargos + 13º/férias</div></div>
+      <div class="tb-item"><div class="tb-eyebrow">Folha evitada</div><div class="tb-value tb-pos">R$ ${N(tFolha)}</div><div class="tb-sub">salários + direito de imagem</div></div>
       <div class="tb-item"><div class="tb-eyebrow">Economia total</div><div class="tb-value tb-pos">R$ ${N(tTot)}</div><div class="tb-sub">impacto positivo no resultado</div></div>
     </div>
     <div class="section-card">
@@ -1709,6 +1712,7 @@ function hSummary() {
       <td class="td-neg">${custosVenda>0?`R$ ${N(custosVenda)}`:'—'}</td>
       <td class="${c.gain!==null?(c.gain>=0?'td-pos':'td-neg'):''}">${c.gain!==null?`${c.gain>=0?'+':''}R$ ${N(c.gain)} ${chipGain}`:'—'}</td>
       <td class="td-pos">${c.futureAmortAvoided!==null&&c.futureAmortAvoided>0?`R$ ${N(c.futureAmortAvoided)}`:'—'}</td>
+      <td class="td-pos">${c.payrollSalary>0?`R$ ${N(c.payrollSalary)}`:'—'}</td>
     </tr>`;
   }).join('');
 
@@ -1722,6 +1726,7 @@ function hSummary() {
     custos:calcs.filter(c=>c.gain!==null).reduce((s,c)=>s+(c.sellOnFee||0)+(c.saleIntermedBRL||0)+(c.saleTaxesBRL||0),0),
     gain: calcs.filter(c=>c.gain!==null).reduce((s,c)=>s+c.gain,0),
     avoid:calcs.filter(c=>c.futureAmortAvoided!==null).reduce((s,c)=>s+(c.futureAmortAvoided??0),0),
+    salary:calcs.filter(c=>c.exitMonths!==null).reduce((s,c)=>s+(c.payrollSalary??0),0),
   };
   const hasGain=calcs.some(c=>c.gain!==null);
 
@@ -1741,6 +1746,7 @@ function hSummary() {
         <th>Custos Venda</th>
         <th>Lucro / Prejuízo</th>
         <th>Amort. Evitada</th>
+        <th>Economia Salário</th>
       </tr></thead>
       <tbody>${rows}</tbody>
       <tfoot><tr class="tr-total">
@@ -1755,10 +1761,11 @@ function hSummary() {
         <td class="td-neg">${tt.custos>0?`R$ ${N(tt.custos)}`:'—'}</td>
         <td class="${hasGain?(tt.gain>=0?'td-pos':'td-neg'):''}">${hasGain?`${tt.gain>=0?'+':''}R$ ${N(tt.gain)}`:'—'}</td>
         <td class="td-pos">${tt.avoid>0?`R$ ${N(tt.avoid)}`:'—'}</td>
+        <td class="td-pos">${tt.salary>0?`R$ ${N(tt.salary)}`:'—'}</td>
       </tr></tfoot>
     </table>
     <div style="margin-top:10px;font-family:'Inter',sans-serif;font-size:8px;color:var(--ink-4);letter-spacing:.04em">
-      ✦ <strong>Amort. Evitada</strong> = amortização que NÃO ocorrerá nos meses após a saída do atleta (economia no P&amp;L futuro)
+      ✦ <strong>Amort. Evitada</strong> = amortização que NÃO ocorrerá nos meses após a saída · <strong>Economia Salário</strong> = salário + encargos (FGTS/INSS/IRPF) + 13º/férias economizados nos meses restantes após a venda (não inclui direito de imagem)
     </div>
   </div>`;
 }

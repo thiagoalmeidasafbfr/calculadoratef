@@ -104,6 +104,13 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream-page);color
 .brl-val{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--warn);text-align:right;white-space:nowrap;padding:0 2px}
 .del-item-btn{width:24px;height:24px;border:none;background:transparent;color:var(--ink-4);font-size:14px;cursor:pointer;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;transition:all .12s;flex-shrink:0}
 .del-item-btn:hover{background:var(--neg-t);color:var(--neg)}
+.base-cfg{position:relative}
+.base-cfg-btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;width:100%;padding:6px 8px;border:1px solid var(--div);background:var(--cream-inset);color:var(--ink-2);font-family:'Inter',sans-serif;font-size:8.5px;font-weight:600;letter-spacing:.03em;cursor:pointer;border-radius:var(--r-sm);white-space:nowrap}
+.base-cfg-btn:hover{background:var(--gold-tint);border-color:var(--gold-ring)}
+.base-cfg-pop{position:absolute;top:calc(100% + 4px);right:0;z-index:50;background:var(--cream,#fff);border:1px solid var(--gold-ring);border-radius:var(--r-sm);padding:8px 10px;min-width:190px;display:flex;flex-direction:column;gap:5px;font-family:'Inter',sans-serif;font-size:10.5px;color:var(--ink-2);box-shadow:0 6px 18px rgba(0,0,0,.08)}
+.base-cfg-pop .bcfg-hdr{font-size:8.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-4);margin-bottom:2px}
+.base-cfg-pop label{display:flex;align-items:center;gap:7px;cursor:pointer;line-height:1.25}
+.base-cfg-pop input[type=checkbox]{accent-color:var(--gold-deep,#8b6a2a);cursor:pointer}
 .items-total-val{font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--warn)}
 
 /* sale & deductions — one aligned grid for every row */
@@ -546,6 +553,56 @@ let view = 'dashboard';                 // 'dashboard' | 'cadastro' | 'consolida
 let SIM  = {playerId:null, exit:''};    // simulação de encerramento (não persiste)
 let COT  = {cur:'EUR', start:'', end:''}; // filtro da página de cotações
 
+// Quais deduções podem entrar na base de cada uma (ordem fixa evita ciclos)
+const SALE_DEDUCTIONS_ORDER = ['solidariedade','sellOn','intermed','taxes'];
+const SALE_DEDUCTION_LABELS = {solidariedade:'Solidariedade',sellOn:'Sell-on fee',intermed:'Intermediação',taxes:'Impostos e taxas',acquisition:'Custo de aquisição (mais-valia)'};
+function getSaleIncl(p, tag){
+  // tag: 'sellOn' | 'intermed' | 'taxes' | 'extra:ID'
+  if (tag.startsWith('extra:')){
+    const eid=+tag.slice(6);
+    const ex=(p.saleExtras||[]).find(x=>x.id===eid);
+    if (!ex) return [];
+    if (Array.isArray(ex.incl)) return ex.incl;
+    ex.incl = ex.method==='bruto' ? ['solidariedade'] : ['solidariedade','acquisition'];
+    return ex.incl;
+  }
+  const field = {sellOn:'sellOnIncl',intermed:'saleIntermedIncl',taxes:'saleTaxesIncl'}[tag];
+  if (!field) return [];
+  if (Array.isArray(p[field])) return p[field];
+  const legacy = {sellOn:'sellOnMethod',intermed:'saleIntermedMethod',taxes:'saleTaxesMethod'}[tag];
+  p[field] = p[legacy]==='bruto' ? ['solidariedade'] : ['solidariedade','acquisition'];
+  return p[field];
+}
+function setSaleIncl(p, tag, arr){
+  if (tag.startsWith('extra:')){
+    const eid=+tag.slice(6);
+    const ex=(p.saleExtras||[]).find(x=>x.id===eid);
+    if (ex) ex.incl = arr;
+    return;
+  }
+  const field = {sellOn:'sellOnIncl',intermed:'saleIntermedIncl',taxes:'saleTaxesIncl'}[tag];
+  if (field) p[field] = arr;
+}
+// Itens disponíveis para a base de uma dedução: tudo que aparece antes dela
+function availableBases(p, tag){
+  const list=[{key:'solidariedade',label:SALE_DEDUCTION_LABELS.solidariedade}];
+  const fixedOrder=['sellOn','intermed','taxes'];
+  for (const t of fixedOrder){
+    if (tag===t) break;
+    list.push({key:t,label:SALE_DEDUCTION_LABELS[t]});
+  }
+  // extras anteriores (se tag é extra:X, lista os que vêm antes; se for um dos fixos, só inclui extras quando tag === 'taxes' ou outro fixo? não — extras vêm depois de taxes)
+  if (tag.startsWith('extra:')){
+    const eid=+tag.slice(6);
+    for (const ex of (p.saleExtras||[])){
+      if (ex.id===eid) break;
+      list.push({key:`extra:${ex.id}`,label:ex.label||'Dedução'});
+    }
+  }
+  list.push({key:'acquisition',label:SALE_DEDUCTION_LABELS.acquisition});
+  return list;
+}
+
 function isEmptyPlayer(p){
   return !p.name && !p.start && !p.end && !p.exit
     && p.saleAmount==null && p.solidariedadePct==null && p.saleIntermed==null && p.saleIntermedPct==null && p.sellOnPct==null && p.saleTaxes==null && p.saleTaxesPct==null && p.salary==null && p.imageRights==null
@@ -713,51 +770,70 @@ function calcPlayer(p) {
   // Custo de aquisição em BRL ao câmbio da data de aquisição (booking)
   const acqBRL=items.reduce((s,it)=>s+it.totalBRL,0);
 
-  let saleBRL=0,saleRate=1,saleSrc='',gain=null,solidariedadeBRL=0,netSale=0,sellOnFee=0,maisValia=0,saleIntermedBRL=0,saleTaxesBRL=0;
+  let saleBRL=0,saleRate=1,saleSrc='',gain=null,solidariedadeBRL=0,sellOnFee=0,maisValia=0,saleIntermedBRL=0,saleTaxesBRL=0;
   let extras=[], saleExtrasBRL=0;
   if (p.saleAmount&&exitD){
     const {rate,src}=getDayRate(p.saleCurrency,p.exit);
     saleRate=rate; saleSrc=src;
     saleBRL=p.saleAmount*saleRate;
 
-    // Mecanismo de Solidariedade é deduzido primeiro; demais % usam a receita líquida como base
+    // Solidariedade — sempre sobre a receita bruta
     solidariedadeBRL=p.solidariedadePct?saleBRL*(p.solidariedadePct/100):0;
-    netSale=Math.max(0,saleBRL-solidariedadeBRL);
 
-    maisValia=Math.max(0,netSale-totAct);
-    const sellOnBase=(p.sellOnMethod==='bruto')?netSale:maisValia;
+    // Base configurável por dedução: começa em saleBRL e subtrai cada item marcado
+    const computed={solidariedade:solidariedadeBRL,sellOn:0,intermed:0,taxes:0,acquisition:totAct};
+    const extraMap={};
+    const computeBase=(incl)=>{
+      let base=saleBRL;
+      for (const k of (incl||[])){
+        if (k.startsWith('extra:')) base -= (extraMap[+k.slice(6)]||0);
+        else if (computed[k]!=null) base -= computed[k];
+      }
+      return Math.max(0,base);
+    };
+
+    const sellOnBase=computeBase(getSaleIncl(p,'sellOn'));
     sellOnFee=p.sellOnPct?sellOnBase*(p.sellOnPct/100):0;
+    computed.sellOn=sellOnFee;
+
+    // exposto p/ exibições legadas que mostravam "mais-valia"
+    maisValia=Math.max(0,saleBRL-solidariedadeBRL-totAct);
 
     if ((p.saleIntermedMode||'valor')==='pct') {
-      const base=(p.saleIntermedMethod==='bruto')?netSale:maisValia;
+      const base=computeBase(getSaleIncl(p,'intermed'));
       saleIntermedBRL=p.saleIntermedPct?base*(p.saleIntermedPct/100):0;
     } else if (p.saleIntermed) {
       const {rate:ir}=getDayRate(p.saleIntermedCurrency||'BRL',p.exit);
       saleIntermedBRL=p.saleIntermed*ir;
     }
+    computed.intermed=saleIntermedBRL;
+
     if ((p.saleTaxesMode||'valor')==='pct') {
-      const base=(p.saleTaxesMethod==='bruto')?netSale:maisValia;
+      const base=computeBase(getSaleIncl(p,'taxes'));
       saleTaxesBRL=p.saleTaxesPct?base*(p.saleTaxesPct/100):0;
     } else if (p.saleTaxes) {
       const {rate:tr}=getDayRate(p.saleTaxesCurrency||'BRL',p.exit);
       saleTaxesBRL=p.saleTaxes*tr;
     }
+    computed.taxes=saleTaxesBRL;
+
     for (const ex of (p.saleExtras||[])) {
       let brl=0;
       if ((ex.mode||'valor')==='pct') {
-        const base=(ex.method==='bruto')?netSale:maisValia;
+        const base=computeBase(getSaleIncl(p,'extra:'+ex.id));
         brl=ex.pct?base*(ex.pct/100):0;
       } else if (ex.val) {
         const {rate:er}=getDayRate(ex.currency||'BRL',p.exit);
         brl=ex.val*er;
       }
+      extraMap[ex.id]=brl;
       extras.push({id:ex.id,label:ex.label||'Dedução',brl});
       saleExtrasBRL+=brl;
     }
     gain=saleBRL-solidariedadeBRL-sellOnFee-saleIntermedBRL-saleTaxesBRL-saleExtrasBRL-totResid;
   }
 
-  return {contractMonths,exitMonths,monthsRemaining,monthlyTotal,futureAmortAvoided,monthlyPayroll,payrollSaved,payrollSalary,payrollImage,totalEconomy,items,totAct,acqBRL,totAmort,totResid,saleBRL,saleRate,saleSrc,gain,solidariedadeBRL,netSale,sellOnFee,maisValia,saleIntermedBRL,saleTaxesBRL,saleExtras:extras,saleExtrasBRL,pctAmort:totAct>0?totAmort/totAct*100:0};
+  return {contractMonths,exitMonths,monthsRemaining,monthlyTotal,futureAmortAvoided,monthlyPayroll,payrollSaved,payrollSalary,payrollImage,totalEconomy,items,totAct,acqBRL,totAmort,totResid,saleBRL,saleRate,saleSrc,gain,solidariedadeBRL,sellOnFee,maisValia,saleIntermedBRL,saleTaxesBRL,saleExtras:extras,saleExtrasBRL,pctAmort:totAct>0?totAmort/totAct*100:0};
 }
 
 // monthly amort for a player in a given month (Date object, first of month)
@@ -1536,10 +1612,7 @@ function hCard(p,idx=0) {
           <span class="sale-lbl">Sell-on fee</span>
           <div class="amt-wrap sale-amt"><input class="amt-inp" type="number" min="0" max="100" step="0.5" data-pid="${p.id}" data-field="sellOnPct" value="${p.sellOnPct??''}" placeholder="0"><span class="pct-suffix">%</span></div>
           <div class="sale-tg-mode" style="visibility:hidden"></div>
-          <div class="cur-toggle sale-tg-sec">
-            <button class="cur-btn${(p.sellOnMethod||'maisValia')==='maisValia'?' on':''}" data-pid="${p.id}" data-field="sellOnMethod" data-v="maisValia">+ valia</button>
-            <button class="cur-btn${(p.sellOnMethod||'maisValia')==='bruto'?' on':''}" data-pid="${p.id}" data-field="sellOnMethod" data-v="bruto">Bruto</button>
-          </div>
+          ${hBaseCfg(p,'sellOn')}
           <span id="sell-on-brl-${p.id}" class="sale-brl-tag">${hSellOnBRL(p)}</span>
         </div>
         ${hPctValueRow(p,{label:'Intermediação',tag:'intermed',mode:p.saleIntermedMode||'valor',modeField:'saleIntermedMode',pct:p.saleIntermedPct,pctField:'saleIntermedPct',method:p.saleIntermedMethod||'maisValia',methodField:'saleIntermedMethod',val:p.saleIntermed,valField:'saleIntermed',cur:p.saleIntermedCurrency||'BRL',curField:'saleIntermedCur',brl:hIntermedBRL(p)})}
@@ -1663,10 +1736,7 @@ function hSaleExtraRow(p,ex) {
            data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraVal" value="${moneyToInput(ex.val)}" placeholder="0">
        </div>`;
   const sec = mode==='pct'
-    ? `<div class="cur-toggle sale-tg-sec">
-         <button class="cur-btn${ex.method==='maisValia'||!ex.method?' on':''}" data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraMethod" data-v="maisValia">+ valia</button>
-         <button class="cur-btn${ex.method==='bruto'?' on':''}" data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraMethod" data-v="bruto">Bruto</button>
-       </div>`
+    ? hBaseCfg(p, 'extra:'+ex.id)
     : `<div class="cur-toggle sale-tg-sec">
          <button class="cur-btn${(ex.currency||'BRL')==='BRL'?' on':''}" data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraCur" data-v="BRL">R$</button>
          <button class="cur-btn${ex.currency==='EUR'?' on':''}" data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraCur" data-v="EUR">EUR</button>
@@ -1694,6 +1764,28 @@ function hSaleExtraBRL(p,ex) {
   return `− R$ ${N(row.brl)}`;
 }
 
+// Botão + popover para configurar quais valores são subtraídos da base
+function baseSummary(incl) {
+  const set=new Set(incl||[]);
+  if (set.size===0) return 'Sobre receita';
+  if (set.size===1 && set.has('solidariedade')) return 'Bruto';
+  if (set.size===2 && set.has('solidariedade') && set.has('acquisition')) return '+ valia';
+  return `Base (${set.size})`;
+}
+function hBaseCfg(p, tag) {
+  const incl = getSaleIncl(p, tag);
+  const opts = availableBases(p, tag);
+  const summary = baseSummary(incl);
+  return `
+    <div class="base-cfg cur-toggle sale-tg-sec" data-base-cfg="${tag}" data-pid="${p.id}">
+      <button type="button" class="base-cfg-btn" data-action="toggle-base-cfg" data-pid="${p.id}" data-tag="${tag}" title="Configurar base da dedução">${esc(summary)} ▾</button>
+      <div class="base-cfg-pop" id="basepop-${p.id}-${tag.replace(':','-')}" style="display:none">
+        <div class="bcfg-hdr">Subtrair antes do cálculo</div>
+        ${opts.map(o=>`<label><input type="checkbox" data-pid="${p.id}" data-incl-tag="${tag}" data-incl-key="${o.key}" ${incl.includes(o.key)?'checked':''}> ${esc(o.label)}</label>`).join('')}
+      </div>
+    </div>`;
+}
+
 // Linha de venda padronizada (Valor/% + base) p/ intermediação e impostos
 function hPctValueRow(p,c) {
   const valBlock = c.mode==='pct'
@@ -1707,10 +1799,7 @@ function hPctValueRow(p,c) {
            data-pid="${p.id}" data-field="${c.valField}" value="${moneyToInput(c.val)}" placeholder="0">
        </div>`;
   const sec = c.mode==='pct'
-    ? `<div class="cur-toggle sale-tg-sec">
-         <button class="cur-btn${c.method==='maisValia'?' on':''}" data-pid="${p.id}" data-field="${c.methodField}" data-v="maisValia">+ valia</button>
-         <button class="cur-btn${c.method==='bruto'?' on':''}" data-pid="${p.id}" data-field="${c.methodField}" data-v="bruto">Bruto</button>
-       </div>`
+    ? hBaseCfg(p, c.tag==='intermed'?'intermed':'taxes')
     : `<div class="cur-toggle sale-tg-sec">
          <button class="cur-btn${c.cur==='BRL'?' on':''}" data-pid="${p.id}" data-field="${c.curField}" data-v="BRL">R$</button>
          <button class="cur-btn${c.cur==='EUR'?' on':''}" data-pid="${p.id}" data-field="${c.curField}" data-v="EUR">EUR</button>
@@ -2023,6 +2112,46 @@ function bindEvents() {
   document.addEventListener('click', e => {
     const nav=e.target.closest('[data-nav]');
     if(nav){ view=nav.dataset.nav; renderAll(); }
+  });
+
+  // Popover "Base ▾": toggle + click-outside
+  document.addEventListener('click', e => {
+    const btn=e.target.closest('[data-action="toggle-base-cfg"]');
+    if(btn){
+      const pid=+btn.dataset.pid, tag=btn.dataset.tag;
+      const pop=document.getElementById(`basepop-${pid}-${tag.replace(':','-')}`);
+      const open=pop && pop.style.display!=='none';
+      document.querySelectorAll('.base-cfg-pop').forEach(el=>el.style.display='none');
+      if(pop && !open) pop.style.display='flex';
+      e.stopPropagation();
+      return;
+    }
+    if(!e.target.closest('.base-cfg-pop')) {
+      document.querySelectorAll('.base-cfg-pop').forEach(el=>el.style.display='none');
+    }
+  });
+
+  // Checkbox da base — adiciona/remove chave da incl list
+  document.addEventListener('change', e => {
+    const t=e.target;
+    if(!t.dataset.inclTag) return;
+    const pid=+t.dataset.pid, tag=t.dataset.inclTag, key=t.dataset.inclKey;
+    const p=DRAFT.players.find(x=>x.id===pid);
+    if(!p) return;
+    const arr=getSaleIncl(p,tag).slice();
+    const has=arr.includes(key);
+    if(t.checked && !has) arr.push(key);
+    if(!t.checked && has) arr.splice(arr.indexOf(key),1);
+    setSaleIncl(p,tag,arr);
+    saveDraft();
+    // atualiza summary do botão correspondente
+    const btn=document.querySelector(`[data-action="toggle-base-cfg"][data-pid="${pid}"][data-tag="${tag}"]`);
+    if(btn) btn.textContent=`${baseSummary(arr)} ▾`;
+    // recalcula tags BRL e resultados
+    const tags={'sale-brl-':hSaleBRL,'solid-brl-':hSolidariedadeBRL,'sell-on-brl-':hSellOnBRL,'intermed-brl-':hIntermedBRL,'taxes-brl-':hTaxesBRL};
+    for(const [pref,fn] of Object.entries(tags)){ const el=document.getElementById(pref+pid); if(el) el.innerHTML=fn(p); }
+    for(const ex of (p.saleExtras||[])){ const el=document.getElementById(`extra-brl-${ex.id}`); if(el) el.innerHTML=hSaleExtraBRL(p,ex); }
+    refreshResults(pid);
   });
 
   document.addEventListener('click', e => {

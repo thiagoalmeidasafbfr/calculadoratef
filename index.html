@@ -1950,7 +1950,15 @@ function bindEvents() {
       return;
     }
     if(action==='save-cadastro'){ saveCadastro(); return; }
-    if(action==='add-player'){ DRAFT.players.push(newPlayer()); saveDraft(); renderAll(); return; }
+    if(action==='add-player'){
+      const empty=DRAFT.players.find(isEmptyPlayer);
+      if(empty){
+        toast('Preencha o atleta em branco antes de adicionar outro','warn');
+        document.querySelector(`[data-pid="${empty.id}"]`)?.scrollIntoView({behavior:'smooth',block:'start'});
+        return;
+      }
+      DRAFT.players.push(newPlayer()); saveDraft(); renderAll(); return;
+    }
     if(action==='edit-player'){
       const sp=S.players.find(p=>p.id===pid); if(!sp) return;
       DRAFT.players=DRAFT.players.filter(d=>!isEmptyPlayer(d) && d._editId!==sp.id);

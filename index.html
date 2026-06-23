@@ -333,6 +333,14 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .cut-toggle .cur-btn{padding:7px 14px;font-size:9.5px}
 .cut-hint{font-family:'Inter',sans-serif;font-size:11px;color:var(--ink-4);flex:1;min-width:240px;line-height:1.45}
 .cut-hint strong{color:var(--ink-2)}
+.cut-sel-status{font-family:'Inter',sans-serif;font-size:9px;font-weight:500;letter-spacing:.04em;text-transform:none;color:var(--ink-4)}
+.cut-incl-row{display:inline-flex;align-items:center;gap:7px;cursor:pointer}
+.cut-incl-row input[type=checkbox]{accent-color:var(--gold-deep,#8b6a2a);cursor:pointer;width:14px;height:14px;flex-shrink:0}
+.row-excluded td{opacity:.32}
+.row-excluded td:first-child{opacity:.65}
+.has-tip{cursor:help}
+.tip-dot{display:inline-block;font-size:9px;color:var(--ink-4);margin-left:3px;vertical-align:1px}
+.has-tip:hover .tip-dot{color:var(--gold-deep)}
 /* Demonstrativo de resultado: nomes dos atletas maiores e em preto, sem scroll vertical */
 .matrix-scroll{max-height:none}
 .matrix-tbl th{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:none;color:var(--ink-1);padding:10px 10px}
@@ -576,7 +584,7 @@ let DRAFT = null;       // null fora da edição; {players:[player], editId:numb
 let view = 'dashboard'; // 'dashboard' | 'edit' | 'consolidado' | 'resultado' | 'cotacoes' | 'impacto'
 let SIM  = {playerId:null, exit:''};    // simulação de encerramento (não persiste)
 let COT  = {cur:'EUR', start:'', end:''}; // filtro da página de cotações
-let CUT  = {date:''};                   // corte de data do consolidado ('' = totalidade)
+let CUT  = {date:'', exclude:[]};        // corte de data + atletas desmarcados no consolidado
 
 // Quais deduções podem entrar na base de cada uma (ordem definida pelo usuário)
 const SALE_DEDUCTION_LABELS = {solidariedade:'Solidariedade',sellOn:'Sell-on fee',intermed:'Intermediação',taxes:'Impostos e taxas',acquisition:'Custo de aquisição'};
@@ -2043,18 +2051,33 @@ function hResults(p) {
 }
 
 // ── Summary table ──────────────────────────────────────────────────
+function isIncluded(pid){ return !(CUT.exclude||[]).includes(pid); }
 function hSummary() {
   const active=S.players.filter(p=>{const c=calcPlayer(p);return c&&c.totAct>0;});
   if (active.length===0) return `<div id="summary-section"></div>`;
 
+  const dedFmt = v => v>0 ? `R$ ${N(v)}` : '—';
+  const allOn  = active.every(p=>isIncluded(p.id));
+  const someOn = active.some(p=>isIncluded(p.id));
+  const includedCount = active.filter(p=>isIncluded(p.id)).length;
+
   const rows=active.map(p=>{
     const c=calcPlayerCutoff(p, CUT.date);
+    const inc=isIncluded(p.id);
     const chipGain=c.gain!==null?(c.gain>=0?`<span class="chip-saída chip-pos">ganho</span>`:`<span class="chip-saída chip-neg">perda</span>`):'';
     const cutNote = CUT.date && p.exit && pDate(p.exit) > pDate(CUT.date) ? `<span class="chip-saída" style="opacity:.55" title="Saída após a data de corte">após corte</span>` : '';
     const exitLabel=c.exitMonths!==null?`${c.exitMonths}/${c.contractMonths} meses <span class="chip-saída">${fmtD(p.exit)}</span>`:(p.exit?`— ${cutNote}`:`— <span class="chip-saída" style="opacity:.4">sem data</span>`);
     const custosVenda=(c.solidariedadeBRL||0)+(c.sellOnFee||0)+(c.saleIntermedBRL||0)+(c.saleTaxesBRL||0)+(c.saleExtrasBRL||0);
-    return `<tr>
-      <td>${esc(p.name||'Sem nome')}</td>
+    const extrasParts = (c.saleExtras||[]).filter(x=>x.brl>0).map(x=>`${x.label}: ${dedFmt(x.brl)}`);
+    const custosTooltip = custosVenda>0 ? [
+      `Solidariedade: ${dedFmt(c.solidariedadeBRL)}`,
+      `Sell-on fee: ${dedFmt(c.sellOnFee)}`,
+      `Intermediação: ${dedFmt(c.saleIntermedBRL)}`,
+      `Impostos e taxas: ${dedFmt(c.saleTaxesBRL)}`,
+      ...extrasParts,
+    ].join(' · ') : '';
+    return `<tr class="${inc?'':'row-excluded'}">
+      <td><label class="cut-incl-row"><input type="checkbox" data-action="cut-incl" data-pid="${p.id}" ${inc?'checked':''}> <span>${esc(p.name||'Sem nome')}</span></label></td>
       <td class="td-dim">${fmtD(p.start)} → ${fmtD(p.end)}</td>
       <td class="td-warn">R$ ${N(c.totAct)}</td>
       <td class="td-amber">R$ ${N(c.monthlyTotal)}<span style="font-size:8px;color:var(--ink-4)">/mês</span></td>
@@ -2062,14 +2085,15 @@ function hSummary() {
       <td class="td-dim">${(c.totAmort||0)>0?`R$ ${N(c.totAmort)}`:'—'}</td>
       <td class="td-gold">${c.exitMonths!==null?`R$ ${N(c.totResid)}`:'—'}</td>
       <td>${c.saleBRL>0?`R$ ${N(c.saleBRL)}`:'—'}</td>
-      <td class="td-neg">${custosVenda>0?`R$ ${N(custosVenda)}`:'—'}</td>
+      <td class="td-neg has-tip" ${custosTooltip?`title="${esc(custosTooltip)}"`:''}>${custosVenda>0?`R$ ${N(custosVenda)} <span class="tip-dot">ⓘ</span>`:'—'}</td>
       <td class="${c.gain!==null?(c.gain>=0?'td-pos':'td-neg'):''}">${c.gain!==null?`${c.gain>=0?'+':''}R$ ${N(c.gain)} ${chipGain}`:'—'}</td>
       <td class="td-pos">${c.futureAmortAvoided!==null&&c.futureAmortAvoided>0?`R$ ${N(c.futureAmortAvoided)}`:'—'}</td>
       <td class="td-pos">${c.payrollSaved>0?`R$ ${N(c.payrollSaved)}`:'—'}</td>
     </tr>`;
   }).join('');
 
-  const calcs=active.map(p=>calcPlayerCutoff(p, CUT.date));
+  // Totais usam apenas atletas marcados
+  const calcs=active.filter(p=>isIncluded(p.id)).map(p=>calcPlayerCutoff(p, CUT.date));
   const tt={
     act:  calcs.reduce((s,c)=>s+c.totAct,0),
     mo:   calcs.reduce((s,c)=>s+c.monthlyTotal,0),
@@ -2077,18 +2101,39 @@ function hSummary() {
     res:  calcs.filter(c=>c.exitMonths!==null).reduce((s,c)=>s+c.totResid,0),
     sale: calcs.filter(c=>c.saleBRL>0).reduce((s,c)=>s+c.saleBRL,0),
     custos:calcs.filter(c=>c.gain!==null).reduce((s,c)=>s+(c.solidariedadeBRL||0)+(c.sellOnFee||0)+(c.saleIntermedBRL||0)+(c.saleTaxesBRL||0)+(c.saleExtrasBRL||0),0),
+    solid:calcs.filter(c=>c.gain!==null).reduce((s,c)=>s+(c.solidariedadeBRL||0),0),
+    sellOn:calcs.filter(c=>c.gain!==null).reduce((s,c)=>s+(c.sellOnFee||0),0),
+    intermed:calcs.filter(c=>c.gain!==null).reduce((s,c)=>s+(c.saleIntermedBRL||0),0),
+    taxes:calcs.filter(c=>c.gain!==null).reduce((s,c)=>s+(c.saleTaxesBRL||0),0),
+    extras:calcs.filter(c=>c.gain!==null).reduce((s,c)=>s+(c.saleExtrasBRL||0),0),
     gain: calcs.filter(c=>c.gain!==null).reduce((s,c)=>s+c.gain,0),
     avoid:calcs.filter(c=>c.futureAmortAvoided!==null).reduce((s,c)=>s+(c.futureAmortAvoided??0),0),
     salary:calcs.filter(c=>c.exitMonths!==null).reduce((s,c)=>s+(c.payrollSaved??0),0),
   };
   const hasGain=calcs.some(c=>c.gain!==null);
+  const totCustosTip = tt.custos>0 ? [
+    `Solidariedade: ${dedFmt(tt.solid)}`,
+    `Sell-on fee: ${dedFmt(tt.sellOn)}`,
+    `Intermediação: ${dedFmt(tt.intermed)}`,
+    `Impostos e taxas: ${dedFmt(tt.taxes)}`,
+    tt.extras>0?`Outras deduções: ${dedFmt(tt.extras)}`:'',
+  ].filter(Boolean).join(' · ') : '';
+
+  const selStatus = allOn
+    ? `<span class="cut-sel-status">Todos os ${active.length} atletas selecionados</span>`
+    : `<span class="cut-sel-status">${includedCount} de ${active.length} selecionados</span>`;
 
   return `
   <div id="summary-section" class="section-card">
-    <div class="sec-eyebrow">Resumo Consolidado</div>
+    <div class="sec-eyebrow" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span>Resumo Consolidado</span>
+      ${selStatus}
+      ${!allOn?`<button class="mini-btn" data-action="cut-incl-all" data-mode="all">Marcar todos</button>`:''}
+      ${someOn&&allOn?`<button class="mini-btn" data-action="cut-incl-all" data-mode="none">Desmarcar todos</button>`:''}
+    </div>
     <table class="stbl">
       <thead><tr>
-        <th style="text-align:left">Atleta</th>
+        <th style="text-align:left"><span class="cut-incl-row"><input type="checkbox" data-action="cut-incl-all" data-mode="${allOn?'none':'all'}" ${allOn?'checked':''} title="Marcar/desmarcar todos"><span>Atleta</span></span></th>
         <th>Vigência</th>
         <th>Total Ativado</th>
         <th>Amort. Mensal</th>
@@ -2103,7 +2148,7 @@ function hSummary() {
       </tr></thead>
       <tbody>${rows}</tbody>
       <tfoot><tr class="tr-total">
-        <td>Total</td>
+        <td>Total${allOn?'':` (${includedCount}/${active.length})`}</td>
         <td class="td-dim">—</td>
         <td class="td-warn">R$ ${N(tt.act)}</td>
         <td class="td-amber">R$ ${N(tt.mo)}/mês</td>
@@ -2111,14 +2156,14 @@ function hSummary() {
         <td class="td-dim">${tt.amort>0?`R$ ${N(tt.amort)}`:'—'}</td>
         <td class="td-gold">${tt.res>0?`R$ ${N(tt.res)}`:'—'}</td>
         <td>${tt.sale>0?`R$ ${N(tt.sale)}`:'—'}</td>
-        <td class="td-neg">${tt.custos>0?`R$ ${N(tt.custos)}`:'—'}</td>
+        <td class="td-neg has-tip" ${totCustosTip?`title="${esc(totCustosTip)}"`:''}>${tt.custos>0?`R$ ${N(tt.custos)} <span class="tip-dot">ⓘ</span>`:'—'}</td>
         <td class="${hasGain?(tt.gain>=0?'td-pos':'td-neg'):''}">${hasGain?`${tt.gain>=0?'+':''}R$ ${N(tt.gain)}`:'—'}</td>
         <td class="td-pos">${tt.avoid>0?`R$ ${N(tt.avoid)}`:'—'}</td>
         <td class="td-pos">${tt.salary>0?`R$ ${N(tt.salary)}`:'—'}</td>
       </tr></tfoot>
     </table>
     <div style="margin-top:10px;font-family:'Inter',sans-serif;font-size:8px;color:var(--ink-4);letter-spacing:.04em">
-      ✦ <strong>Amort. Evitada</strong> = amortização que NÃO ocorrerá nos meses após a saída · <strong>Economia Salário</strong> = salário (+13º) + direito de imagem economizados nos meses restantes após a venda
+      ✦ <strong>Amort. Evitada</strong> = amortização que NÃO ocorrerá nos meses após a saída · <strong>Economia Salário</strong> = salário (+13º) + direito de imagem economizados nos meses restantes após a venda · Passe o mouse sobre <span class="tip-dot">ⓘ</span> em Custos Venda para ver o detalhamento.
     </div>
   </div>`;
 }
@@ -2439,6 +2484,23 @@ function bindEvents() {
         }
       }
       renderAll();
+      return;
+    }
+    if(action==='cut-incl'){
+      if (pid==null) return;
+      const list = CUT.exclude || (CUT.exclude=[]);
+      const idx = list.indexOf(pid);
+      if (idx>=0) list.splice(idx,1); else list.push(pid);
+      const sec=document.getElementById('summary-section');
+      if(sec) sec.outerHTML=hSummary();
+      return;
+    }
+    if(action==='cut-incl-all'){
+      const mode=t.dataset.mode;
+      if (mode==='all') CUT.exclude=[];
+      else CUT.exclude=S.players.map(p=>p.id);
+      const sec=document.getElementById('summary-section');
+      if(sec) sec.outerHTML=hSummary();
       return;
     }
     if(action==='cot-fetch'){

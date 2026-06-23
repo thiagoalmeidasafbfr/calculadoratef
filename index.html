@@ -343,7 +343,7 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .has-tip:hover .tip-dot{color:var(--gold)}
 .has-tip[data-tip]:hover::before{
   content:attr(data-tip);
-  position:absolute;bottom:calc(100% + 9px);right:-6px;
+  position:absolute;top:calc(100% + 9px);right:-6px;
   background:var(--dark);color:var(--on-dark);
   border:1px solid var(--gold-ring);border-radius:var(--r-md);
   padding:10px 14px;font-family:'Inter',sans-serif;font-size:10.5px;
@@ -352,8 +352,8 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
   letter-spacing:.01em;
 }
 .has-tip[data-tip]:hover::after{
-  content:'';position:absolute;bottom:calc(100% + 3px);right:14px;
-  border:6px solid transparent;border-top-color:var(--gold-ring);
+  content:'';position:absolute;top:calc(100% + 3px);right:14px;
+  border:6px solid transparent;border-bottom-color:var(--gold-ring);
   z-index:300;pointer-events:none;
 }
 .stbl-compact td{padding:7px 8px}

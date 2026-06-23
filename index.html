@@ -1975,7 +1975,7 @@ function hSummary() {
       <td class="td-neg">${custosVenda>0?`R$ ${N(custosVenda)}`:'—'}</td>
       <td class="${c.gain!==null?(c.gain>=0?'td-pos':'td-neg'):''}">${c.gain!==null?`${c.gain>=0?'+':''}R$ ${N(c.gain)} ${chipGain}`:'—'}</td>
       <td class="td-pos">${c.futureAmortAvoided!==null&&c.futureAmortAvoided>0?`R$ ${N(c.futureAmortAvoided)}`:'—'}</td>
-      <td class="td-pos">${c.payrollSalary>0?`R$ ${N(c.payrollSalary)}`:'—'}</td>
+      <td class="td-pos">${c.payrollSaved>0?`R$ ${N(c.payrollSaved)}`:'—'}</td>
     </tr>`;
   }).join('');
 
@@ -1989,7 +1989,7 @@ function hSummary() {
     custos:calcs.filter(c=>c.gain!==null).reduce((s,c)=>s+(c.solidariedadeBRL||0)+(c.sellOnFee||0)+(c.saleIntermedBRL||0)+(c.saleTaxesBRL||0)+(c.saleExtrasBRL||0),0),
     gain: calcs.filter(c=>c.gain!==null).reduce((s,c)=>s+c.gain,0),
     avoid:calcs.filter(c=>c.futureAmortAvoided!==null).reduce((s,c)=>s+(c.futureAmortAvoided??0),0),
-    salary:calcs.filter(c=>c.exitMonths!==null).reduce((s,c)=>s+(c.payrollSalary??0),0),
+    salary:calcs.filter(c=>c.exitMonths!==null).reduce((s,c)=>s+(c.payrollSaved??0),0),
   };
   const hasGain=calcs.some(c=>c.gain!==null);
 
@@ -2028,7 +2028,7 @@ function hSummary() {
       </tr></tfoot>
     </table>
     <div style="margin-top:10px;font-family:'Inter',sans-serif;font-size:8px;color:var(--ink-4);letter-spacing:.04em">
-      ✦ <strong>Amort. Evitada</strong> = amortização que NÃO ocorrerá nos meses após a saída · <strong>Economia Salário</strong> = salário + 13º economizados nos meses restantes após a venda (não inclui direito de imagem)
+      ✦ <strong>Amort. Evitada</strong> = amortização que NÃO ocorrerá nos meses após a saída · <strong>Economia Salário</strong> = salário (+13º) + direito de imagem economizados nos meses restantes após a venda
     </div>
   </div>`;
 }

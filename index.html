@@ -760,6 +760,18 @@ function amortRange(p, startM, endM) {
   return total;
 }
 
+// Proportional amortization avoided within the exit month itself.
+// If exit is on day D of a month with N days, the avoided fraction is (N - D) / N.
+function exitMonthPartialAmort(p, exitDateStr) {
+  if (!exitDateStr) return 0;
+  const exitD = pDate(exitDateStr);
+  const daysInMonth = new Date(exitD.getFullYear(), exitD.getMonth()+1, 0).getDate();
+  const remainingDays = daysInMonth - exitD.getDate();
+  if (remainingDays <= 0) return 0;
+  const ym = exitD.getFullYear()+'-'+String(exitD.getMonth()+1).padStart(2,'0');
+  return monthlyAmortBRL(p, ym) * (remainingDays / daysInMonth);
+}
+
 // Build sorted array of first-of-month Dates spanning all players' ranges
 function buildMonthRange(players) {
   let minD=null, maxD=null;
@@ -809,11 +821,12 @@ function calcPlayer(p) {
   const monthsRemaining=exitMonths!==null?contractMonths-exitMonths:null;
   // Monthly display at latest available PTAX
   const monthlyTotal=monthlyAmortBRL(p,getLatestYM());
-  // Future amort avoided = sum of remaining months after exit using their PTAX
+  // Future amort avoided = proportional part of exit month + full remaining months
   let futureAmortAvoided=null;
   if (exitM) {
     const nextM=new Date(exitM.getFullYear(),exitM.getMonth()+1,1);
-    futureAmortAvoided=nextM<=endM?amortRange(p,nextM,endM):0;
+    const fullMonths=nextM<=endM?amortRange(p,nextM,endM):0;
+    futureAmortAvoided=fullMonths+exitMonthPartialAmort(p,p.exit);
   }
 
   // Economia de folha pelos meses restantes após a saída.
@@ -962,12 +975,13 @@ function calcPlayerCutoff(p, cutoffISO){
   const saleExtrasBRL    = exitedByCutoff ? base.saleExtrasBRL    : 0;
   const gain             = exitedByCutoff ? base.gain             : null;
 
-  // Amortização evitada / folha evitada: meses de (saída+1) até min(fim, corte)
+  // Amortização evitada / folha evitada: fração proporcional do mês de saída + meses de (saída+1) até min(fim, corte)
   let futureAmortAvoided=null, payrollSaved=null, payrollSalary=0, payrollImage=0;
   if (exitedByCutoff){
     const nextM = new Date(exitM.getFullYear(), exitM.getMonth()+1, 1);
     const cap   = cutM < endM ? cutM : endM;
-    futureAmortAvoided = nextM <= cap ? amortRange(p, nextM, cap) : 0;
+    const fullMonths = nextM <= cap ? amortRange(p, nextM, cap) : 0;
+    futureAmortAvoided = fullMonths + exitMonthPartialAmort(p, p.exit);
     const Sal = p.salary??0, Img = p.imageRights??0;
     let cur = new Date(nextM);
     while (cur <= cap){

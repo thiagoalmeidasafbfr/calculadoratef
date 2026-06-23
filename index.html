@@ -124,7 +124,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--cream-page);color
 .drag-handle:hover{color:var(--ink-2);background:var(--gold-tint)}
 .drag-handle:active{cursor:grabbing}
 .dedu-spacer{flex:0 0 18px;width:18px}
-.sale-row{display:grid;grid-template-columns:128px minmax(110px,1.1fr) 74px minmax(92px,116px) minmax(60px,1fr);gap:8px;align-items:center}
+.sale-row{display:grid;grid-template-columns:128px minmax(110px,1.1fr) 74px minmax(78px,96px) minmax(96px,118px) minmax(60px,1fr);gap:8px;align-items:center}
 .sale-lbl{font-family:'Inter',sans-serif;font-size:10.5px;font-weight:500;color:var(--ink-2);white-space:normal;overflow:visible;line-height:1.25;word-break:break-word}
 .sale-amt,.sale-tg-mode,.sale-tg-sec{width:auto;min-width:0}
 .sale-brl-tag{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1638,6 +1638,7 @@ function hCard(p,idx=0) {
               <button class="cur-btn${p.saleCurrency==='EUR'?' on':''}" data-pid="${p.id}" data-field="saleCur" data-v="EUR">EUR</button>
               <button class="cur-btn${p.saleCurrency==='USD'?' on':''}" data-pid="${p.id}" data-field="saleCur" data-v="USD">USD</button>
             </div>
+            <div style="visibility:hidden"></div>
             <span id="sale-brl-${p.id}" class="sale-brl-tag">${hSaleBRL(p)}</span>
           </div>
         </div>
@@ -1760,22 +1761,22 @@ function hSaleExtraRow(p,ex) {
          <input class="amt-inp" type="text" inputmode="decimal" data-money="1"
            data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraVal" value="${moneyToInput(ex.val)}" placeholder="0">
        </div>`;
-  const sec = mode==='pct'
-    ? hBaseCfg(p, 'extra:'+ex.id)
-    : `<div class="cur-toggle sale-tg-sec">
-         <button class="cur-btn${(ex.currency||'BRL')==='BRL'?' on':''}" data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraCur" data-v="BRL">R$</button>
-         <button class="cur-btn${ex.currency==='EUR'?' on':''}" data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraCur" data-v="EUR">EUR</button>
-         <button class="cur-btn${ex.currency==='USD'?' on':''}" data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraCur" data-v="USD">USD</button>
-       </div>`;
+  const curDim = mode==='pct' ? ' style="opacity:.4"' : '';
+  const baseDim = mode==='valor' ? 'opacity:.4;' : '';
   return `
-  <div class="sale-row" id="exrow-${ex.id}" style="grid-template-columns:128px minmax(110px,1.1fr) 74px minmax(92px,116px) minmax(60px,1fr) 24px">
+  <div class="sale-row" id="exrow-${ex.id}" style="grid-template-columns:128px minmax(110px,1.1fr) 74px minmax(78px,96px) minmax(96px,118px) minmax(60px,1fr) 24px">
     <input class="sale-lbl" type="text" data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraLabel" value="${esc(ex.label||'')}" placeholder="Nome da dedução" style="background:transparent;border:none;border-bottom:1px solid var(--gold-ring);font:500 10.5px/1.25 'Inter',sans-serif;color:var(--ink-2);padding:2px 0;outline:none;width:100%">
     ${valBlock}
     <div class="cur-toggle sale-tg-mode">
       <button class="cur-btn${mode==='valor'?' on':''}" data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraMode" data-v="valor">Valor</button>
       <button class="cur-btn${mode==='pct'?' on':''}" data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraMode" data-v="pct">%</button>
     </div>
-    ${sec}
+    <div class="cur-toggle sale-tg-sec"${curDim}>
+      <button class="cur-btn${(ex.currency||'BRL')==='BRL'?' on':''}" data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraCur" data-v="BRL">R$</button>
+      <button class="cur-btn${ex.currency==='EUR'?' on':''}" data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraCur" data-v="EUR">EUR</button>
+      <button class="cur-btn${ex.currency==='USD'?' on':''}" data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraCur" data-v="USD">USD</button>
+    </div>
+    <div style="${baseDim}min-width:0">${hBaseCfg(p, 'extra:'+ex.id)}</div>
     <span id="extra-brl-${ex.id}" class="sale-brl-tag">${hSaleExtraBRL(p,ex)}</span>
     <button class="del-item-btn" data-pid="${p.id}" data-eid="${ex.id}" data-action="remove-sale-extra" title="Remover">×</button>
   </div>`;
@@ -1796,6 +1797,7 @@ function hSolidRow(p) {
     <span class="sale-lbl">Mecanismo de Solidariedade</span>
     <div class="amt-wrap sale-amt"><input class="amt-inp" type="number" min="0" max="100" step="0.5" data-pid="${p.id}" data-field="solidariedadePct" value="${p.solidariedadePct??''}" placeholder="0"><span class="pct-suffix">%</span></div>
     <div class="sale-tg-mode" style="visibility:hidden"></div>
+    <div style="visibility:hidden"></div>
     ${hBaseCfg(p,'solidariedade')}
     <span id="solid-brl-${p.id}" class="sale-brl-tag">${hSolidariedadeBRL(p)}</span>
   </div>`;
@@ -1808,6 +1810,7 @@ function hSellOnRow(p) {
     <span class="sale-lbl">Sell-on fee</span>
     <div class="amt-wrap sale-amt"><input class="amt-inp" type="number" min="0" max="100" step="0.5" data-pid="${p.id}" data-field="sellOnPct" value="${p.sellOnPct??''}" placeholder="0"><span class="pct-suffix">%</span></div>
     <div class="sale-tg-mode" style="visibility:hidden"></div>
+    <div style="visibility:hidden"></div>
     ${hBaseCfg(p,'sellOn')}
     <span id="sell-on-brl-${p.id}" class="sale-brl-tag">${hSellOnBRL(p)}</span>
   </div>`;
@@ -1853,7 +1856,7 @@ function hBaseCfg(p, tag) {
     </div>`;
 }
 
-// Linha de venda padronizada (Valor/% + base) p/ intermediação e impostos
+// Linha de venda padronizada (Valor/% + moeda + base) p/ intermediação e impostos
 function hPctValueRow(p,c) {
   const valBlock = c.mode==='pct'
     ? `<div class="amt-wrap sale-amt">
@@ -1865,13 +1868,8 @@ function hPctValueRow(p,c) {
          <input class="amt-inp" type="text" inputmode="decimal" data-money="1"
            data-pid="${p.id}" data-field="${c.valField}" value="${moneyToInput(c.val)}" placeholder="0">
        </div>`;
-  const sec = c.mode==='pct'
-    ? hBaseCfg(p, c.tag==='intermed'?'intermed':'taxes')
-    : `<div class="cur-toggle sale-tg-sec">
-         <button class="cur-btn${c.cur==='BRL'?' on':''}" data-pid="${p.id}" data-field="${c.curField}" data-v="BRL">R$</button>
-         <button class="cur-btn${c.cur==='EUR'?' on':''}" data-pid="${p.id}" data-field="${c.curField}" data-v="EUR">EUR</button>
-         <button class="cur-btn${c.cur==='USD'?' on':''}" data-pid="${p.id}" data-field="${c.curField}" data-v="USD">USD</button>
-       </div>`;
+  const curDim = c.mode==='pct' ? ' style="opacity:.4"' : '';
+  const baseDim = c.mode==='valor' ? 'opacity:.4;' : '';
   return `
   <div class="sale-row">
     <span class="sale-lbl">${c.label}</span>
@@ -1880,7 +1878,12 @@ function hPctValueRow(p,c) {
       <button class="cur-btn${c.mode==='valor'?' on':''}" data-pid="${p.id}" data-field="${c.modeField}" data-v="valor">Valor</button>
       <button class="cur-btn${c.mode==='pct'?' on':''}" data-pid="${p.id}" data-field="${c.modeField}" data-v="pct">%</button>
     </div>
-    ${sec}
+    <div class="cur-toggle sale-tg-sec"${curDim}>
+      <button class="cur-btn${c.cur==='BRL'?' on':''}" data-pid="${p.id}" data-field="${c.curField}" data-v="BRL">R$</button>
+      <button class="cur-btn${c.cur==='EUR'?' on':''}" data-pid="${p.id}" data-field="${c.curField}" data-v="EUR">EUR</button>
+      <button class="cur-btn${c.cur==='USD'?' on':''}" data-pid="${p.id}" data-field="${c.curField}" data-v="USD">USD</button>
+    </div>
+    <div style="${baseDim}min-width:0">${hBaseCfg(p, c.tag)}</div>
     <span id="${c.tag}-brl-${p.id}" class="sale-brl-tag">${c.brl}</span>
   </div>`;
 }

@@ -533,9 +533,10 @@ function safeRerenderAfterFx(){
 // ═══════════════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════════════
-let _pid=0, _iid=0;
+let _pid=0, _iid=0, _eid=0;
 function newItem(label='Transfer Fee',currency='BRL'){return {id:++_iid,label,amount:null,currency};}
-function newPlayer(){return {id:++_pid,name:'',start:'',end:'',exit:'',saleAmount:null,saleCurrency:'BRL',sellOnPct:null,sellOnMethod:'maisValia',saleIntermed:null,saleIntermedCurrency:'BRL',saleIntermedMode:'valor',saleIntermedPct:null,saleIntermedMethod:'maisValia',saleTaxes:null,saleTaxesCurrency:'BRL',saleTaxesMode:'valor',saleTaxesPct:null,saleTaxesMethod:'maisValia',salary:null,imageRights:null,inssPct:null,irpfPct:null,items:[newItem('Transfer Fee'),newItem('Intermediação'),newItem('Luva')]};}
+function newSaleExtra(label=''){return {id:++_eid,label,mode:'valor',val:null,currency:'BRL',pct:null,method:'maisValia'};}
+function newPlayer(){return {id:++_pid,name:'',start:'',end:'',exit:'',saleAmount:null,saleCurrency:'BRL',sellOnPct:null,sellOnMethod:'maisValia',saleIntermed:null,saleIntermedCurrency:'BRL',saleIntermedMode:'valor',saleIntermedPct:null,saleIntermedMethod:'maisValia',saleTaxes:null,saleTaxesCurrency:'BRL',saleTaxesMode:'valor',saleTaxesPct:null,saleTaxesMethod:'maisValia',salary:null,imageRights:null,inssPct:null,irpfPct:null,items:[newItem('Transfer Fee'),newItem('Intermediação'),newItem('Luva')],saleExtras:[]};}
 
 // S      = atletas SALVOS (vão para o banco / aparecem no Dashboard e Consolidado)
 // DRAFT  = formulário de cadastro (transiente, só vai pro banco ao apertar Salvar)
@@ -548,13 +549,16 @@ let COT  = {cur:'EUR', start:'', end:''}; // filtro da página de cotações
 function isEmptyPlayer(p){
   return !p.name && !p.start && !p.end && !p.exit
     && p.saleAmount==null && p.saleIntermed==null && p.saleIntermedPct==null && p.sellOnPct==null && p.saleTaxes==null && p.saleTaxesPct==null && p.salary==null && p.imageRights==null
-    && !p.items.some(i=>i.amount);
+    && !p.items.some(i=>i.amount)
+    && !(p.saleExtras||[]).some(e=>e.label||e.val||e.pct);
 }
 // mantém os contadores de id acima de qualquer id já existente em S/DRAFT
 function reconcileCounters(){
   for(const set of [S,DRAFT]) for(const p of set.players||[]){
     if(p.id>_pid)_pid=p.id;
     for(const it of p.items||[]) if(it.id>_iid)_iid=it.id;
+    if(!Array.isArray(p.saleExtras)) p.saleExtras=[];
+    for(const ex of p.saleExtras) if(ex.id>_eid)_eid=ex.id;
   }
 }
 
@@ -710,6 +714,7 @@ function calcPlayer(p) {
   const acqBRL=items.reduce((s,it)=>s+it.totalBRL,0);
 
   let saleBRL=0,saleRate=1,saleSrc='',gain=null,sellOnFee=0,maisValia=0,saleIntermedBRL=0,saleTaxesBRL=0;
+  let extras=[], saleExtrasBRL=0;
   if (p.saleAmount&&exitD){
     const {rate,src}=getDayRate(p.saleCurrency,p.exit);
     saleRate=rate; saleSrc=src;
@@ -733,10 +738,22 @@ function calcPlayer(p) {
       const {rate:tr}=getDayRate(p.saleTaxesCurrency||'BRL',p.exit);
       saleTaxesBRL=p.saleTaxes*tr;
     }
-    gain=saleBRL-sellOnFee-saleIntermedBRL-saleTaxesBRL-totResid;
+    for (const ex of (p.saleExtras||[])) {
+      let brl=0;
+      if ((ex.mode||'valor')==='pct') {
+        const base=(ex.method==='bruto')?saleBRL:maisValia;
+        brl=ex.pct?base*(ex.pct/100):0;
+      } else if (ex.val) {
+        const {rate:er}=getDayRate(ex.currency||'BRL',p.exit);
+        brl=ex.val*er;
+      }
+      extras.push({id:ex.id,label:ex.label||'Dedução',brl});
+      saleExtrasBRL+=brl;
+    }
+    gain=saleBRL-sellOnFee-saleIntermedBRL-saleTaxesBRL-saleExtrasBRL-totResid;
   }
 
-  return {contractMonths,exitMonths,monthsRemaining,monthlyTotal,futureAmortAvoided,monthlyPayroll,payrollSaved,payrollSalary,payrollImage,totalEconomy,items,totAct,acqBRL,totAmort,totResid,saleBRL,saleRate,saleSrc,gain,sellOnFee,maisValia,saleIntermedBRL,saleTaxesBRL,pctAmort:totAct>0?totAmort/totAct*100:0};
+  return {contractMonths,exitMonths,monthsRemaining,monthlyTotal,futureAmortAvoided,monthlyPayroll,payrollSaved,payrollSalary,payrollImage,totalEconomy,items,totAct,acqBRL,totAmort,totResid,saleBRL,saleRate,saleSrc,gain,sellOnFee,maisValia,saleIntermedBRL,saleTaxesBRL,saleExtras:extras,saleExtrasBRL,pctAmort:totAct>0?totAmort/totAct*100:0};
 }
 
 // monthly amort for a player in a given month (Date object, first of month)
@@ -810,7 +827,7 @@ function exportToExcel() {
   const wb=XLSX.utils.book_new();
 
   // Sheet 1: Resumo
-  const resumoHeader=['Atleta','Início','Fim','Total Ativado (R$)','Amort. Mensal (R$)','Meses Contrato','Meses Amortizados','Baixa/Residual (R$)','Receita da Venda (R$)','Sell-on Fee (R$)','Intermed. Venda (R$)','Impostos e Taxas (R$)','Lucro/Prejuízo (R$)','Amort. Evitada (R$)'];
+  const resumoHeader=['Atleta','Início','Fim','Total Ativado (R$)','Amort. Mensal (R$)','Meses Contrato','Meses Amortizados','Baixa/Residual (R$)','Receita da Venda (R$)','Sell-on Fee (R$)','Intermed. Venda (R$)','Impostos e Taxas (R$)','Outras Deduções (R$)','Lucro/Prejuízo (R$)','Amort. Evitada (R$)'];
   const resumoRows=active.map(p=>{
     const c=calcPlayer(p);
     return [
@@ -822,6 +839,7 @@ function exportToExcel() {
       c.sellOnFee>0?+c.sellOnFee.toFixed(2):'',
       c.saleIntermedBRL>0?+c.saleIntermedBRL.toFixed(2):'',
       c.saleTaxesBRL>0?+c.saleTaxesBRL.toFixed(2):'',
+      c.saleExtrasBRL>0?+c.saleExtrasBRL.toFixed(2):'',
       c.gain!==null?+c.gain.toFixed(2):'',
       c.futureAmortAvoided!=null?+c.futureAmortAvoided.toFixed(2):'',
     ];
@@ -837,6 +855,7 @@ function exportToExcel() {
     +calcsAll.reduce((s,c)=>s+(c.sellOnFee||0),0).toFixed(2),
     +calcsAll.reduce((s,c)=>s+(c.saleIntermedBRL||0),0).toFixed(2),
     +calcsAll.reduce((s,c)=>s+(c.saleTaxesBRL||0),0).toFixed(2),
+    +calcsAll.reduce((s,c)=>s+(c.saleExtrasBRL||0),0).toFixed(2),
     +calcsAll.filter(c=>c.gain!==null).reduce((s,c)=>s+c.gain,0).toFixed(2),
     +calcsAll.reduce((s,c)=>s+(c.futureAmortAvoided??0),0).toFixed(2),
   ]);
@@ -1252,7 +1271,8 @@ function buildResultMatrix(players) {
   ded('Intermediação',c=>c.saleIntermedBRL);
   ded('Sell-on Fee',c=>c.sellOnFee);
   ded('Impostos e Taxas',c=>c.saleTaxesBRL);
-  const dedTot=c=>(c.saleIntermedBRL||0)+(c.sellOnFee||0)+(c.saleTaxesBRL||0);
+  if (calcs.some(({c})=>c.saleExtrasBRL>0)) ded('Outras deduções',c=>c.saleExtrasBRL);
+  const dedTot=c=>(c.saleIntermedBRL||0)+(c.sellOnFee||0)+(c.saleTaxesBRL||0)+(c.saleExtrasBRL||0);
   push('Total Deduções','sub',
     calcs.map(({c})=>c.saleBRL>0?neg(dedTot(c)):{d:'—',r:''}),
     neg(calcs.reduce((a,{c})=>a+dedTot(c),0)));
@@ -1510,6 +1530,8 @@ function hCard(p,idx=0) {
         </div>
         ${hPctValueRow(p,{label:'Intermediação',tag:'intermed',mode:p.saleIntermedMode||'valor',modeField:'saleIntermedMode',pct:p.saleIntermedPct,pctField:'saleIntermedPct',method:p.saleIntermedMethod||'maisValia',methodField:'saleIntermedMethod',val:p.saleIntermed,valField:'saleIntermed',cur:p.saleIntermedCurrency||'BRL',curField:'saleIntermedCur',brl:hIntermedBRL(p)})}
         ${hPctValueRow(p,{label:'Impostos e taxas',tag:'taxes',mode:p.saleTaxesMode||'valor',modeField:'saleTaxesMode',pct:p.saleTaxesPct,pctField:'saleTaxesPct',method:p.saleTaxesMethod||'maisValia',methodField:'saleTaxesMethod',val:p.saleTaxes,valField:'saleTaxes',cur:p.saleTaxesCurrency||'BRL',curField:'saleTaxesCur',brl:hTaxesBRL(p)})}
+        <div id="extras-${p.id}">${(p.saleExtras||[]).map(ex=>hSaleExtraRow(p,ex)).join('')}</div>
+        <div style="margin-top:9px"><button class="add-item-btn" data-pid="${p.id}" data-action="add-sale-extra">＋ adicionar dedução</button></div>
       </div>
     </div>
 
@@ -1606,6 +1628,51 @@ function hTaxesBRL(p) {
   return `− R$ ${N(p.saleTaxes*rate)}`;
 }
 
+// Linha de dedução customizada (nome editável + remover)
+function hSaleExtraRow(p,ex) {
+  const mode=ex.mode||'valor';
+  const valBlock = mode==='pct'
+    ? `<div class="amt-wrap sale-amt">
+         <input class="amt-inp" type="number" min="0" max="100" step="0.5"
+           data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraPct" value="${ex.pct??''}" placeholder="0">
+         <span class="pct-suffix">%</span>
+       </div>`
+    : `<div class="amt-wrap sale-amt">
+         <input class="amt-inp" type="text" inputmode="decimal" data-money="1"
+           data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraVal" value="${moneyToInput(ex.val)}" placeholder="0">
+       </div>`;
+  const sec = mode==='pct'
+    ? `<div class="cur-toggle sale-tg-sec">
+         <button class="cur-btn${ex.method==='maisValia'||!ex.method?' on':''}" data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraMethod" data-v="maisValia">+ valia</button>
+         <button class="cur-btn${ex.method==='bruto'?' on':''}" data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraMethod" data-v="bruto">Bruto</button>
+       </div>`
+    : `<div class="cur-toggle sale-tg-sec">
+         <button class="cur-btn${(ex.currency||'BRL')==='BRL'?' on':''}" data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraCur" data-v="BRL">R$</button>
+         <button class="cur-btn${ex.currency==='EUR'?' on':''}" data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraCur" data-v="EUR">EUR</button>
+         <button class="cur-btn${ex.currency==='USD'?' on':''}" data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraCur" data-v="USD">USD</button>
+       </div>`;
+  return `
+  <div class="sale-row" id="exrow-${ex.id}" style="grid-template-columns:128px minmax(110px,1.1fr) 74px minmax(92px,116px) minmax(60px,1fr) 24px">
+    <input class="sale-lbl" type="text" data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraLabel" value="${esc(ex.label||'')}" placeholder="Nome da dedução" style="background:transparent;border:none;border-bottom:1px solid var(--gold-ring);font:inherit;color:inherit;padding:2px 0;outline:none;width:100%">
+    ${valBlock}
+    <div class="cur-toggle sale-tg-mode">
+      <button class="cur-btn${mode==='valor'?' on':''}" data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraMode" data-v="valor">Valor</button>
+      <button class="cur-btn${mode==='pct'?' on':''}" data-pid="${p.id}" data-eid="${ex.id}" data-field="saleExtraMode" data-v="pct">%</button>
+    </div>
+    ${sec}
+    <span id="extra-brl-${ex.id}" class="sale-brl-tag">${hSaleExtraBRL(p,ex)}</span>
+    <button class="del-item-btn" data-pid="${p.id}" data-eid="${ex.id}" data-action="remove-sale-extra" title="Remover">×</button>
+  </div>`;
+}
+
+function hSaleExtraBRL(p,ex) {
+  if (!p.exit) return '';
+  const c=calcPlayer(p);
+  const row=c?.saleExtras?.find(x=>x.id===ex.id);
+  if (!row||!row.brl) return '';
+  return `− R$ ${N(row.brl)}`;
+}
+
 // Linha de venda padronizada (Valor/% + base) p/ intermediação e impostos
 function hPctValueRow(p,c) {
   const valBlock = c.mode==='pct'
@@ -1655,6 +1722,7 @@ function hResults(p) {
     ${eqDed('Sell-on',c.sellOnFee)}
     ${eqDed('Intermediação',c.saleIntermedBRL)}
     ${eqDed('Impostos',c.saleTaxesBRL)}
+    ${(c.saleExtras||[]).map(x=>eqDed(esc(x.label||'Dedução'),x.brl)).join('')}
     <span class="eq-op">−</span>
     <div class="eq-cell"><span class="eq-lbl">Baixa</span><span class="eq-val" style="color:#fbbf24">R$ ${N(c.totResid)}</span></div>
     <span class="eq-op">=</span>
@@ -1692,7 +1760,7 @@ function hSummary() {
     const c=calcPlayer(p);
     const chipGain=c.gain!==null?(c.gain>=0?`<span class="chip-saída chip-pos">ganho</span>`:`<span class="chip-saída chip-neg">perda</span>`):'';
     const exitLabel=c.exitMonths!==null?`${c.exitMonths}/${c.contractMonths} meses <span class="chip-saída">${fmtD(p.exit)}</span>`:`— <span class="chip-saída" style="opacity:.4">sem data</span>`;
-    const custosVenda=(c.sellOnFee||0)+(c.saleIntermedBRL||0)+(c.saleTaxesBRL||0);
+    const custosVenda=(c.sellOnFee||0)+(c.saleIntermedBRL||0)+(c.saleTaxesBRL||0)+(c.saleExtrasBRL||0);
     return `<tr>
       <td>${esc(p.name||'Sem nome')}</td>
       <td class="td-dim">${fmtD(p.start)} → ${fmtD(p.end)}</td>
@@ -1716,7 +1784,7 @@ function hSummary() {
     amort:calcs.filter(c=>c.exitMonths!==null).reduce((s,c)=>s+c.totAmort,0),
     res:  calcs.filter(c=>c.exitMonths!==null).reduce((s,c)=>s+c.totResid,0),
     sale: calcs.filter(c=>c.saleBRL>0).reduce((s,c)=>s+c.saleBRL,0),
-    custos:calcs.filter(c=>c.gain!==null).reduce((s,c)=>s+(c.sellOnFee||0)+(c.saleIntermedBRL||0)+(c.saleTaxesBRL||0),0),
+    custos:calcs.filter(c=>c.gain!==null).reduce((s,c)=>s+(c.sellOnFee||0)+(c.saleIntermedBRL||0)+(c.saleTaxesBRL||0)+(c.saleExtrasBRL||0),0),
     gain: calcs.filter(c=>c.gain!==null).reduce((s,c)=>s+c.gain,0),
     avoid:calcs.filter(c=>c.futureAmortAvoided!==null).reduce((s,c)=>s+(c.futureAmortAvoided??0),0),
     salary:calcs.filter(c=>c.exitMonths!==null).reduce((s,c)=>s+(c.payrollSalary??0),0),
@@ -2001,15 +2069,44 @@ function bindEvents() {
       }
       return;
     }
+    if(action==='add-sale-extra'){
+      const p=DRAFT.players.find(x=>x.id===pid);
+      if(p){ p.saleExtras=p.saleExtras||[]; p.saleExtras.push(newSaleExtra()); saveDraft(); renderAll(); }
+      return;
+    }
+    if(action==='remove-sale-extra'){
+      const p=DRAFT.players.find(x=>x.id===pid);
+      const eid=t.dataset.eid?+t.dataset.eid:null;
+      if(p&&eid){ p.saleExtras=(p.saleExtras||[]).filter(x=>x.id!==eid); saveDraft(); renderAll(); }
+      return;
+    }
   }, true);
 
   document.addEventListener('click', e => {
     // Currency and method toggles
-    const t=e.target.closest('[data-field="itemCur"],[data-field="saleCur"],[data-field="sellOnMethod"],[data-field="saleIntermedCur"],[data-field="saleIntermedMode"],[data-field="saleIntermedMethod"],[data-field="saleTaxesCur"],[data-field="saleTaxesMode"],[data-field="saleTaxesMethod"]');
+    const t=e.target.closest('[data-field="itemCur"],[data-field="saleCur"],[data-field="sellOnMethod"],[data-field="saleIntermedCur"],[data-field="saleIntermedMode"],[data-field="saleIntermedMethod"],[data-field="saleTaxesCur"],[data-field="saleTaxesMode"],[data-field="saleTaxesMethod"],[data-field="saleExtraMode"],[data-field="saleExtraMethod"],[data-field="saleExtraCur"]');
     if(!t) return;
     const pid=+t.dataset.pid, iid=t.dataset.iid?+t.dataset.iid:null;
+    const eid=t.dataset.eid?+t.dataset.eid:null;
     const p=DRAFT.players.find(x=>x.id===pid);
     if(!p) return;
+    const ex=eid?(p.saleExtras||[]).find(x=>x.id===eid):null;
+    if(t.dataset.field==='saleExtraMode'&&ex){ ex.mode=t.dataset.v; saveDraft(); renderAll(); return; }
+    if(t.dataset.field==='saleExtraMethod'&&ex){
+      ex.method=t.dataset.v; saveDraft();
+      document.querySelectorAll(`[data-field="saleExtraMethod"][data-eid="${eid}"]`).forEach(b=>b.classList.toggle('on',b.dataset.v===ex.method));
+      const el=document.getElementById(`extra-brl-${eid}`); if(el) el.innerHTML=hSaleExtraBRL(p,ex);
+      refreshResults(pid);
+      return;
+    }
+    if(t.dataset.field==='saleExtraCur'&&ex){
+      ex.currency=t.dataset.v; saveDraft();
+      document.querySelectorAll(`[data-field="saleExtraCur"][data-eid="${eid}"]`).forEach(b=>b.classList.toggle('on',b.dataset.v===(ex.currency||'BRL')));
+      const el=document.getElementById(`extra-brl-${eid}`); if(el) el.innerHTML=hSaleExtraBRL(p,ex);
+      refreshResults(pid);
+      schedulePrefetch();
+      return;
+    }
     if(/Cur$/.test(t.dataset.field)) schedulePrefetch();   // mudou moeda → buscar PTAX
 
     if(t.dataset.field==='saleIntermedMode') {
@@ -2082,12 +2179,24 @@ function bindEvents() {
     const field=t.dataset.field;
     if(!field) return;
     const pid=+t.dataset.pid, iid=t.dataset.iid?+t.dataset.iid:null;
+    const eid=t.dataset.eid?+t.dataset.eid:null;
     const p=DRAFT.players.find(x=>x.id===pid);
     if(!p) return;
 
     if(t.dataset.money) maskMoneyInput(t);   // aplica milhar/decimal preservando cursor
     const num = t.dataset.money ? parseMoney(t.value) : (t.value===''?null:parseFloat(t.value));
 
+    if(eid&&['saleExtraLabel','saleExtraVal','saleExtraPct'].includes(field)) {
+      const ex=(p.saleExtras||[]).find(x=>x.id===eid);
+      if(!ex) return;
+      if(field==='saleExtraLabel') ex.label=t.value;
+      if(field==='saleExtraVal')   ex.val=num;
+      if(field==='saleExtraPct')   ex.pct=num;
+      saveDraft();
+      const el=document.getElementById(`extra-brl-${eid}`); if(el) el.innerHTML=hSaleExtraBRL(p,ex);
+      refreshResults(pid);
+      return;
+    }
     if(iid) {
       const it=p.items.find(i=>i.id===iid);
       if(!it) return;
@@ -2129,6 +2238,9 @@ function bindEvents() {
       const so=document.getElementById(`sell-on-brl-${pid}`); if(so) so.innerHTML=hSellOnBRL(p);
       const im=document.getElementById(`intermed-brl-${pid}`); if(im) im.innerHTML=hIntermedBRL(p);
       const tx=document.getElementById(`taxes-brl-${pid}`); if(tx) tx.innerHTML=hTaxesBRL(p);
+      for(const ex of (p.saleExtras||[])){
+        const el=document.getElementById(`extra-brl-${ex.id}`); if(el) el.innerHTML=hSaleExtraBRL(p,ex);
+      }
     };
     if(field==='saleAmount') refreshSaleTags();
     if(field==='sellOnPct'){ const so=document.getElementById(`sell-on-brl-${pid}`); if(so) so.innerHTML=hSellOnBRL(p); }
@@ -2165,6 +2277,9 @@ function bindEvents() {
     if(imEl) imEl.innerHTML=hIntermedBRL(p);
     const txEl=document.getElementById(`taxes-brl-${pid}`);
     if(txEl) txEl.innerHTML=hTaxesBRL(p);
+    for(const ex of (p.saleExtras||[])){
+      const exEl=document.getElementById(`extra-brl-${ex.id}`); if(exEl) exEl.innerHTML=hSaleExtraBRL(p,ex);
+    }
     const peEl=document.getElementById(`payroll-eco-${pid}`);
     if(peEl) peEl.innerHTML=hPayrollEco(p);
     refreshResults(pid);

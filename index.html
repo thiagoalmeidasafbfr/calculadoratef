@@ -376,9 +376,6 @@ async function loadFromDB() {
     if (d.S?.players?.length) { S = d.S; _pid = d._pid || _pid; _iid = d._iid || _iid; }
     reconcileCounters();
     saveSavedLocal();   // keep localStorage in sync
-    // se entramos no Cadastro só por não ter dados locais, e o banco trouxe
-    // atletas (e o rascunho está vazio), leva pro Dashboard
-    if (S.players.length && view==='cadastro' && DRAFT.players.every(isEmptyPlayer)) view='dashboard';
     renderAll();
     schedulePrefetch();
   }
@@ -525,7 +522,7 @@ function getDayRate(currency, isoDate) {
 let _fxPrefetchTimer=null;
 function schedulePrefetch(){ clearTimeout(_fxPrefetchTimer); _fxPrefetchTimer=setTimeout(prefetchRates,250); }
 async function prefetchRates(){
-  const players=[...S.players,...DRAFT.players];
+  const players=[...S.players,...S.players];
   const curs=new Set(); let minISO=null,maxISO=null;
   const note=iso=>{ if(!iso)return; if(!minISO||iso<minISO)minISO=iso; if(!maxISO||iso>maxISO)maxISO=iso; };
   for(const p of players){
@@ -559,11 +556,9 @@ function newItem(label='Transfer Fee',currency='BRL'){return {id:++_iid,label,am
 function newSaleExtra(label=''){return {id:++_eid,label,mode:'pct',val:null,currency:'BRL',pct:null,method:'maisValia'};}
 function newPlayer(){return {id:++_pid,name:'',start:'',end:'',exit:'',saleAmount:null,saleCurrency:'BRL',solidariedadePct:null,sellOnPct:null,sellOnMethod:'maisValia',saleIntermed:null,saleIntermedCurrency:'BRL',saleIntermedMode:'valor',saleIntermedPct:null,saleIntermedMethod:'maisValia',saleTaxes:null,saleTaxesCurrency:'BRL',saleTaxesMode:'valor',saleTaxesPct:null,saleTaxesMethod:'maisValia',salary:null,imageRights:null,inssPct:null,irpfPct:null,items:[newItem('Transfer Fee'),newItem('Intermediação'),newItem('Luva')],saleExtras:[]};}
 
-// S      = atletas SALVOS (vão para o banco / aparecem no Dashboard e Consolidado)
-// DRAFT  = formulário de cadastro (transiente, só vai pro banco ao apertar Salvar)
+// S = atletas (única fonte da verdade — toda edição auto-salva)
 let S = {players:[]};
-let DRAFT = {players:[newPlayer()]};
-let view = 'dashboard';                 // 'dashboard' | 'cadastro' | 'consolidado' | 'resultado' | 'cotacoes'
+let view = 'dashboard';                 // 'dashboard' | 'consolidado' | 'resultado' | 'cotacoes' | 'impacto'
 let SIM  = {playerId:null, exit:''};    // simulação de encerramento (não persiste)
 let COT  = {cur:'EUR', start:'', end:''}; // filtro da página de cotações
 
@@ -646,9 +641,9 @@ function isEmptyPlayer(p){
     && !p.items.some(i=>i.amount)
     && !(p.saleExtras||[]).some(e=>e.label||e.val||e.pct);
 }
-// mantém os contadores de id acima de qualquer id já existente em S/DRAFT
+// mantém os contadores de id acima de qualquer id já existente em S
 function reconcileCounters(){
-  for(const set of [S,DRAFT]) for(const p of set.players||[]){
+  for(const p of S.players||[]){
     if(p.id>_pid)_pid=p.id;
     for(const it of p.items||[]) if(it.id>_iid)_iid=it.id;
     if(!Array.isArray(p.saleExtras)) p.saleExtras=[];
@@ -659,22 +654,26 @@ function reconcileCounters(){
 function saveSavedLocal(){
   try{localStorage.setItem('gbai_v3',JSON.stringify({S,_pid,_iid}));}catch(e){}
 }
-function persistSaved(){            // localStorage + banco (só atletas salvos)
+function persistSaved(){            // localStorage + banco
   saveSavedLocal();
   saveToDB();
 }
-function saveDraft(){               // rascunho fica só no navegador
-  try{localStorage.setItem('gbai_draft_v1',JSON.stringify({DRAFT}));}catch(e){}
-}
+// alias de compat: toda alteração agora persiste direto
+function saveDraft(){ persistSaved(); }
 function loadLocal(){
   let hadSaved=false;
   try{
     const d=JSON.parse(localStorage.getItem('gbai_v3')||'null');
     if(d?.S?.players?.length){S=d.S;_pid=d._pid||_pid;_iid=d._iid||_iid;hadSaved=true;}
   }catch(e){}
+  // migra rascunhos antigos (gbai_draft_v1) para a base, mantendo conteúdo do usuário
   try{
     const dr=JSON.parse(localStorage.getItem('gbai_draft_v1')||'null');
-    if(dr?.DRAFT?.players?.length){DRAFT=dr.DRAFT;}
+    if(dr?.DRAFT?.players?.length){
+      for(const p of dr.DRAFT.players){ if(!isEmptyPlayer(p)) S.players.push(p); }
+      localStorage.removeItem('gbai_draft_v1');
+      if (S.players.length) hadSaved=true;
+    }
   }catch(e){}
   reconcileCounters();
   return hadSaved;
@@ -1092,8 +1091,7 @@ function maskMoneyInput(el){
   while(pos<disp.length && seen<digitsBefore){ if(/\d/.test(disp[pos])) seen++; pos++; }
   if(el.setSelectionRange) try{ el.setSelectionRange(pos,pos); }catch(e){}
 }
-// localiza um player em DRAFT ou S (cards editáveis usam DRAFT)
-function findAny(pid){ return DRAFT.players.find(x=>x.id===pid)||S.players.find(x=>x.id===pid); }
+function findAny(pid){ return S.players.find(x=>x.id===pid); }
 
 // ═══════════════════════════════════════════════════════════════════
 // RENDER
@@ -1104,14 +1102,13 @@ function renderAll() {
 }
 
 function refreshResults(pid) {
-  // resultados só aparecem nos cards editáveis do Cadastro (DRAFT)
-  const p=DRAFT.players.find(x=>x.id===pid);
+  const p=S.players.find(x=>x.id===pid);
   const el=document.getElementById(`res-${pid}`);
   if(p&&el) el.innerHTML=hResults(p);
 }
 
 function refreshItemRow(pid,iid) {
-  const p=DRAFT.players.find(x=>x.id===pid);
+  const p=S.players.find(x=>x.id===pid);
   const it=p?.items.find(i=>i.id===iid);
   const row=document.getElementById(`irow-${iid}`);
   if(it&&row){const tmp=document.createElement('div');tmp.innerHTML=hItemRow(pid,it);row.replaceWith(tmp.firstElementChild);}
@@ -1135,8 +1132,7 @@ function refreshLedger() {
 }
 
 function buildApp() {
-  const page = view==='cadastro' ? hCadastro()
-             : view==='consolidado' ? hConsolidado()
+  const page = view==='consolidado' ? hConsolidado()
              : view==='resultado' ? hResultado()
              : view==='cotacoes' ? hCotacoes()
              : view==='impacto' ? hImpacto()
@@ -1156,7 +1152,7 @@ function hHero() {
       <h1 class="hero-title">Baixa de <em>Intangível</em></h1>
       <div class="hero-sub">Custo de aquisição · Amortização mensal · Ganho econômico na transferência</div>
       <div class="nav" style="margin-top:14px">
-        ${tab('dashboard','Dashboard')}${tab('cadastro','Cadastro')}${tab('consolidado','Consolidado')}${tab('resultado','Resultado')}${tab('impacto','Impacto')}${tab('cotacoes','Cotações')}
+        ${tab('dashboard','Dashboard')}${tab('consolidado','Consolidado')}${tab('resultado','Resultado')}${tab('impacto','Impacto')}${tab('cotacoes','Cotações')}
       </div>
     </div>
     <div class="hero-right">
@@ -1174,26 +1170,7 @@ function hHero() {
 
 // ── PÁGINAS ─────────────────────────────────────────────────────────
 function emptyState(title,sub){
-  return `<div class="empty-state"><div class="es-title">${title}</div><div class="es-sub">${sub}</div><button class="btn-primary" data-nav="cadastro">Ir para Cadastro</button></div>`;
-}
-
-function hCadastro() {
-  return `
-    <div class="page-head">
-      <div>
-        <div class="sec-eyebrow">Cadastro</div>
-        <div class="page-title">Lançamento de atletas</div>
-        <div class="page-desc">Preencha cada bloco na ordem — contrato, aquisição, saída e folha. Os resultados são calculados em tempo real abaixo de cada atleta.</div>
-      </div>
-      <div class="page-head-actions">
-        <button class="btn-ghost" data-action="add-player">＋ Adicionar atleta</button>
-        <button class="btn-primary" data-action="save-cadastro">Salvar no banco</button>
-      </div>
-    </div>
-    <div class="players-grid cad">${DRAFT.players.map((p,i)=>hCard(p,i)).join('')}</div>
-    <div class="cadastro-foot">
-      <button class="btn-primary lg" data-action="save-cadastro">Salvar e enviar ao banco</button>
-    </div>`;
+  return `<div class="empty-state"><div class="es-title">${title}</div><div class="es-sub">${sub}</div><button class="btn-primary" data-nav="dashboard">Voltar ao Dashboard</button></div>`;
 }
 
 function hConsolidado() {
@@ -1206,13 +1183,28 @@ function hConsolidado() {
 }
 
 function hDashboard() {
-  if (!S.players.length) return emptyState('Nenhum atleta salvo','Comece cadastrando um atleta para ver os indicadores.');
-  return `
-    <div class="page-head"><div><div class="sec-eyebrow">Dashboard</div><div class="page-title">Visão geral</div><div class="page-desc">Indicadores da base de atletas: total ativado, amortização mensal, baixas e o resultado econômico projetado das vendas.</div></div></div>
+  const hasPlayers = S.players.length>0;
+  const indicators = hasPlayers ? `
     ${hTotalsBand()}
-    ${hBullets()}
-    <div class="sec-eyebrow" style="margin:20px 0 10px">Atletas na base</div>
-    <div class="players-grid dash">${S.players.map(p=>hPlayerSummary(p)).join('')}</div>
+    ${hBullets()}` : '';
+  const playerCards = hasPlayers
+    ? `<div class="players-grid cad">${S.players.map((p,i)=>hCard(p,i)).join('')}</div>`
+    : `<div class="empty-state" style="margin:24px 0"><div class="es-title">Nenhum atleta cadastrado</div><div class="es-sub">Clique em "Adicionar atleta" para começar.</div></div>`;
+  return `
+    <div class="page-head">
+      <div>
+        <div class="sec-eyebrow">Dashboard</div>
+        <div class="page-title">Atletas</div>
+        <div class="page-desc">Edite cada atleta diretamente abaixo — contrato, aquisição, saída e folha. Toda alteração é salva automaticamente.</div>
+      </div>
+      <div class="page-head-actions">
+        <button class="btn-primary" data-action="add-player">＋ Adicionar atleta</button>
+      </div>
+    </div>
+    ${indicators}
+    ${hasPlayers?`<div class="sec-eyebrow" style="margin:20px 0 10px">Atletas na base</div>`:''}
+    ${playerCards}
+    ${hasPlayers?`<div class="cadastro-foot"><button class="btn-primary lg" data-action="add-player">＋ Adicionar atleta</button></div>`:''}
     ${hSimulator()}`;
 }
 
@@ -1239,32 +1231,6 @@ function hBullets() {
     bullets.push(`Resultado econômico projetado nas vendas: <strong class="${tot>=0?'b-pos':'b-neg'}">${tot>=0?'+':''}R$ ${N(tot)}</strong>`);
   }
   return `<div class="section-card"><div class="sec-eyebrow">Destaques</div><ul class="bullets">${bullets.map(b=>`<li>${b}</li>`).join('')}</ul></div>`;
-}
-
-function hPlayerSummary(p) {
-  const c=calcPlayer(p);
-  const totalAct=p.items.reduce((s,it)=>{const{rate}=getDayRate(it.currency,p.start);return s+(it.amount??0)*rate;},0);
-  const exited=c&&c.exitMonths!==null;
-  const status=exited
-    ? `<span class="chip-saída">saída ${fmtD(p.exit)}</span>`
-    : (c?`<span class="chip-saída chip-pos">ativo</span>`:`<span class="chip-saída chip-neg">incompleto</span>`);
-  return `
-  <div class="sumcard">
-    <div class="sumcard-head">
-      <div class="sumcard-name"><span>${esc(p.name||'Sem nome')}</span> ${status}</div>
-      <div class="sumcard-actions">
-        <button class="mini-btn" data-action="edit-player" data-pid="${p.id}">editar</button>
-        <button class="mini-btn mini-danger" data-action="remove-saved" data-pid="${p.id}">remover</button>
-      </div>
-    </div>
-    <div class="sumcard-dates">${fmtD(p.start)||'—'} → ${fmtD(p.end)||'—'}${c?` · ${c.contractMonths} meses`:''}</div>
-    <div class="sumcard-grid">
-      <div><span class="sc-l">Total ativado</span><span class="sc-v">R$ ${N(totalAct)}</span></div>
-      <div><span class="sc-l">Amort. mensal</span><span class="sc-v sc-amber">R$ ${N(c?c.monthlyTotal:0)}</span></div>
-      <div><span class="sc-l">Baixa residual</span><span class="sc-v sc-gold">${exited?`R$ ${N(c.totResid)}`:'—'}</span></div>
-      <div><span class="sc-l">Lucro / Prejuízo</span><span class="sc-v ${c&&c.gain!=null?(c.gain>=0?'sc-pos':'sc-neg'):''}">${c&&c.gain!=null?`${c.gain>=0?'+':''}R$ ${N(c.gain)}`:'—'}</span></div>
-    </div>
-  </div>`;
 }
 
 function hSimulator() {
@@ -1322,28 +1288,6 @@ function toast(msg,kind='ok') {
   el.classList.add('show');
   clearTimeout(toast._t);
   toast._t=setTimeout(()=>el.classList.remove('show'),2600);
-}
-
-function saveCadastro() {
-  const toSave=DRAFT.players.filter(p=>!isEmptyPlayer(p));
-  if (!toSave.length){ toast('Preencha ao menos um atleta antes de salvar.','warn'); return; }
-  for (const d of toSave){
-    const clone=JSON.parse(JSON.stringify(d));
-    const editId=clone._editId; delete clone._editId;
-    if (editId!=null){
-      const idx=S.players.findIndex(p=>p.id===editId);
-      if (idx>=0) S.players[idx]=clone; else S.players.push(clone);
-    } else {
-      S.players.push(clone);
-    }
-  }
-  persistSaved();
-  DRAFT.players=[newPlayer()];
-  saveDraft();
-  view='dashboard';
-  renderAll();
-  schedulePrefetch();
-  toast(`${toSave.length} atleta(s) salvo(s) no banco ✓`);
 }
 
 // ── DEMONSTRATIVO DE RESULTADO (matriz rubricas × atletas) ──────────
@@ -2244,7 +2188,7 @@ function bindEvents() {
     const r=wrap.getBoundingClientRect();
     const before=e.clientY < r.top + r.height/2;
     const targetKey=wrap.dataset.dedKey;
-    const p=DRAFT.players.find(x=>x.id===_drag.pid);
+    const p=S.players.find(x=>x.id===_drag.pid);
     if(p && targetKey!==_drag.key){
       const ord=getSaleOrder(p);
       const from=ord.indexOf(_drag.key);
@@ -2282,7 +2226,7 @@ function bindEvents() {
     const preset=e.target.closest('[data-action="base-preset"]');
     if(preset){
       const pid=+preset.dataset.pid, tag=preset.dataset.tag, kind=preset.dataset.preset;
-      const p=DRAFT.players.find(x=>x.id===pid);
+      const p=S.players.find(x=>x.id===pid);
       if(p){
         const opts=new Set(availableBases(p,tag).map(o=>o.key));
         let arr=[];
@@ -2310,7 +2254,7 @@ function bindEvents() {
     const t=e.target;
     if(!t.dataset.inclTag) return;
     const pid=+t.dataset.pid, tag=t.dataset.inclTag, key=t.dataset.inclKey;
-    const p=DRAFT.players.find(x=>x.id===pid);
+    const p=S.players.find(x=>x.id===pid);
     if(!p) return;
     const arr=getSaleIncl(p,tag).slice();
     const has=arr.includes(key);
@@ -2346,12 +2290,12 @@ function bindEvents() {
       });
       return;
     }
-    if(action==='save-cadastro'){ saveCadastro(); return; }
     if(action==='add-player'){
       // não empilha fichas em branco: se já existe uma vazia, leva até ela
-      let target=DRAFT.players.find(isEmptyPlayer);
+      let target=S.players.find(isEmptyPlayer);
       const isNew=!target;
-      if(isNew){ target=newPlayer(); DRAFT.players.push(target); saveDraft(); }
+      if(isNew){ target=newPlayer(); S.players.push(target); persistSaved(); }
+      view='dashboard';
       renderAll();
       const card=document.getElementById(`card-${target.id}`);
       if(card){
@@ -2362,31 +2306,17 @@ function bindEvents() {
       if(!isNew) toast('Você já tem uma ficha em branco — preencha-a antes de adicionar outra.','warn');
       return;
     }
-    if(action==='edit-player'){
-      const sp=S.players.find(p=>p.id===pid); if(!sp) return;
-      DRAFT.players=DRAFT.players.filter(d=>!isEmptyPlayer(d) && d._editId!==sp.id);
-      const clone=JSON.parse(JSON.stringify(sp)); clone._editId=sp.id;
-      DRAFT.players.push(clone); saveDraft(); view='cadastro'; renderAll(); schedulePrefetch();
-      toast(`Editando ${sp.name||'atleta'} — altere e salve`); return;
-    }
-    if(action==='remove-saved'){
-      S.players=S.players.filter(p=>p.id!==pid); persistSaved(); renderAll();
-      toast('Atleta removido do banco'); return;
-    }
-
-    // ── ações do Cadastro (operam sobre DRAFT) ──
     if(action==='remove-player'){
-      DRAFT.players=DRAFT.players.filter(p=>p.id!==pid);
-      if(!DRAFT.players.length) DRAFT.players=[newPlayer()];
-      saveDraft();renderAll(); return;
+      S.players=S.players.filter(p=>p.id!==pid);
+      persistSaved(); renderAll(); return;
     }
     if(action==='add-item'){
-      const p=DRAFT.players.find(x=>x.id===pid);
+      const p=S.players.find(x=>x.id===pid);
       if(p){p.items.push(newItem(''));saveDraft();renderAll();}
       return;
     }
     if(action==='remove-item'){
-      const p=DRAFT.players.find(x=>x.id===pid);
+      const p=S.players.find(x=>x.id===pid);
       if(p){
         p.items=p.items.filter(i=>i.id!==iid);
         if(!p.items.length) p.items.push(newItem(''));
@@ -2395,12 +2325,12 @@ function bindEvents() {
       return;
     }
     if(action==='add-sale-extra'){
-      const p=DRAFT.players.find(x=>x.id===pid);
+      const p=S.players.find(x=>x.id===pid);
       if(p){ p.saleExtras=p.saleExtras||[]; p.saleExtras.push(newSaleExtra()); saveDraft(); renderAll(); }
       return;
     }
     if(action==='remove-sale-extra'){
-      const p=DRAFT.players.find(x=>x.id===pid);
+      const p=S.players.find(x=>x.id===pid);
       const eid=t.dataset.eid?+t.dataset.eid:null;
       if(p&&eid){ p.saleExtras=(p.saleExtras||[]).filter(x=>x.id!==eid); saveDraft(); renderAll(); }
       return;
@@ -2413,7 +2343,7 @@ function bindEvents() {
     if(!t) return;
     const pid=+t.dataset.pid, iid=t.dataset.iid?+t.dataset.iid:null;
     const eid=t.dataset.eid?+t.dataset.eid:null;
-    const p=DRAFT.players.find(x=>x.id===pid);
+    const p=S.players.find(x=>x.id===pid);
     if(!p) return;
     const ex=eid?(p.saleExtras||[]).find(x=>x.id===eid):null;
     if(t.dataset.field==='saleExtraMode'&&ex){ ex.mode=t.dataset.v; saveDraft(); renderAll(); return; }
@@ -2511,7 +2441,7 @@ function bindEvents() {
     if(!field) return;
     const pid=+t.dataset.pid, iid=t.dataset.iid?+t.dataset.iid:null;
     const eid=t.dataset.eid?+t.dataset.eid:null;
-    const p=DRAFT.players.find(x=>x.id===pid);
+    const p=S.players.find(x=>x.id===pid);
     if(!p) return;
 
     if(t.dataset.money) maskMoneyInput(t);   // aplica milhar/decimal preservando cursor
@@ -2592,7 +2522,7 @@ function bindEvents() {
     const field=t.dataset.field;
     if(!['start','end','exit'].includes(field)) return;
     const pid=+t.dataset.pid;
-    const p=DRAFT.players.find(x=>x.id===pid);
+    const p=S.players.find(x=>x.id===pid);
     if(!p) return;
     p[field]=t.value;
     saveDraft();
@@ -2629,9 +2559,9 @@ function bindEvents() {
 async function init() {
   initDB();
 
-  // Carrega salvos + rascunho do localStorage enquanto o banco responde
-  const hadSaved = loadLocal();
-  view = hadSaved ? 'dashboard' : 'cadastro';
+  // Carrega salvos + qualquer rascunho migrado do localStorage
+  loadLocal();
+  view = 'dashboard';
   renderAll();
 
   const tasks = [fetchLivePTAX()];

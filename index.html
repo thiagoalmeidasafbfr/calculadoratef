@@ -338,9 +338,26 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .cut-incl-row input[type=checkbox]{accent-color:var(--gold-deep,#8b6a2a);cursor:pointer;width:14px;height:14px;flex-shrink:0}
 .row-excluded td{opacity:.32}
 .row-excluded td:first-child{opacity:.65}
-.has-tip{cursor:help}
+.has-tip{cursor:help;position:relative}
 .tip-dot{display:inline-block;font-size:9px;color:var(--ink-4);margin-left:3px;vertical-align:1px}
-.has-tip:hover .tip-dot{color:var(--gold-deep)}
+.has-tip:hover .tip-dot{color:var(--gold)}
+.has-tip[data-tip]:hover::before{
+  content:attr(data-tip);
+  position:absolute;bottom:calc(100% + 9px);right:-6px;
+  background:var(--dark);color:var(--on-dark);
+  border:1px solid var(--gold-ring);border-radius:var(--r-md);
+  padding:10px 14px;font-family:'Inter',sans-serif;font-size:10.5px;
+  line-height:1.8;white-space:pre;z-index:300;
+  box-shadow:0 6px 24px rgba(0,0,0,.28);pointer-events:none;
+  letter-spacing:.01em;
+}
+.has-tip[data-tip]:hover::after{
+  content:'';position:absolute;bottom:calc(100% + 3px);right:14px;
+  border:6px solid transparent;border-top-color:var(--gold-ring);
+  z-index:300;pointer-events:none;
+}
+.stbl-compact td{padding:7px 8px}
+.stbl-compact th{padding:7px 8px}
 /* Demonstrativo de resultado: nomes dos atletas maiores e em preto, sem scroll vertical */
 .matrix-scroll{max-height:none}
 .matrix-tbl th{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:none;color:var(--ink-1);padding:10px 10px}
@@ -2075,7 +2092,7 @@ function hSummary() {
       `Intermediação: ${dedFmt(c.saleIntermedBRL)}`,
       `Impostos e taxas: ${dedFmt(c.saleTaxesBRL)}`,
       ...extrasParts,
-    ].join(' · ') : '';
+    ].join('\n') : '';
     return `<tr class="${inc?'':'row-excluded'}">
       <td><label class="cut-incl-row"><input type="checkbox" data-action="cut-incl" data-pid="${p.id}" ${inc?'checked':''}> <span>${esc(p.name||'Sem nome')}</span></label></td>
       <td class="td-dim">${fmtD(p.start)} → ${fmtD(p.end)}</td>
@@ -2085,7 +2102,7 @@ function hSummary() {
       <td class="td-dim">${(c.totAmort||0)>0?`R$ ${N(c.totAmort)}`:'—'}</td>
       <td class="td-gold">${c.exitMonths!==null?`R$ ${N(c.totResid)}`:'—'}</td>
       <td>${c.saleBRL>0?`R$ ${N(c.saleBRL)}`:'—'}</td>
-      <td class="td-neg has-tip" ${custosTooltip?`title="${esc(custosTooltip)}"`:''}>${custosVenda>0?`R$ ${N(custosVenda)} <span class="tip-dot">ⓘ</span>`:'—'}</td>
+      <td class="td-neg has-tip" ${custosTooltip?`data-tip="${esc(custosTooltip)}"`:''}>${custosVenda>0?`R$ ${N(custosVenda)} <span class="tip-dot">ⓘ</span>`:'—'}</td>
       <td class="${c.gain!==null?(c.gain>=0?'td-pos':'td-neg'):''}">${c.gain!==null?`${c.gain>=0?'+':''}R$ ${N(c.gain)} ${chipGain}`:'—'}</td>
       <td class="td-pos">${c.futureAmortAvoided!==null&&c.futureAmortAvoided>0?`R$ ${N(c.futureAmortAvoided)}`:'—'}</td>
       <td class="td-pos">${c.payrollSaved>0?`R$ ${N(c.payrollSaved)}`:'—'}</td>
@@ -2117,7 +2134,7 @@ function hSummary() {
     `Intermediação: ${dedFmt(tt.intermed)}`,
     `Impostos e taxas: ${dedFmt(tt.taxes)}`,
     tt.extras>0?`Outras deduções: ${dedFmt(tt.extras)}`:'',
-  ].filter(Boolean).join(' · ') : '';
+  ].filter(Boolean).join('\n') : '';
 
   const selStatus = allOn
     ? `<span class="cut-sel-status">Todos os ${active.length} atletas selecionados</span>`
@@ -2131,7 +2148,7 @@ function hSummary() {
       ${!allOn?`<button class="mini-btn" data-action="cut-incl-all" data-mode="all">Marcar todos</button>`:''}
       ${someOn&&allOn?`<button class="mini-btn" data-action="cut-incl-all" data-mode="none">Desmarcar todos</button>`:''}
     </div>
-    <table class="stbl">
+    <table class="stbl stbl-compact">
       <thead><tr>
         <th style="text-align:left"><span class="cut-incl-row"><input type="checkbox" data-action="cut-incl-all" data-mode="${allOn?'none':'all'}" ${allOn?'checked':''} title="Marcar/desmarcar todos"><span>Atleta</span></span></th>
         <th>Vigência</th>
@@ -2156,7 +2173,7 @@ function hSummary() {
         <td class="td-dim">${tt.amort>0?`R$ ${N(tt.amort)}`:'—'}</td>
         <td class="td-gold">${tt.res>0?`R$ ${N(tt.res)}`:'—'}</td>
         <td>${tt.sale>0?`R$ ${N(tt.sale)}`:'—'}</td>
-        <td class="td-neg has-tip" ${totCustosTip?`title="${esc(totCustosTip)}"`:''}>${tt.custos>0?`R$ ${N(tt.custos)} <span class="tip-dot">ⓘ</span>`:'—'}</td>
+        <td class="td-neg has-tip" ${totCustosTip?`data-tip="${esc(totCustosTip)}"`:''}>${tt.custos>0?`R$ ${N(tt.custos)} <span class="tip-dot">ⓘ</span>`:'—'}</td>
         <td class="${hasGain?(tt.gain>=0?'td-pos':'td-neg'):''}">${hasGain?`${tt.gain>=0?'+':''}R$ ${N(tt.gain)}`:'—'}</td>
         <td class="td-pos">${tt.avoid>0?`R$ ${N(tt.avoid)}`:'—'}</td>
         <td class="td-pos">${tt.salary>0?`R$ ${N(tt.salary)}`:'—'}</td>

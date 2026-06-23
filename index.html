@@ -1950,7 +1950,21 @@ function bindEvents() {
       return;
     }
     if(action==='save-cadastro'){ saveCadastro(); return; }
-    if(action==='add-player'){ DRAFT.players.push(newPlayer()); saveDraft(); renderAll(); return; }
+    if(action==='add-player'){
+      // não empilha fichas em branco: se já existe uma vazia, leva até ela
+      let target=DRAFT.players.find(isEmptyPlayer);
+      const isNew=!target;
+      if(isNew){ target=newPlayer(); DRAFT.players.push(target); saveDraft(); }
+      renderAll();
+      const card=document.getElementById(`card-${target.id}`);
+      if(card){
+        card.scrollIntoView({behavior:'smooth',block:'center'});
+        const nm=card.querySelector('.pcard-name');
+        if(nm) nm.focus({preventScroll:true});
+      }
+      if(!isNew) toast('Você já tem uma ficha em branco — preencha-a antes de adicionar outra.','warn');
+      return;
+    }
     if(action==='edit-player'){
       const sp=S.players.find(p=>p.id===pid); if(!sp) return;
       DRAFT.players=DRAFT.players.filter(d=>!isEmptyPlayer(d) && d._editId!==sp.id);

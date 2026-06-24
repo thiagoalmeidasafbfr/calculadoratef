@@ -2115,9 +2115,9 @@ function hSummary() {
     ].join('\n') : '';
     const salMes=p.salary??0, imgMes=p.imageRights??0;
     const salarioTooltip = (c.payrollSaved>0) ? [
-      `Salário: R$ ${N(salMes)}/mês × ${c.monthsRemaining} meses (+13º) = ${dedFmt(c.payrollSalary)}`,
-      `Direito de imagem: R$ ${N(imgMes)}/mês × ${c.monthsRemaining} meses = ${dedFmt(c.payrollImage)}`,
-      `Total economizado: ${dedFmt(c.payrollSaved)}`,
+      `Salário mês = R$ ${N(salMes)}`,
+      `Imagem mês = R$ ${N(imgMes)}`,
+      `Total mês = R$ ${N(salMes+imgMes)}`,
     ].join('\n') : '';
     return `<tr class="${inc?'':'row-excluded'}">
       <td><label class="cut-incl-row"><input type="checkbox" data-action="cut-incl" data-pid="${p.id}" ${inc?'checked':''}> <span>${esc(p.name||'Sem nome')}</span></label></td>
@@ -2152,9 +2152,10 @@ function hSummary() {
     gain: calcs.filter(c=>c.gain!==null).reduce((s,c)=>s+c.gain,0),
     avoid:calcs.filter(c=>c.futureAmortAvoided!==null).reduce((s,c)=>s+(c.futureAmortAvoided??0),0),
     salary:calcs.filter(c=>c.exitMonths!==null).reduce((s,c)=>s+(c.payrollSaved??0),0),
-    salaryOnly:calcs.filter(c=>c.exitMonths!==null).reduce((s,c)=>s+(c.payrollSalary??0),0),
-    imageOnly:calcs.filter(c=>c.exitMonths!==null).reduce((s,c)=>s+(c.payrollImage??0),0),
   };
+  const incPlayers=active.filter(p=>isIncluded(p.id));
+  const ttSalMes=incPlayers.filter(p=>{const cc=calcPlayerCutoff(p,CUT.date);return cc.exitMonths!==null;}).reduce((s,p)=>s+(p.salary??0),0);
+  const ttImgMes=incPlayers.filter(p=>{const cc=calcPlayerCutoff(p,CUT.date);return cc.exitMonths!==null;}).reduce((s,p)=>s+(p.imageRights??0),0);
   const hasGain=calcs.some(c=>c.gain!==null);
   const totCustosTip = tt.custos>0 ? [
     `Solidariedade: ${dedFmt(tt.solid)}`,
@@ -2164,9 +2165,9 @@ function hSummary() {
     tt.extras>0?`Outras deduções: ${dedFmt(tt.extras)}`:'',
   ].filter(Boolean).join('\n') : '';
   const totSalarioTip = tt.salary>0 ? [
-    `Salário (c/ 13º): ${dedFmt(tt.salaryOnly)}`,
-    `Direito de imagem: ${dedFmt(tt.imageOnly)}`,
-    `Total economizado: ${dedFmt(tt.salary)}`,
+    `Salário mês = R$ ${N(ttSalMes)}`,
+    `Imagem mês = R$ ${N(ttImgMes)}`,
+    `Total mês = R$ ${N(ttSalMes+ttImgMes)}`,
   ].join('\n') : '';
 
   const selStatus = allOn

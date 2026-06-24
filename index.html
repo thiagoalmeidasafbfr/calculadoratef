@@ -357,6 +357,13 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
   border:6px solid transparent;border-bottom-color:var(--gold-ring);
   z-index:300;pointer-events:none;
 }
+.tr-total .has-tip[data-tip]:hover::before{
+  top:auto;bottom:calc(100% + 9px);
+}
+.tr-total .has-tip[data-tip]:hover::after{
+  top:auto;bottom:calc(100% + 3px);
+  border-bottom-color:transparent;border-top-color:var(--gold-ring);
+}
 .stbl-compact td{padding:7px 8px}
 .stbl-compact th{padding:7px 8px}
 /* Demonstrativo de resultado: nomes dos atletas maiores e em preto, sem scroll vertical */

@@ -339,7 +339,8 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .row-excluded td{opacity:.32}
 .row-excluded td:first-child{opacity:.65}
 .has-tip{cursor:help;position:relative}
-.tip-dot{display:inline-block;font-size:9px;color:var(--ink-4);margin-left:3px;vertical-align:1px}
+.tip-dot{display:inline-flex;align-items:center;justify-content:center;width:11px;height:11px;margin-left:4px;vertical-align:-1px;color:var(--ink-4);transition:color .15s ease}
+.tip-dot svg{width:100%;height:100%;display:block;shape-rendering:geometricPrecision}
 .has-tip:hover .tip-dot{color:var(--gold)}
 .has-tip[data-tip]:hover::before{
   content:attr(data-tip);
@@ -372,6 +373,11 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
   <option value="Solidarity Fee"><option value="Sell-on Fee"><option value="Agente comprador">
 </datalist>
 <script>
+// ═══════════════════════════════════════════════════════════════════
+// UI ATOMS
+// ═══════════════════════════════════════════════════════════════════
+const TIP_ICON = '<span class="tip-dot" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="8" cy="8" r="6.5"/><line x1="8" y1="7.2" x2="8" y2="11.4"/><circle cx="8" cy="4.7" r="0.85" fill="currentColor" stroke="none"/></svg></span>';
+
 // ═══════════════════════════════════════════════════════════════════
 // SUPABASE
 // ═══════════════════════════════════════════════════════════════════
@@ -2107,6 +2113,12 @@ function hSummary() {
       `Impostos e taxas: ${dedFmt(c.saleTaxesBRL)}`,
       ...extrasParts,
     ].join('\n') : '';
+    const salMes=p.salary??0, imgMes=p.imageRights??0;
+    const salarioTooltip = (c.payrollSaved>0) ? [
+      `Salário: R$ ${N(salMes)}/mês × ${c.monthsRemaining} meses (+13º) = ${dedFmt(c.payrollSalary)}`,
+      `Direito de imagem: R$ ${N(imgMes)}/mês × ${c.monthsRemaining} meses = ${dedFmt(c.payrollImage)}`,
+      `Total economizado: ${dedFmt(c.payrollSaved)}`,
+    ].join('\n') : '';
     return `<tr class="${inc?'':'row-excluded'}">
       <td><label class="cut-incl-row"><input type="checkbox" data-action="cut-incl" data-pid="${p.id}" ${inc?'checked':''}> <span>${esc(p.name||'Sem nome')}</span></label></td>
       <td class="td-dim">${fmtD(p.start)} → ${fmtD(p.end)}</td>
@@ -2116,10 +2128,10 @@ function hSummary() {
       <td class="td-dim">${(c.totAmort||0)>0?`R$ ${N(c.totAmort)}`:'—'}</td>
       <td class="td-gold">${c.exitMonths!==null?`R$ ${N(c.totResid)}`:'—'}</td>
       <td>${c.saleBRL>0?`R$ ${N(c.saleBRL)}`:'—'}</td>
-      <td class="td-neg has-tip" ${custosTooltip?`data-tip="${esc(custosTooltip)}"`:''}>${custosVenda>0?`R$ ${N(custosVenda)} <span class="tip-dot">ⓘ</span>`:'—'}</td>
+      <td class="td-neg has-tip" ${custosTooltip?`data-tip="${esc(custosTooltip)}"`:''}>${custosVenda>0?`R$ ${N(custosVenda)} ${TIP_ICON}`:'—'}</td>
       <td class="${c.gain!==null?(c.gain>=0?'td-pos':'td-neg'):''}">${c.gain!==null?`${c.gain>=0?'+':''}R$ ${N(c.gain)} ${chipGain}`:'—'}</td>
       <td class="td-pos">${c.futureAmortAvoided!==null&&c.futureAmortAvoided>0?`R$ ${N(c.futureAmortAvoided)}`:'—'}</td>
-      <td class="td-pos">${c.payrollSaved>0?`R$ ${N(c.payrollSaved)}`:'—'}</td>
+      <td class="td-pos has-tip" ${salarioTooltip?`data-tip="${esc(salarioTooltip)}"`:''}>${c.payrollSaved>0?`R$ ${N(c.payrollSaved)} ${TIP_ICON}`:'—'}</td>
     </tr>`;
   }).join('');
 
@@ -2140,6 +2152,8 @@ function hSummary() {
     gain: calcs.filter(c=>c.gain!==null).reduce((s,c)=>s+c.gain,0),
     avoid:calcs.filter(c=>c.futureAmortAvoided!==null).reduce((s,c)=>s+(c.futureAmortAvoided??0),0),
     salary:calcs.filter(c=>c.exitMonths!==null).reduce((s,c)=>s+(c.payrollSaved??0),0),
+    salaryOnly:calcs.filter(c=>c.exitMonths!==null).reduce((s,c)=>s+(c.payrollSalary??0),0),
+    imageOnly:calcs.filter(c=>c.exitMonths!==null).reduce((s,c)=>s+(c.payrollImage??0),0),
   };
   const hasGain=calcs.some(c=>c.gain!==null);
   const totCustosTip = tt.custos>0 ? [
@@ -2149,6 +2163,11 @@ function hSummary() {
     `Impostos e taxas: ${dedFmt(tt.taxes)}`,
     tt.extras>0?`Outras deduções: ${dedFmt(tt.extras)}`:'',
   ].filter(Boolean).join('\n') : '';
+  const totSalarioTip = tt.salary>0 ? [
+    `Salário (c/ 13º): ${dedFmt(tt.salaryOnly)}`,
+    `Direito de imagem: ${dedFmt(tt.imageOnly)}`,
+    `Total economizado: ${dedFmt(tt.salary)}`,
+  ].join('\n') : '';
 
   const selStatus = allOn
     ? `<span class="cut-sel-status">Todos os ${active.length} atletas selecionados</span>`
@@ -2170,7 +2189,7 @@ function hSummary() {
         <th>Amort. Mensal</th>
         <th>Meses / Saída</th>
         <th>Amort. Acum.</th>
-        <th>Baixa (Residual)</th>
+        <th>Baixa (Saldo Residual)</th>
         <th>Receita da Venda</th>
         <th>Custos Venda</th>
         <th>Lucro / Prejuízo</th>
@@ -2187,14 +2206,14 @@ function hSummary() {
         <td class="td-dim">${tt.amort>0?`R$ ${N(tt.amort)}`:'—'}</td>
         <td class="td-gold">${tt.res>0?`R$ ${N(tt.res)}`:'—'}</td>
         <td>${tt.sale>0?`R$ ${N(tt.sale)}`:'—'}</td>
-        <td class="td-neg has-tip" ${totCustosTip?`data-tip="${esc(totCustosTip)}"`:''}>${tt.custos>0?`R$ ${N(tt.custos)} <span class="tip-dot">ⓘ</span>`:'—'}</td>
+        <td class="td-neg has-tip" ${totCustosTip?`data-tip="${esc(totCustosTip)}"`:''}>${tt.custos>0?`R$ ${N(tt.custos)} ${TIP_ICON}`:'—'}</td>
         <td class="${hasGain?(tt.gain>=0?'td-pos':'td-neg'):''}">${hasGain?`${tt.gain>=0?'+':''}R$ ${N(tt.gain)}`:'—'}</td>
         <td class="td-pos">${tt.avoid>0?`R$ ${N(tt.avoid)}`:'—'}</td>
-        <td class="td-pos">${tt.salary>0?`R$ ${N(tt.salary)}`:'—'}</td>
+        <td class="td-pos has-tip" ${totSalarioTip?`data-tip="${esc(totSalarioTip)}"`:''}>${tt.salary>0?`R$ ${N(tt.salary)} ${TIP_ICON}`:'—'}</td>
       </tr></tfoot>
     </table>
     <div style="margin-top:10px;font-family:'Inter',sans-serif;font-size:8px;color:var(--ink-4);letter-spacing:.04em">
-      ✦ <strong>Amort. Evitada</strong> = amortização que NÃO ocorrerá nos meses após a saída · <strong>Economia Salário</strong> = salário (+13º) + direito de imagem economizados nos meses restantes após a venda · Passe o mouse sobre <span class="tip-dot">ⓘ</span> em Custos Venda para ver o detalhamento.
+      ✦ <strong>Amort. Evitada</strong> = amortização que NÃO ocorrerá nos meses após a saída · <strong>Economia Salário</strong> = salário (+13º) + direito de imagem economizados nos meses restantes após a venda · Passe o mouse sobre ${TIP_ICON} em Custos Venda ou Economia Salário para ver o detalhamento.
     </div>
   </div>`;
 }

@@ -338,9 +338,21 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .cut-incl-row input[type=checkbox]{accent-color:var(--gold-deep,#8b6a2a);cursor:pointer;width:14px;height:14px;flex-shrink:0}
 .row-excluded td{opacity:.32}
 .row-excluded td:first-child{opacity:.65}
-.has-tip{cursor:help}
+.has-tip{cursor:help;position:relative}
 .tip-dot{display:inline-block;font-size:9px;color:var(--ink-4);margin-left:3px;vertical-align:1px}
 .has-tip:hover .tip-dot{color:var(--gold-deep)}
+.cell-tip{display:none}
+/* Painel flutuante de tooltip — usa o mesmo idioma visual dos cards/popovers */
+.float-tip{position:fixed;z-index:200;background:var(--cream-card);border:1px solid var(--gold-ring);border-radius:var(--r-md);box-shadow:0 14px 32px rgba(0,0,0,.14),0 2px 6px rgba(0,0,0,.05);padding:12px 14px;min-width:240px;max-width:320px;font-family:'Inter',sans-serif;text-align:left;pointer-events:none;opacity:0;transform:translateY(-2px);transition:opacity .12s ease,transform .12s ease}
+.float-tip.show{opacity:1;transform:translateY(0)}
+.float-tip .cell-tip-hdr{font-size:8.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-deep);padding-bottom:7px;border-bottom:1px solid var(--div);margin-bottom:7px}
+.float-tip .cell-tip-row{display:flex;justify-content:space-between;align-items:baseline;gap:18px;padding:3px 0;font-size:11px}
+.float-tip .cell-tip-row span{color:var(--ink-4);font-weight:500;letter-spacing:.01em}
+.float-tip .cell-tip-row strong{font-family:'JetBrains Mono',monospace;font-weight:500;color:var(--ink-2);white-space:nowrap}
+.float-tip .cell-tip-row.is-dim span,.float-tip .cell-tip-row.is-dim strong{color:var(--ink-4);opacity:.5}
+.float-tip .cell-tip-total{display:flex;justify-content:space-between;align-items:baseline;gap:18px;margin-top:8px;padding-top:7px;border-top:1px solid var(--div)}
+.float-tip .cell-tip-total span{font-family:'Inter',sans-serif;font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2)}
+.float-tip .cell-tip-total strong{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--neg)}
 /* Demonstrativo de resultado: nomes dos atletas maiores e em preto, sem scroll vertical */
 .matrix-scroll{max-height:none}
 .matrix-tbl th{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:none;color:var(--ink-1);padding:10px 10px}
@@ -2061,6 +2073,12 @@ function hSummary() {
   const someOn = active.some(p=>isIncluded(p.id));
   const includedCount = active.filter(p=>isIncluded(p.id)).length;
 
+  // Constrói o painel-tooltip de Custos Venda no idioma visual da app
+  const buildCustosTip = (parts, total, title) => {
+    const rows = parts.map(([label,val]) => `<div class="cell-tip-row${val>0?'':' is-dim'}"><span>${esc(label)}</span><strong>${val>0?`− R$ ${N(val)}`:'—'}</strong></div>`).join('');
+    return `<div class="cell-tip"><div class="cell-tip-hdr">${esc(title)}</div>${rows}<div class="cell-tip-total"><span>Total</span><strong>R$ ${N(total)}</strong></div></div>`;
+  };
+
   const rows=active.map(p=>{
     const c=calcPlayerCutoff(p, CUT.date);
     const inc=isIncluded(p.id);
@@ -2068,14 +2086,14 @@ function hSummary() {
     const cutNote = CUT.date && p.exit && pDate(p.exit) > pDate(CUT.date) ? `<span class="chip-saída" style="opacity:.55" title="Saída após a data de corte">após corte</span>` : '';
     const exitLabel=c.exitMonths!==null?`${c.exitMonths}/${c.contractMonths} meses <span class="chip-saída">${fmtD(p.exit)}</span>`:(p.exit?`— ${cutNote}`:`— <span class="chip-saída" style="opacity:.4">sem data</span>`);
     const custosVenda=(c.solidariedadeBRL||0)+(c.sellOnFee||0)+(c.saleIntermedBRL||0)+(c.saleTaxesBRL||0)+(c.saleExtrasBRL||0);
-    const extrasParts = (c.saleExtras||[]).filter(x=>x.brl>0).map(x=>`${x.label}: ${dedFmt(x.brl)}`);
-    const custosTooltip = custosVenda>0 ? [
-      `Solidariedade: ${dedFmt(c.solidariedadeBRL)}`,
-      `Sell-on fee: ${dedFmt(c.sellOnFee)}`,
-      `Intermediação: ${dedFmt(c.saleIntermedBRL)}`,
-      `Impostos e taxas: ${dedFmt(c.saleTaxesBRL)}`,
-      ...extrasParts,
-    ].join(' · ') : '';
+    const parts = [
+      ['Solidariedade',  c.solidariedadeBRL||0],
+      ['Sell-on fee',    c.sellOnFee||0],
+      ['Intermediação',  c.saleIntermedBRL||0],
+      ['Impostos e taxas', c.saleTaxesBRL||0],
+      ...((c.saleExtras||[]).filter(x=>x.brl>0).map(x=>[x.label||'Outra dedução', x.brl])),
+    ];
+    const custosTipHTML = custosVenda>0 ? buildCustosTip(parts, custosVenda, `Custos da venda · ${p.name||'atleta'}`) : '';
     return `<tr class="${inc?'':'row-excluded'}">
       <td><label class="cut-incl-row"><input type="checkbox" data-action="cut-incl" data-pid="${p.id}" ${inc?'checked':''}> <span>${esc(p.name||'Sem nome')}</span></label></td>
       <td class="td-dim">${fmtD(p.start)} → ${fmtD(p.end)}</td>
@@ -2085,7 +2103,7 @@ function hSummary() {
       <td class="td-dim">${(c.totAmort||0)>0?`R$ ${N(c.totAmort)}`:'—'}</td>
       <td class="td-gold">${c.exitMonths!==null?`R$ ${N(c.totResid)}`:'—'}</td>
       <td>${c.saleBRL>0?`R$ ${N(c.saleBRL)}`:'—'}</td>
-      <td class="td-neg has-tip" ${custosTooltip?`title="${esc(custosTooltip)}"`:''}>${custosVenda>0?`R$ ${N(custosVenda)} <span class="tip-dot">ⓘ</span>`:'—'}</td>
+      <td class="td-neg ${custosVenda>0?'has-tip':''}">${custosVenda>0?`R$ ${N(custosVenda)} <span class="tip-dot">ⓘ</span>${custosTipHTML}`:'—'}</td>
       <td class="${c.gain!==null?(c.gain>=0?'td-pos':'td-neg'):''}">${c.gain!==null?`${c.gain>=0?'+':''}R$ ${N(c.gain)} ${chipGain}`:'—'}</td>
       <td class="td-pos">${c.futureAmortAvoided!==null&&c.futureAmortAvoided>0?`R$ ${N(c.futureAmortAvoided)}`:'—'}</td>
       <td class="td-pos">${c.payrollSaved>0?`R$ ${N(c.payrollSaved)}`:'—'}</td>
@@ -2111,13 +2129,13 @@ function hSummary() {
     salary:calcs.filter(c=>c.exitMonths!==null).reduce((s,c)=>s+(c.payrollSaved??0),0),
   };
   const hasGain=calcs.some(c=>c.gain!==null);
-  const totCustosTip = tt.custos>0 ? [
-    `Solidariedade: ${dedFmt(tt.solid)}`,
-    `Sell-on fee: ${dedFmt(tt.sellOn)}`,
-    `Intermediação: ${dedFmt(tt.intermed)}`,
-    `Impostos e taxas: ${dedFmt(tt.taxes)}`,
-    tt.extras>0?`Outras deduções: ${dedFmt(tt.extras)}`:'',
-  ].filter(Boolean).join(' · ') : '';
+  const totCustosTipHTML = tt.custos>0 ? buildCustosTip([
+    ['Solidariedade',   tt.solid],
+    ['Sell-on fee',     tt.sellOn],
+    ['Intermediação',   tt.intermed],
+    ['Impostos e taxas',tt.taxes],
+    ...(tt.extras>0?[['Outras deduções', tt.extras]]:[]),
+  ], tt.custos, 'Custos da venda · total') : '';
 
   const selStatus = allOn
     ? `<span class="cut-sel-status">Todos os ${active.length} atletas selecionados</span>`
@@ -2156,7 +2174,7 @@ function hSummary() {
         <td class="td-dim">${tt.amort>0?`R$ ${N(tt.amort)}`:'—'}</td>
         <td class="td-gold">${tt.res>0?`R$ ${N(tt.res)}`:'—'}</td>
         <td>${tt.sale>0?`R$ ${N(tt.sale)}`:'—'}</td>
-        <td class="td-neg has-tip" ${totCustosTip?`title="${esc(totCustosTip)}"`:''}>${tt.custos>0?`R$ ${N(tt.custos)} <span class="tip-dot">ⓘ</span>`:'—'}</td>
+        <td class="td-neg ${tt.custos>0?'has-tip':''}">${tt.custos>0?`R$ ${N(tt.custos)} <span class="tip-dot">ⓘ</span>${totCustosTipHTML}`:'—'}</td>
         <td class="${hasGain?(tt.gain>=0?'td-pos':'td-neg'):''}">${hasGain?`${tt.gain>=0?'+':''}R$ ${N(tt.gain)}`:'—'}</td>
         <td class="td-pos">${tt.avoid>0?`R$ ${N(tt.avoid)}`:'—'}</td>
         <td class="td-pos">${tt.salary>0?`R$ ${N(tt.salary)}`:'—'}</td>
@@ -2333,6 +2351,57 @@ function hTotalsBand() {
 function bindEvents() {
   if(bindEvents._done) return;   // delegação: registrar listeners uma única vez
   bindEvents._done=true;
+
+  // ── Tooltip flutuante (Custos Venda etc.) ──
+  let _tipEl=null, _tipFor=null;
+  const ensureTipEl=()=>{
+    if (_tipEl) return _tipEl;
+    _tipEl=document.createElement('div');
+    _tipEl.className='float-tip';
+    document.body.appendChild(_tipEl);
+    return _tipEl;
+  };
+  const positionTip=(tip,target)=>{
+    const r=target.getBoundingClientRect();
+    const m=8, vw=window.innerWidth, vh=window.innerHeight;
+    tip.style.left='0px'; tip.style.top='0px';   // reset p/ medir
+    const tw=tip.offsetWidth, th=tip.offsetHeight;
+    let left=r.right-tw;
+    if (left<m) left=Math.min(r.left, vw-tw-m);
+    if (left<m) left=m;
+    let top=r.bottom+6;
+    if (top+th>vh-m) top=Math.max(m, r.top-th-6);
+    tip.style.left=`${left}px`;
+    tip.style.top=`${top}px`;
+  };
+  const showTip=(target)=>{
+    const src=target.querySelector(':scope > .cell-tip');
+    if(!src){ hideTip(); return; }
+    const tip=ensureTipEl();
+    tip.innerHTML=src.innerHTML;
+    tip.style.display='block';
+    positionTip(tip,target);
+    requestAnimationFrame(()=>tip.classList.add('show'));
+    _tipFor=target;
+  };
+  const hideTip=()=>{
+    if(!_tipEl) return;
+    _tipEl.classList.remove('show');
+    _tipEl.style.display='none';
+    _tipFor=null;
+  };
+  document.addEventListener('mouseover', e => {
+    const target=e.target.closest?.('.has-tip');
+    if (target===_tipFor) return;
+    if (target) showTip(target); else hideTip();
+  });
+  document.addEventListener('mouseout', e => {
+    const target=e.target.closest?.('.has-tip');
+    if (!target || target!==_tipFor) return;
+    if (e.relatedTarget && target.contains(e.relatedTarget)) return;
+    hideTip();
+  });
+  window.addEventListener('scroll', hideTip, true);
 
   // Navegação entre páginas — descarta o atleta em edição se sair sem salvar
   document.addEventListener('click', e => {

@@ -371,10 +371,69 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .matrix-tbl th{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:none;color:var(--ink-1);padding:10px 10px}
 .matrix-tbl th:first-child{font-size:12px;color:var(--ink-1)}
 .matrix-tbl th.th-total{font-size:12px;color:var(--ink-1)}
+
+/* ── APRESENTAÇÃO (vitrine) ───────────────────────────── */
+.pres-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:900px){.pres-kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--dark);border-radius:var(--r-lg);padding:18px 20px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.kpi-eyebrow{font-family:'Inter',sans-serif;font-size:8.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--on-dark-m)}
+.kpi-value{font-family:'JetBrains Mono',monospace;font-size:clamp(1.2rem,2.4vw,1.7rem);font-weight:600;letter-spacing:-.01em;color:var(--on-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi-value.pos{color:#86efac}.kpi-value.neg{color:#fca5a5}.kpi-value.gold{color:var(--gold-soft)}.kpi-value.amber{color:#f0b95e}
+.kpi-sub{font-family:'Inter',sans-serif;font-size:9px;color:var(--on-dark-d);letter-spacing:.03em}
+.pres-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+@media(max-width:900px){.pres-grid2{grid-template-columns:1fr}}
+.chart-card{background:var(--cream-card);border:1px solid var(--div);border-radius:var(--r-lg);box-shadow:var(--sh-h);padding:18px 20px 14px}
+.chart-hd{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:4px;flex-wrap:wrap}
+.chart-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;color:var(--ink-1);letter-spacing:-.01em}
+.chart-note{font-family:'Inter',sans-serif;font-size:10px;color:var(--ink-4);letter-spacing:.02em}
+.chart-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+.chart-legend .lg{display:flex;align-items:center;gap:6px;font-family:'Inter',sans-serif;font-size:9.5px;color:var(--ink-2);letter-spacing:.02em}
+.chart-legend .lg i{width:11px;height:11px;border-radius:3px;display:inline-block;flex-shrink:0}
+.chart-svg{width:100%;height:auto;display:block;overflow:visible}
+.chart-svg .grid-line{stroke:var(--div);stroke-width:1}
+.chart-svg .axis-txt{font-family:'JetBrains Mono',monospace;font-size:9px;fill:var(--ink-4)}
+.chart-svg .val-txt{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600}
+.chart-svg .name-txt{font-family:'Inter',sans-serif;font-size:11px;font-weight:500;fill:var(--ink-2)}
+.chart-svg .mark:hover{opacity:.82;cursor:default}
+.chart-empty{font-family:'Inter',sans-serif;font-size:11px;color:var(--ink-4);padding:22px 0;text-align:center}
+
+/* ── LOGIN ────────────────────────────────────────────── */
+.auth-overlay{position:fixed;inset:0;z-index:1000;background:var(--dark);display:flex;align-items:center;justify-content:center;padding:20px}
+.auth-card{width:100%;max-width:400px;background:rgba(243,238,226,.04);border:1px solid rgba(243,238,226,.12);border-radius:var(--r-lg);padding:34px 32px}
+.auth-eyebrow{font-family:'Inter',sans-serif;font-size:8.5px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--on-dark-d);margin-bottom:8px}
+.auth-title{font-family:'Space Grotesk',sans-serif;font-size:1.9rem;font-weight:700;line-height:1.1;letter-spacing:-.02em;color:var(--on-dark)}
+.auth-title em{font-style:normal;font-weight:500;color:var(--gold)}
+.auth-sub{font-family:'Inter',sans-serif;font-size:11px;color:var(--on-dark-d);margin:8px 0 22px}
+.auth-form{display:flex;flex-direction:column}
+.auth-lbl{font-family:'Inter',sans-serif;font-size:8.5px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:var(--on-dark-d);margin:0 0 6px}
+.auth-inp{background:rgba(243,238,226,.06);border:1px solid rgba(243,238,226,.14);border-radius:var(--r-sm);padding:11px 13px;font-family:'Inter',sans-serif;font-size:14px;color:var(--on-dark);outline:none;margin-bottom:16px;transition:border-color .15s,background .15s}
+.auth-inp:focus{border-color:var(--gold);background:rgba(243,238,226,.10)}
+.auth-inp::placeholder{color:var(--on-dark-m)}
+.auth-msg{font-family:'Inter',sans-serif;font-size:11px;min-height:16px;margin-bottom:12px;color:#fca5a5}
+.auth-msg.ok{color:#86efac}
+.auth-btn{padding:12px;border-radius:var(--r-pill);border:none;background:var(--gold);color:var(--dark);font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:background .15s}
+.auth-btn:hover{background:var(--gold-soft)}
+.auth-btn:disabled{opacity:.55;cursor:default}
 </style>
 </head>
 <body>
 <div id="app"></div>
+
+<div id="auth-overlay" class="auth-overlay" style="display:none">
+  <div class="auth-card">
+    <div class="auth-eyebrow">Glorioso Finance · Departamento Financeiro</div>
+    <h1 class="auth-title">Baixa de <em>Intangível</em></h1>
+    <div class="auth-sub">Acesso restrito. Entre com suas credenciais.</div>
+    <form id="auth-form" class="auth-form" autocomplete="on">
+      <label class="auth-lbl" for="auth-email">E-mail</label>
+      <input id="auth-email" class="auth-inp" type="email" required autocomplete="username" placeholder="voce@botafogo.com.br">
+      <label class="auth-lbl" for="auth-pass">Senha</label>
+      <input id="auth-pass" class="auth-inp" type="password" required autocomplete="current-password" placeholder="••••••••">
+      <div id="auth-msg" class="auth-msg"></div>
+      <button id="auth-btn" class="auth-btn" type="submit">Entrar</button>
+    </form>
+  </div>
+</div>
 <datalist id="item-labels">
   <option value="Transfer Fee"><option value="Intermediação"><option value="Luva">
   <option value="Solidarity Fee"><option value="Sell-on Fee"><option value="Agente comprador">
@@ -445,6 +504,53 @@ function saveToDB() {
     if (error) { console.error('Supabase save:', error); setStatus('error'); }
     else setStatus('saved');
   }, 700);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// AUTENTICAÇÃO (Supabase Auth) — protege os dados reais dos atletas
+// ═══════════════════════════════════════════════════════════════════
+let _authed = false;
+function showAuth(){
+  _authed = false;
+  const ov=document.getElementById('auth-overlay'); if(ov) ov.style.display='flex';
+  const lo=document.getElementById('logout-btn');   if(lo) lo.style.display='none';
+}
+function hideAuth(){
+  const ov=document.getElementById('auth-overlay'); if(ov) ov.style.display='none';
+  const lo=document.getElementById('logout-btn');   if(lo) lo.style.display='';
+}
+async function onSignedIn(){
+  if(_authed) return;
+  _authed = true;
+  hideAuth();
+  setStatus('loading');
+  await loadFromDB();
+}
+async function signOut(){
+  try{ if(_db) await _db.auth.signOut(); }catch(e){}
+  S = {players:[]};
+  try{ localStorage.removeItem('gbai_v3'); }catch(e){}
+  renderAll();
+  showAuth();
+}
+function bindAuthForm(){
+  const form=document.getElementById('auth-form');
+  if(!form || form._bound) return; form._bound=true;
+  form.addEventListener('submit', async e=>{
+    e.preventDefault();
+    const email=document.getElementById('auth-email').value.trim();
+    const pass =document.getElementById('auth-pass').value;
+    const msg  =document.getElementById('auth-msg');
+    const btn  =document.getElementById('auth-btn');
+    msg.className='auth-msg'; msg.textContent='';
+    if(!_db){ msg.textContent='Serviço de login indisponível.'; return; }
+    btn.disabled=true; btn.textContent='Entrando…';
+    const { error } = await _db.auth.signInWithPassword({ email, password: pass });
+    btn.disabled=false; btn.textContent='Entrar';
+    if(error){ msg.textContent = /invalid/i.test(error.message) ? 'E-mail ou senha inválidos.' : error.message; return; }
+    document.getElementById('auth-pass').value='';
+    // onAuthStateChange dispara onSignedIn()
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1273,6 +1379,7 @@ function refreshLedger() {
 
 function buildApp() {
   const page = view==='edit' ? hEdit()
+             : view==='apresentacao' ? hApresentacao()
              : view==='consolidado' ? hConsolidado()
              : view==='resultado' ? hResultado()
              : view==='cotacoes' ? hCotacoes()
@@ -1293,7 +1400,7 @@ function hHero() {
       <h1 class="hero-title">Baixa de <em>Intangível</em></h1>
       <div class="hero-sub">Custo de aquisição · Amortização mensal · Ganho econômico na transferência</div>
       <div class="nav" style="margin-top:14px">
-        ${tab('dashboard','Dashboard')}${tab('consolidado','Consolidado')}${tab('resultado','Resultado')}${tab('impacto','Impacto')}${tab('cotacoes','Cotações')}
+        ${tab('apresentacao','Apresentação')}${tab('dashboard','Dashboard')}${tab('consolidado','Consolidado')}${tab('resultado','Resultado')}${tab('impacto','Impacto')}${tab('cotacoes','Cotações')}
       </div>
     </div>
     <div class="hero-right">
@@ -1305,6 +1412,7 @@ function hHero() {
       </div>
       <button class="hero-btn" onclick="exportToExcel()">Exportar XLSX</button>
       <button class="hero-btn" onclick="window.print()">Imprimir</button>
+      <button class="hero-btn" id="logout-btn" onclick="signOut()" style="display:${_authed?'':'none'}">Sair</button>
     </div>
   </div>`;
 }
@@ -1333,6 +1441,152 @@ function hConsolidado() {
     ${hSummary()}
     ${hLedger()}
     ${hMonthly()}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// APRESENTAÇÃO (vitrine) — KPIs, gráficos e destaques sobre os dados reais
+// ═══════════════════════════════════════════════════════════════════
+const fmtMi = v => {
+  const a=Math.abs(v);
+  if (a>=1e6) return (v/1e6).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+' mi';
+  if (a>=1e3) return Math.round(v/1e3).toLocaleString('pt-BR')+' mil';
+  return N0(v);
+};
+
+// Área temporal — série única (magnitude ao longo do tempo). Cor: dourado.
+function svgArea(series){
+  if (!series.length) return `<div class="chart-empty">Sem dados no período.</div>`;
+  const VW=760, VH=240, padL=54, padR=58, padT=18, padB=26;
+  const n=series.length;
+  const vals=series.map(s=>s.value);
+  const top=Math.max(...vals,1)*1.12;
+  const xF=i=> n===1?padL:padL+(i/(n-1))*(VW-padL-padR);
+  const yF=v=> padT+(1-v/top)*(VH-padT-padB);
+  const base=yF(0);
+  const grid=[0,1,2,3,4].map(g=>{const val=top*g/4;const y=yF(val);
+    return `<line class="grid-line" x1="${padL}" y1="${y.toFixed(1)}" x2="${VW-padR}" y2="${y.toFixed(1)}"/>`+
+           `<text class="axis-txt" x="${padL-8}" y="${(y+3).toFixed(1)}" text-anchor="end">${fmtMi(val)}</text>`;}).join('');
+  const line=series.map((s,i)=>`${i?'L':'M'}${xF(i).toFixed(1)},${yF(s.value).toFixed(1)}`).join(' ');
+  const area=`M${padL},${base.toFixed(1)} `+series.map((s,i)=>`L${xF(i).toFixed(1)},${yF(s.value).toFixed(1)}`).join(' ')+` L${xF(n-1).toFixed(1)},${base.toFixed(1)} Z`;
+  let prevY=null;
+  const xlab=series.map((s,i)=>{const yr=s.date.getFullYear();let out='';
+    if(yr!==prevY){prevY=yr;out=`<text class="axis-txt" x="${xF(i).toFixed(1)}" y="${VH-8}" text-anchor="middle">${yr}</text>`+
+      `<line class="grid-line" x1="${xF(i).toFixed(1)}" y1="${padT}" x2="${xF(i).toFixed(1)}" y2="${base.toFixed(1)}" stroke-dasharray="2 3" opacity=".6"/>`;}
+    return out;}).join('');
+  const hov=series.map((s,i)=>{const w=(VW-padL-padR)/Math.max(n-1,1);
+    return `<rect class="mark" x="${(xF(i)-w/2).toFixed(1)}" y="${padT}" width="${w.toFixed(1)}" height="${(base-padT).toFixed(1)}" fill="transparent"><title>${esc(s.label)} · R$ ${N(s.value)}</title></rect>`;}).join('');
+  const last=series[n-1];
+  return `<svg class="chart-svg" viewBox="0 0 ${VW} ${VH}" preserveAspectRatio="xMidYMid meet" role="img">
+    <defs><linearGradient id="areaGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#be8c4a" stop-opacity=".30"/><stop offset="1" stop-color="#be8c4a" stop-opacity=".02"/>
+    </linearGradient></defs>
+    ${grid}${xlab}
+    <path d="${area}" fill="url(#areaGold)"/>
+    <path d="${line}" fill="none" stroke="#be8c4a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${xF(n-1).toFixed(1)}" cy="${yF(last.value).toFixed(1)}" r="4" fill="#be8c4a" stroke="#fdfbf6" stroke-width="2"/>
+    <text class="val-txt" fill="#7a6244" x="${(xF(n-1)+8).toFixed(1)}" y="${(yF(last.value)+3).toFixed(1)}" text-anchor="start">R$ ${fmtMi(last.value)}</text>
+    ${hov}
+  </svg>`;
+}
+
+// Barras horizontais — magnitude por atleta (uma medida). Cor: dourado.
+function svgBarsH(items){
+  if (!items.length) return `<div class="chart-empty">Nenhum atleta com custo ativado.</div>`;
+  const VW=760, rowH=36, padT=8, gut=150, valW=94;
+  const H=items.length*rowH+padT*2;
+  const maxV=Math.max(...items.map(i=>i.value),1);
+  const bx=gut, bw=VW-gut-valW, sc=bw/maxV;
+  const rows=items.map((it,i)=>{const y=padT+i*rowH+rowH/2;const w=Math.max(it.value*sc,2);
+    return `<text class="name-txt" x="0" y="${(y+4).toFixed(1)}" text-anchor="start">${esc(it.name)}</text>`+
+      `<rect class="mark" x="${bx}" y="${(y-9).toFixed(1)}" width="${w.toFixed(1)}" height="18" rx="4" fill="#be8c4a"><title>${esc(it.name)} · R$ ${N(it.value)}</title></rect>`+
+      `<text class="val-txt" fill="#7a6244" x="${(bx+w+7).toFixed(1)}" y="${(y+4).toFixed(1)}" text-anchor="start">R$ ${fmtMi(it.value)}</text>`;}).join('');
+  return `<svg class="chart-svg" viewBox="0 0 ${VW} ${H}" preserveAspectRatio="xMidYMid meet" role="img">${rows}</svg>`;
+}
+
+// Barras divergentes — polaridade (lucro/prejuízo). Verde/vermelho + rótulos com sinal.
+function svgDiverging(items){
+  if (!items.length) return `<div class="chart-empty">Nenhuma venda registrada ainda.</div>`;
+  const VW=760, rowH=40, padT=8, gut=140, valW=104;
+  const H=items.length*rowH+padT*2;
+  const x0=gut, x1=VW-valW, xc=(x0+x1)/2;
+  const maxA=Math.max(...items.map(i=>Math.abs(i.value)),1);
+  const sc=(xc-x0)/maxA;
+  const axis=`<line class="grid-line" x1="${xc}" y1="${padT}" x2="${xc}" y2="${H-padT}"/>`;
+  const rows=items.map((it,i)=>{const y=padT+i*rowH+rowH/2;const v=it.value;const w=Math.max(Math.abs(v)*sc,2);
+    const pos=v>=0;const rx=pos?xc:xc-w;const col=pos?'#166534':'#b91c1c';
+    const lx=pos?xc+w+7:xc-w-7;const anc=pos?'start':'end';
+    return `<text class="name-txt" x="0" y="${(y+4).toFixed(1)}" text-anchor="start">${esc(it.name)}</text>`+
+      `<rect class="mark" x="${rx.toFixed(1)}" y="${(y-9).toFixed(1)}" width="${w.toFixed(1)}" height="18" rx="4" fill="${col}"><title>${esc(it.name)} · ${pos?'+':'−'}R$ ${N(Math.abs(v))}</title></rect>`+
+      `<text class="val-txt" fill="${col}" x="${lx.toFixed(1)}" y="${(y+4).toFixed(1)}" text-anchor="${anc}">${pos?'+':'−'}R$ ${fmtMi(Math.abs(v))}</text>`;}).join('');
+  return `<svg class="chart-svg" viewBox="0 0 ${VW} ${H}" preserveAspectRatio="xMidYMid meet" role="img">${axis}${rows}</svg>`;
+}
+
+function hApresentacao(){
+  const calcs=S.players.map(p=>({p,c:calcPlayer(p)})).filter(x=>x.c && x.c.totAct>0);
+  if (!calcs.length) return `
+    <div class="page-head"><div>
+      <div class="sec-eyebrow">Apresentação</div>
+      <div class="page-title">Visão executiva</div>
+      <div class="page-desc">Painel de indicadores, gráficos e destaques da base de atletas — pronto para apresentação.</div>
+    </div></div>
+    <div class="empty-state" style="margin:24px 0"><div class="es-title">Nenhum atleta na base</div><div class="es-sub">Cadastre atletas no Dashboard para popular a apresentação.</div><button class="btn-primary" data-nav="dashboard">Ir para o Dashboard</button></div>`;
+
+  const cc=calcs.map(x=>x.c);
+  const totAct=cc.reduce((s,c)=>s+c.totAct,0);
+  const totMo=cc.reduce((s,c)=>s+c.monthlyTotal,0);
+  const exited=cc.filter(c=>c.exitMonths!==null);
+  const gains=cc.filter(c=>c.gain!=null);
+  const totGain=gains.reduce((s,c)=>s+c.gain,0);
+  const economia=exited.reduce((s,c)=>s+((c.futureAmortAvoided??0)+(c.payrollSaved??0)),0);
+
+  // Série mensal consolidada de amortização
+  const active=S.players.filter(p=>calcPlayer(p)&&p.items.some(i=>i.amount));
+  const months=buildMonthRange(active);
+  const series=months.map(m=>{
+    const total=active.reduce((s,p)=>{const{amort,status}=monthAmort(p,m);return s+((status==='active'||status==='exit')?amort:0);},0);
+    return {date:m,value:total,label:`${MONTHS_PT[m.getMonth()]}/${String(m.getFullYear()).slice(2)}`};
+  });
+
+  const custo=calcs.map(x=>({name:x.p.name||'Sem nome',value:x.c.totAct})).sort((a,b)=>b.value-a.value);
+  const vendas=gains.map((c,i)=>({name:calcs.find(x=>x.c===c)?.p.name||'Sem nome',value:c.gain})).sort((a,b)=>b.value-a.value);
+
+  const kpi=(eb,val,cls,sub)=>`<div class="kpi"><div class="kpi-eyebrow">${eb}</div><div class="kpi-value ${cls||''}">${val}</div><div class="kpi-sub">${sub}</div></div>`;
+
+  return `
+    <div class="page-head"><div>
+      <div class="sec-eyebrow">Apresentação</div>
+      <div class="page-title">Visão executiva</div>
+      <div class="page-desc">Painel de indicadores, gráficos e destaques da base de atletas — pronto para apresentação.</div>
+    </div></div>
+
+    <div class="pres-kpis">
+      ${kpi('Total Ativado',`R$ ${fmtMi(totAct)}`,'gold',`${calcs.length} atleta${calcs.length>1?'s':''} na base`)}
+      ${kpi('Amortização Mensal',`R$ ${fmtMi(totMo)}`,'amber','enquanto todos ativos')}
+      ${kpi('Ganho Econômico',`${totGain>=0?'+':'−'}R$ ${fmtMi(Math.abs(totGain))}`,gains.length?(totGain>=0?'pos':'neg'):'',gains.length?`${gains.length} venda${gains.length>1?'s':''} · receita − baixa`:'sem vendas')}
+      ${kpi('Economia Projetada',`R$ ${fmtMi(economia)}`,'pos','amort. + folha evitadas')}
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-hd">
+        <div class="chart-title">Amortização mensal consolidada</div>
+        <div class="chart-note">R$ por mês · soma de todos os atletas ativos</div>
+      </div>
+      ${svgArea(series)}
+    </div>
+
+    <div class="pres-grid2">
+      <div class="chart-card">
+        <div class="chart-hd"><div class="chart-title">Custo ativado por atleta</div></div>
+        ${svgBarsH(custo)}
+      </div>
+      <div class="chart-card">
+        <div class="chart-hd"><div class="chart-title">Resultado por venda</div><div class="chart-note">lucro / prejuízo econômico</div></div>
+        ${svgDiverging(vendas)}
+        <div class="chart-legend"><span class="lg"><i style="background:#166534"></i>Lucro</span><span class="lg"><i style="background:#b91c1c"></i>Prejuízo</span></div>
+      </div>
+    </div>
+
+    ${hBullets()}`;
 }
 
 function hDashboard() {
@@ -2876,20 +3130,24 @@ function bindEvents() {
 // ═══════════════════════════════════════════════════════════════════
 async function init() {
   initDB();
-
-  // Carrega salvos + qualquer rascunho migrado do localStorage
-  loadLocal();
+  bindAuthForm();
   view = 'dashboard';
   renderAll();
+  fetchLivePTAX();
 
-  const tasks = [fetchLivePTAX()];
   if (_db) {
-    setStatus('loading');
-    tasks.push(loadFromDB());
+    // Exige login: só carrega os dados após sessão autenticada
+    const { data:{ session } } = await _db.auth.getSession();
+    if (session) { await onSignedIn(); } else { showAuth(); }
+    _db.auth.onAuthStateChange((_evt, sess) => {
+      if (sess) onSignedIn(); else showAuth();
+    });
   } else {
+    // Sem serviço de banco (ex.: offline): cai para dados locais do próprio navegador
+    loadLocal();
+    renderAll();
     setStatus('offline');
   }
-  await Promise.all(tasks);
   schedulePrefetch();   // busca PTAX BACEN dos atletas já carregados
 }
 init();

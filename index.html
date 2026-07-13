@@ -396,6 +396,8 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .chart-svg .name-txt{font-family:'Inter',sans-serif;font-size:11px;font-weight:500;fill:var(--ink-2)}
 .chart-svg .mark:hover{opacity:.82;cursor:default}
 .chart-empty{font-family:'Inter',sans-serif;font-size:11px;color:var(--ink-4);padding:22px 0;text-align:center}
+.amort-wrap{display:grid;grid-template-columns:minmax(0,2.4fr) minmax(0,1fr);gap:14px;margin-top:14px;align-items:stretch}
+@media(max-width:820px){.amort-wrap{grid-template-columns:1fr}}
 .amort-picker{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0 2px}
 .amort-picker-lbl{font-family:'Inter',sans-serif;font-size:8.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-deep);flex-shrink:0}
 .amort-chips{display:flex;gap:6px;flex-wrap:wrap}
@@ -403,6 +405,18 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .amort-chip:hover{background:var(--gold-tint);border-color:var(--gold-ring)}
 .amort-chip.on{border-color:var(--chip);background:color-mix(in srgb,var(--chip) 12%,transparent);color:var(--ink-1);font-weight:600}
 .amort-chip-dot{width:9px;height:9px;border-radius:50%;background:var(--div-m);flex-shrink:0}
+.amort-summary{display:flex;flex-direction:column;gap:14px}
+.amort-sum-empty{font-family:'Inter',sans-serif;font-size:11px;line-height:1.5;color:var(--ink-4);margin-top:10px}
+.amort-sum-names{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.amort-sum-name{font-family:'Inter',sans-serif;font-size:9.5px;font-weight:600;color:#2f6f9f;background:color-mix(in srgb,#2f6f9f 11%,transparent);border:1px solid color-mix(in srgb,#2f6f9f 28%,transparent);padding:3px 9px;border-radius:var(--r-pill)}
+.amort-sum-stat{border-top:1px solid var(--div);padding-top:12px}
+.amort-sum-lbl{font-family:'Inter',sans-serif;font-size:8px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:var(--gold-deep);margin-bottom:5px}
+.amort-sum-val{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:var(--ink-1);letter-spacing:-.01em;line-height:1}
+.amort-sum-sub{font-family:'Inter',sans-serif;font-size:9.5px;color:var(--ink-4);margin-top:3px}
+.amort-share{display:flex;align-items:center;gap:8px;margin-top:9px}
+.amort-share-track{flex:1;height:7px;background:var(--cream-inset);border-radius:var(--r-pill);overflow:hidden}
+.amort-share-fill{height:100%;background:#2f6f9f;border-radius:var(--r-pill);min-width:2px}
+.amort-share-pct{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;color:#2f6f9f;min-width:44px;text-align:right}
 
 /* ── LOGIN ────────────────────────────────────────────── */
 .auth-overlay{position:fixed;inset:0;z-index:1000;background:var(--dark);display:flex;align-items:center;justify-content:center;padding:20px}
@@ -1513,18 +1527,17 @@ function svgArea(series){
   </svg>`;
 }
 
-// Paleta categórica para as linhas dos atletas destacados (distinta do dourado do total).
-const SERIES_PAL=['#2f6f9f','#3d8f6b','#a85ab0','#c2683a','#5b8bd0','#4f9d9d','#b0567a','#8a8f3c'];
+// Cor de destaque da seleção (linha acumulada dos atletas selecionados). Distinta do dourado do total.
+const AMORT_SEL_COLOR='#2f6f9f';
 
-// Área temporal multi-série: área/linha do TOTAL (dourado) + uma linha por atleta selecionado.
-// months: Date[] (1º de cada mês) · total: number[] · players: [{name,color,values:number[]}]
-function svgAreaMulti(months,total,players){
+// Área temporal comparativa: TOTAL (dourado) + linha ACUMULADA da seleção (soma dos atletas selecionados).
+// months: Date[] (1º de cada mês) · total: number[] · sel: number[]|null (soma da seleção, mesmo tamanho)
+function svgAreaCompare(months,total,sel){
   if (!months.length) return `<div class="chart-empty">Sem dados no período.</div>`;
-  const GOLD='#be8c4a';
+  const GOLD='#be8c4a', SEL=AMORT_SEL_COLOR;
   const VW=1000, VH=250, padL=58, padR=104, padT=18, padB=28;
   const n=months.length;
-  const allVals=[...total, ...players.flatMap(p=>p.values)];
-  const top=Math.max(...allVals,1)*1.12;
+  const top=Math.max(...total, ...(sel||[]), 1)*1.12;
   const xF=i=> n===1?padL:padL+(i/(n-1))*(VW-padL-padR);
   const yF=v=> padT+(1-v/top)*(VH-padT-padB);
   const base=yF(0);
@@ -1537,30 +1550,36 @@ function svgAreaMulti(months,total,players){
       `<line class="grid-line" x1="${xF(i).toFixed(1)}" y1="${padT}" x2="${xF(i).toFixed(1)}" y2="${base.toFixed(1)}" stroke-dasharray="2 3" opacity=".6"/>`;}
     return out;}).join('');
   const pathOf=vals=>vals.map((v,i)=>`${i?'L':'M'}${xF(i).toFixed(1)},${yF(v).toFixed(1)}`).join(' ');
-  const areaTot=`M${padL},${base.toFixed(1)} `+total.map((v,i)=>`L${xF(i).toFixed(1)},${yF(v).toFixed(1)}`).join(' ')+` L${xF(n-1).toFixed(1)},${base.toFixed(1)} Z`;
-  // Linhas dos atletas (mais finas), desenhadas sob a linha do total
-  const playerLines=players.map(p=>
-    `<path d="${pathOf(p.values)}" fill="none" stroke="${p.color}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" opacity=".95"/>`+
-    `<circle cx="${xF(n-1).toFixed(1)}" cy="${yF(p.values[n-1]).toFixed(1)}" r="3" fill="${p.color}" stroke="#fdfbf6" stroke-width="1.5"/>`).join('');
+  const areaOf=vals=>`M${padL},${base.toFixed(1)} `+vals.map((v,i)=>`L${xF(i).toFixed(1)},${yF(v).toFixed(1)}`).join(' ')+` L${xF(n-1).toFixed(1)},${base.toFixed(1)} Z`;
+  const hasSel=Array.isArray(sel);
+  const selLayer=hasSel?`
+    <path d="${areaOf(sel)}" fill="url(#areaSel)"/>
+    <path d="${pathOf(sel)}" fill="none" stroke="${SEL}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${xF(n-1).toFixed(1)}" cy="${yF(sel[n-1]).toFixed(1)}" r="3.5" fill="${SEL}" stroke="#fdfbf6" stroke-width="2"/>`:'';
   // Rótulos de valor final, com de-colisão vertical
-  const ends=[{color:GOLD,v:total[n-1]}, ...players.map(p=>({color:p.color,v:p.values[n-1]}))]
+  const ends=[{color:GOLD,v:total[n-1]}, ...(hasSel?[{color:SEL,v:sel[n-1]}]:[])]
     .map(e=>({...e,y:yF(e.v)})).sort((a,b)=>a.y-b.y);
-  const minGap=12;
+  const minGap=13;
   for(let i=1;i<ends.length;i++){ if(ends[i].y-ends[i-1].y<minGap) ends[i].y=ends[i-1].y+minGap; }
   const maxY=VH-padB; for(let i=ends.length-1;i>0;i--){ if(ends[i].y>maxY){ ends[i].y=maxY; if(ends[i].y-ends[i-1].y<minGap) ends[i-1].y=ends[i].y-minGap; } }
   const endLabels=ends.map(e=>`<text class="val-txt" fill="${e.color}" x="${(xF(n-1)+8).toFixed(1)}" y="${(e.y+3).toFixed(1)}" text-anchor="start">R$ ${fmtMi(e.v)}</text>`).join('');
-  // Áreas de hover com tooltip listando total e cada atleta selecionado no mês
   const hov=months.map((m,i)=>{const w=(VW-padL-padR)/Math.max(n-1,1);
     const lab=`${MONTHS_PT[m.getMonth()]}/${m.getFullYear()}`;
-    const lines=[`Total · R$ ${N(total[i])}`,...players.map(p=>`${p.name}: R$ ${N(p.values[i])}`)].join('\n');
+    const pct=total[i]>0?Math.round(sel?.[i]/total[i]*100):0;
+    const lines=[`Total · R$ ${N(total[i])}`,...(hasSel?[`Seleção · R$ ${N(sel[i])} (${pct}%)`]:[])].join('\n');
     return `<rect class="mark" x="${(xF(i)-w/2).toFixed(1)}" y="${padT}" width="${w.toFixed(1)}" height="${(base-padT).toFixed(1)}" fill="transparent"><title>${esc(lab)}\n${esc(lines)}</title></rect>`;}).join('');
   return `<svg class="chart-svg" viewBox="0 0 ${VW} ${VH}" preserveAspectRatio="xMidYMid meet" role="img">
-    <defs><linearGradient id="areaGold" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#be8c4a" stop-opacity=".30"/><stop offset="1" stop-color="#be8c4a" stop-opacity=".02"/>
-    </linearGradient></defs>
+    <defs>
+      <linearGradient id="areaGold" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#be8c4a" stop-opacity=".30"/><stop offset="1" stop-color="#be8c4a" stop-opacity=".02"/>
+      </linearGradient>
+      <linearGradient id="areaSel" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="${SEL}" stop-opacity=".28"/><stop offset="1" stop-color="${SEL}" stop-opacity=".03"/>
+      </linearGradient>
+    </defs>
     ${grid}${xlab}
-    <path d="${areaTot}" fill="url(#areaGold)"/>
-    ${playerLines}
+    <path d="${areaOf(total)}" fill="url(#areaGold)"/>
+    ${selLayer}
     <path d="${pathOf(total)}" fill="none" stroke="${GOLD}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
     <circle cx="${xF(n-1).toFixed(1)}" cy="${yF(total[n-1]).toFixed(1)}" r="4" fill="${GOLD}" stroke="#fdfbf6" stroke-width="2"/>
     ${endLabels}
@@ -1568,41 +1587,81 @@ function svgAreaMulti(months,total,players){
   </svg>`;
 }
 
-// Card do gráfico de amortização consolidada com seletor de múltiplos atletas + linha de total.
+// Card do gráfico de amortização: seleção de vários atletas → linha acumulada + quadro-resumo da seleção.
 function hAmortChart(){
   const active=S.players.filter(p=>calcPlayer(p)&&p.items.some(i=>i.amount));
   const months=buildMonthRange(active);
   const head=`<div class="chart-hd">
       <div class="chart-title">Amortização mensal consolidada</div>
-      <div class="chart-note">R$ por mês · atletas selecionados vs. total</div>
+      <div class="chart-note">R$ por mês · seleção acumulada vs. total</div>
     </div>`;
-  if(!months.length) return `<div class="chart-card" id="amort-chart-card" style="margin-top:14px">${head}<div class="chart-empty">Sem dados no período.</div></div>`;
-  const total=months.map(m=>active.reduce((s,p)=>{const{amort,status}=monthAmort(p,m);return s+((status==='active'||status==='exit')?amort:0);},0));
+  if(!months.length) return `<div id="amort-chart-card" class="amort-wrap"><div class="chart-card">${head}<div class="chart-empty">Sem dados no período.</div></div></div>`;
+  const seriesOf=p=>months.map(m=>{const{amort,status}=monthAmort(p,m);return (status==='active'||status==='exit')?amort:0;});
+  // série de cada atleta + total (soma) em uma única passada
+  const total=months.map(()=>0);
+  const perPlayer=new Map();
+  for(const p of active){ const sv=seriesOf(p); perPlayer.set(p.id,sv); sv.forEach((v,i)=>total[i]+=v); }
   // mantém apenas seleções que ainda existem na base
   const activeIds=new Set(active.map(p=>p.id));
   AMORT_SEL=AMORT_SEL.filter(id=>activeIds.has(id));
-  const seriesOf=p=>months.map(m=>{const{amort,status}=monthAmort(p,m);return (status==='active'||status==='exit')?amort:0;});
-  const playerSeries=AMORT_SEL.map((id,i)=>{const p=active.find(x=>x.id===id);
-    return {name:p.name||'Sem nome',color:SERIES_PAL[i%SERIES_PAL.length],values:seriesOf(p)};});
+  const hasSel=AMORT_SEL.length>0;
+  // linha ACUMULADA: soma mês a mês dos atletas selecionados
+  const sel=hasSel?months.map((_,i)=>AMORT_SEL.reduce((s,id)=>s+(perPlayer.get(id)?.[i]||0),0)):null;
   const chips=active.map(p=>{
-    const idx=AMORT_SEL.indexOf(p.id), on=idx>=0;
-    const col=on?SERIES_PAL[idx%SERIES_PAL.length]:'';
-    return `<button class="amort-chip${on?' on':''}" data-action="amort-sel" data-pid="${p.id}"${on?` style="--chip:${col}"`:''}>`+
-      `<span class="amort-chip-dot"${on?` style="background:${col}"`:''}></span>${esc(p.name||'Sem nome')}</button>`;}).join('');
+    const on=AMORT_SEL.includes(p.id);
+    return `<button class="amort-chip${on?' on':''}" data-action="amort-sel" data-pid="${p.id}"${on?` style="--chip:${AMORT_SEL_COLOR}"`:''}>`+
+      `<span class="amort-chip-dot"${on?` style="background:${AMORT_SEL_COLOR}"`:''}></span>${esc(p.name||'Sem nome')}</button>`;}).join('');
   const legend=`<div class="chart-legend">
     <span class="lg"><i style="background:#be8c4a"></i>Total (todos ativos)</span>
-    ${playerSeries.map(s=>`<span class="lg"><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join('')}
+    ${hasSel?`<span class="lg"><i style="background:${AMORT_SEL_COLOR}"></i>Seleção (${AMORT_SEL.length} atleta${AMORT_SEL.length>1?'s':''})</span>`:''}
   </div>`;
-  return `<div class="chart-card" id="amort-chart-card" style="margin-top:14px">
+  const chart=`<div class="chart-card">
     ${head}
     <div class="amort-picker">
-      <span class="amort-picker-lbl">Comparar atletas</span>
+      <span class="amort-picker-lbl">Selecionar atletas</span>
       <div class="amort-chips">${chips}</div>
-      ${AMORT_SEL.length?`<button class="mini-btn" data-action="amort-sel-clear">limpar (${AMORT_SEL.length})</button>`:''}
+      ${hasSel?`<button class="mini-btn" data-action="amort-sel-clear">limpar (${AMORT_SEL.length})</button>`:''}
     </div>
-    ${svgAreaMulti(months,total,playerSeries)}
+    ${svgAreaCompare(months,total,sel)}
     ${legend}
   </div>`;
+  return `<div id="amort-chart-card" class="amort-wrap">${chart}${hAmortSummary(active,months,total,sel,perPlayer)}</div>`;
+}
+
+// Quadro-resumo da seleção: valor somado e participação (%) em relação ao total.
+function hAmortSummary(active,months,total,sel,perPlayer){
+  const wrap=inner=>`<div class="chart-card amort-summary"><div class="chart-title" style="font-size:13px">Resumo da seleção</div>${inner}</div>`;
+  if(!AMORT_SEL.length){
+    return wrap(`<div class="amort-sum-empty">Selecione um ou mais atletas nos chips ao lado para ver a linha acumulada e sua participação no total.</div>`);
+  }
+  const n=months.length;
+  // mês de referência = mês atual (limitado ao período da série)
+  const now=new Date(), nowM=new Date(now.getFullYear(),now.getMonth(),1);
+  let ref=months.findIndex(m=>m.getFullYear()===nowM.getFullYear()&&m.getMonth()===nowM.getMonth());
+  if(ref<0) ref = nowM<months[0]?0:n-1;
+  const refLab=`${MONTHS_PT[months[ref].getMonth()]}/${String(months[ref].getFullYear()).slice(2)}`;
+  const selRef=sel[ref], totRef=total[ref];
+  const pctRef=totRef>0?selRef/totRef*100:0;
+  // acumulado no período (soma de todos os meses)
+  const selPer=sel.reduce((s,v)=>s+v,0), totPer=total.reduce((s,v)=>s+v,0);
+  const pctPer=totPer>0?selPer/totPer*100:0;
+  const names=AMORT_SEL.map(id=>active.find(p=>p.id===id)).filter(Boolean)
+    .map(p=>`<span class="amort-sum-name">${esc(p.name||'Sem nome')}</span>`).join('');
+  const bar=pct=>`<div class="amort-share"><div class="amort-share-track"><div class="amort-share-fill" style="width:${Math.min(pct,100).toFixed(1)}%"></div></div><span class="amort-share-pct">${pct.toFixed(1)}%</span></div>`;
+  return wrap(`
+    <div class="amort-sum-names">${names}</div>
+    <div class="amort-sum-stat">
+      <div class="amort-sum-lbl">Amortização somada · ${esc(refLab)} (mês atual)</div>
+      <div class="amort-sum-val" style="color:${AMORT_SEL_COLOR}">R$ ${fmtMi(selRef)}</div>
+      <div class="amort-sum-sub">de R$ ${fmtMi(totRef)} do total</div>
+      ${bar(pctRef)}
+    </div>
+    <div class="amort-sum-stat">
+      <div class="amort-sum-lbl">Acumulado no período</div>
+      <div class="amort-sum-val">R$ ${fmtMi(selPer)}</div>
+      <div class="amort-sum-sub">de R$ ${fmtMi(totPer)} amortizados</div>
+      ${bar(pctPer)}
+    </div>`);
 }
 
 // Barras horizontais — magnitude por atleta (uma medida). Cor: dourado.

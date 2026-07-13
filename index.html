@@ -414,6 +414,22 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .auth-btn{padding:12px;border-radius:var(--r-pill);border:none;background:var(--gold);color:var(--dark);font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:background .15s}
 .auth-btn:hover{background:var(--gold-soft)}
 .auth-btn:disabled{opacity:.55;cursor:default}
+
+/* ── APRESENTAÇÃO · insights extra ────────────────────── */
+.pres-wrap{max-width:1200px;margin:0 auto}
+.pres-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+@media(max-width:760px){.pres-strip{grid-template-columns:repeat(2,1fr)}}
+.stat{background:var(--cream-card);border:1px solid var(--div);border-radius:var(--r-md);padding:13px 15px;box-shadow:var(--sh-h);min-width:0}
+.stat-lbl{font-family:'Inter',sans-serif;font-size:8.5px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-4);margin-bottom:5px}
+.stat-val{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:600;color:var(--ink-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat-val.pos{color:var(--pos)}.stat-val.neg{color:var(--neg)}.stat-val.gold{color:var(--gold-deep)}
+.stat-sub{font-family:'Inter',sans-serif;font-size:9.5px;color:var(--ink-4);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cur-bars{display:flex;flex-direction:column;gap:13px;margin-top:8px}
+.curbar-row{display:grid;grid-template-columns:52px 1fr auto;gap:11px;align-items:center}
+.curbar-lbl{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--ink-2)}
+.curbar-track{height:14px;background:var(--cream-inset);border-radius:var(--r-pill);overflow:hidden}
+.curbar-fill{height:100%;background:var(--gold);border-radius:var(--r-pill);min-width:2px}
+.curbar-val{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-4);white-space:nowrap}
 </style>
 </head>
 <body>
@@ -1456,7 +1472,7 @@ const fmtMi = v => {
 // Área temporal — série única (magnitude ao longo do tempo). Cor: dourado.
 function svgArea(series){
   if (!series.length) return `<div class="chart-empty">Sem dados no período.</div>`;
-  const VW=760, VH=240, padL=54, padR=58, padT=18, padB=26;
+  const VW=1000, VH=250, padL=58, padR=104, padT=18, padB=28;
   const n=series.length;
   const vals=series.map(s=>s.value);
   const top=Math.max(...vals,1)*1.12;
@@ -1492,7 +1508,7 @@ function svgArea(series){
 // Barras horizontais — magnitude por atleta (uma medida). Cor: dourado.
 function svgBarsH(items){
   if (!items.length) return `<div class="chart-empty">Nenhum atleta com custo ativado.</div>`;
-  const VW=760, rowH=36, padT=8, gut=150, valW=94;
+  const VW=640, rowH=34, padT=8, gut=132, valW=88;
   const H=items.length*rowH+padT*2;
   const maxV=Math.max(...items.map(i=>i.value),1);
   const bx=gut, bw=VW-gut-valW, sc=bw/maxV;
@@ -1506,7 +1522,7 @@ function svgBarsH(items){
 // Barras divergentes — polaridade (lucro/prejuízo). Verde/vermelho + rótulos com sinal.
 function svgDiverging(items){
   if (!items.length) return `<div class="chart-empty">Nenhuma venda registrada ainda.</div>`;
-  const VW=760, rowH=40, padT=8, gut=140, valW=104;
+  const VW=640, rowH=38, padT=8, gut=120, valW=96;
   const H=items.length*rowH+padT*2;
   const x0=gut, x1=VW-valW, xc=(x0+x1)/2;
   const maxA=Math.max(...items.map(i=>Math.abs(i.value)),1);
@@ -1548,11 +1564,27 @@ function hApresentacao(){
   });
 
   const custo=calcs.map(x=>({name:x.p.name||'Sem nome',value:x.c.totAct})).sort((a,b)=>b.value-a.value);
-  const vendas=gains.map((c,i)=>({name:calcs.find(x=>x.c===c)?.p.name||'Sem nome',value:c.gain})).sort((a,b)=>b.value-a.value);
+  const vendas=gains.map(c=>({name:calcs.find(x=>x.c===c)?.p.name||'Sem nome',value:c.gain})).sort((a,b)=>b.value-a.value);
+
+  // ── Insights adicionais ──────────────────────────────
+  const receitaVendas=cc.filter(c=>c.gain!=null).reduce((s,c)=>s+c.saleBRL,0);
+  const baixaTotal=exited.reduce((s,c)=>s+c.totResid,0);
+  const ticketMedio=totAct/calcs.length;
+  const avgContract=Math.round(cc.reduce((s,c)=>s+c.contractMonths,0)/calcs.length);
+  const topLucro=vendas[0], topPior=vendas[vendas.length-1];
+  const piorNeg=topPior && topPior.value<0;
+  // Exposição por moeda (custo ativado, em R$)
+  const byCur={};
+  calcs.forEach(x=>x.c.items.forEach(it=>{ if(it.totalBRL) byCur[it.currency]=(byCur[it.currency]||0)+it.totalBRL; }));
+  const curOrder=Object.entries(byCur).sort((a,b)=>b[1]-a[1]);
+  const curTotal=curOrder.reduce((s,[,v])=>s+v,0);
+  const curRows=curOrder.map(([cur,val])=>{const pct=curTotal>0?val/curTotal*100:0;
+    return `<div class="curbar-row"><span class="curbar-lbl">${cur}</span><div class="curbar-track"><div class="curbar-fill" style="width:${pct.toFixed(1)}%"></div></div><span class="curbar-val">R$ ${fmtMi(val)} · ${pct.toFixed(0)}%</span></div>`;}).join('');
 
   const kpi=(eb,val,cls,sub)=>`<div class="kpi"><div class="kpi-eyebrow">${eb}</div><div class="kpi-value ${cls||''}">${val}</div><div class="kpi-sub">${sub}</div></div>`;
+  const stat=(lbl,val,cls,sub)=>`<div class="stat"><div class="stat-lbl">${lbl}</div><div class="stat-val ${cls||''}">${val}</div><div class="stat-sub">${sub||''}</div></div>`;
 
-  return `
+  return `<div class="pres-wrap">
     <div class="page-head"><div>
       <div class="sec-eyebrow">Apresentação</div>
       <div class="page-title">Visão executiva</div>
@@ -1566,7 +1598,16 @@ function hApresentacao(){
       ${kpi('Economia Projetada',`R$ ${fmtMi(economia)}`,'pos','amort. + folha evitadas')}
     </div>
 
-    <div class="chart-card">
+    <div class="pres-strip">
+      ${stat('Receita de Vendas',`R$ ${fmtMi(receitaVendas)}`,'gold',`${gains.length} transferência${gains.length!==1?'s':''}`)}
+      ${stat('Baixa Total (residual)',`R$ ${fmtMi(baixaTotal)}`,'','intangível baixado nas saídas')}
+      ${stat('Ticket Médio de Aquisição',`R$ ${fmtMi(ticketMedio)}`,'','custo por atleta')}
+      ${topLucro?stat('Maior Lucro',`+R$ ${fmtMi(topLucro.value)}`,'pos',esc(topLucro.name)):''}
+      ${topPior?stat(piorNeg?'Maior Prejuízo':'Menor Resultado',`${piorNeg?'−':'+'}R$ ${fmtMi(Math.abs(topPior.value))}`,piorNeg?'neg':'pos',esc(topPior.name)):''}
+      ${stat('Contrato Médio',`${avgContract} meses`,'',`${cc.length} contrato${cc.length!==1?'s':''}`)}
+    </div>
+
+    <div class="chart-card" style="margin-top:14px">
       <div class="chart-hd">
         <div class="chart-title">Amortização mensal consolidada</div>
         <div class="chart-note">R$ por mês · soma de todos os atletas ativos</div>
@@ -1586,7 +1627,14 @@ function hApresentacao(){
       </div>
     </div>
 
-    ${hBullets()}`;
+    <div class="pres-grid2">
+      <div class="chart-card">
+        <div class="chart-hd"><div class="chart-title">Exposição por moeda</div><div class="chart-note">custo ativado em R$</div></div>
+        <div class="cur-bars">${curRows||'<div class="chart-empty">Sem dados.</div>'}</div>
+      </div>
+      ${hBullets()}
+    </div>
+  </div>`;
 }
 
 function hDashboard() {
